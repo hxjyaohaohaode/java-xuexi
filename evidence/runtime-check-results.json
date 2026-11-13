@@ -1,0 +1,1429 @@
+{
+  "schemaVersion": "1.0",
+  "result": "PASS",
+  "scope": "v0.3 implemented runtime and architecture gates; not final product/course acceptance",
+  "recordedAt": "2026-11-13T18:02:08.083995+00:00",
+  "baselineCommit": "e13e01bb004d1d6ee9423dc9004f25237e744421",
+  "environment": {
+    "os": "Linux",
+    "python": "3.12.14",
+    "maven": "3.9.9",
+    "jdk": "21.0.13.0.2",
+    "compilerRelease": 17,
+    "springBoot": "3.5.16",
+    "h2": "2.3.232",
+    "mysql": "8.4.13",
+    "localMysqlMode": "official isolated server; not Docker"
+  },
+  "sourceSnapshot": {
+    "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+    "digest": "2304ef8f3c99298cd3fd9f7ef0b44fd3950edb9d6e1c6f8a658823a2c0b92ed8",
+    "excludedReports": [
+      "evidence/runtime-check-results.json",
+      "evidence/runtime-review.md"
+    ],
+    "fileCount": 156,
+    "files": {
+      ".gitattributes": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c",
+      ".github/workflows/baseline.yml": "25922ceb5c16017d1c51858d578d8f6ae16a8183251cd35b1cd9994b57b27954",
+      ".gitignore": "d667d736976b016d4745c43271700e0ed6551610c8bddd5bca08cb407f12460b",
+      "AGENTS.md": "a18931aec7bf4a2be07da98d59fbe5266b2f198b600fb9be69e5bb0180f6feaa",
+      "README.md": "f9574fb34d3a1ce1a37b37d579a34679a596fa5567000c35860b614d010e25bb",
+      "agent/README.md": "9dea6c60b6a3de3c855bf6bd1744d916c88358af8183cdf756c0063e97424dd0",
+      "agent/artifact-examples.json": "658422e9efa5fb481866785d90ca852f3fa7a394e62a208c82732c35996c71d9",
+      "agent/capability-matrix.json": "ad0a2a5b6146b654d083bcfc48ea5a70208c47f55e608be402683d9eb7fa3ec2",
+      "agent/cluster-evaluation-cases.json": "e88fa89c49fe37a0dd4255d45518ef705a895247eb7e4899a0cf1ee3f4b8f722",
+      "agent/conductor-prompt.md": "dad7ca58d37ec72c31d2e0f84cf0e75503a9d83697208353c5a67ac167f6f1d6",
+      "agent/evaluation-cases.json": "9bce860769733b0b337f5b5ae06e73ed9fa6b7aa8fbd07d39478dcd484bfa543",
+      "agent/example-plan.json": "af70c3ceb13dda099e6cc05633cf70fd78b2cad268e70058e41e03c45509adfc",
+      "agent/roles.json": "a45948be9ce2665b70ef472e8ef1d92051e72cdcadcb694ee184dc8006a0e9b5",
+      "agent/run-policy.json": "c00433c894ce85fdfdd563f915fb99277afc6c4235933d7b5b7c3c591f8228b6",
+      "agent/system-prompt.md": "7bca7814ddecca6ab8d8447680ba75ec03b72aa7cdbfbdc0ee15d566a77e65f8",
+      "agent/tools.json": "48f9bb9b1e6f956bd8694533071966e2181f6262061798120e8db071748811c0",
+      "backend/README.md": "b1c194aa0465d96b4a7969e4cf825e4c8128868c4c368c65237b793264c44e2b",
+      "backend/pom.xml": "d7612f9c236ddb2c7c2ce84d3d69a272c10f3ef8b1800b2bf03c793e39a2ceca",
+      "backend/src/main/java/io/typeforge/TypeForgeApplication.java": "3554363b1b9a6990b0bced041770fe934a2a858a24dd2c5ac501c3a966cdb890",
+      "backend/src/main/java/io/typeforge/artifacts/ArtifactController.java": "82bc65e208d2d5ee7312f9cf53493a0b98d6d605d21c0e802bdc006b85a235d2",
+      "backend/src/main/java/io/typeforge/artifacts/ArtifactInvalidation.java": "23854de035a8c3aac2c2271ba04ac50ac569818258105bd06672c01fb85c615c",
+      "backend/src/main/java/io/typeforge/artifacts/ArtifactService.java": "4d61fe8313c9a11b883aee72c5d746fe24af9ed88a013723322e9997a93d9530",
+      "backend/src/main/java/io/typeforge/artifacts/ArtifactStudio.java": "b99e6939292413e7fa32910f8c84cc7a6bdf30b7edac30caad0391da83bdc062",
+      "backend/src/main/java/io/typeforge/artifacts/package-info.java": "92bae393bdc93b230107cbfb9d21ace3806b31cadd51c1516c6fb19a6473f311",
+      "backend/src/main/java/io/typeforge/compiler/CompilationGateway.java": "9b16b47349d4830ea640babb37005d8804c105b377741cdb0d19c51a93380f5e",
+      "backend/src/main/java/io/typeforge/compiler/package-info.java": "b132190e3a87f6161ab20ca1da8cbc5cd97b613ea8fd59f743197f27a444e9d0",
+      "backend/src/main/java/io/typeforge/curriculum/ConceptCatalog.java": "b6289eb3e16dfedd96720ded5bf2c413623b60e276247bd9393058b9454e419a",
+      "backend/src/main/java/io/typeforge/curriculum/CurriculumService.java": "450a64969cf6c2ec207444ebd9f774c6ed512725b28306569c7504bb34d90174",
+      "backend/src/main/java/io/typeforge/curriculum/KnowledgeController.java": "26547ce579c32d316c554618eff6da72dc7b26436ec5699c7f5cd36694a09569",
+      "backend/src/main/java/io/typeforge/curriculum/package-info.java": "d1f9608c93b4bf9061fb98bd319ee1fd5e838cc74d205d5a60f4375f0a33da1a",
+      "backend/src/main/java/io/typeforge/evidence/package-info.java": "8e21eb8f78355147469e10256088227525e5a8dd8075648c6617c753623fde57",
+      "backend/src/main/java/io/typeforge/exercise/ExerciseGrader.java": "ba435899dba84f0c67a9bb3a218dd12791c97161bad325cdf46d38498da362ba",
+      "backend/src/main/java/io/typeforge/exercise/LearningController.java": "76bd78d6f198241370abb28382926c8d32f49109413d830f0cd51090029d37fb",
+      "backend/src/main/java/io/typeforge/exercise/LearningService.java": "d27df31f3f9c1e0289ff1d4c502b159530f8fad3fe397db581ef13f39a2eac42",
+      "backend/src/main/java/io/typeforge/exercise/package-info.java": "56283add36cde4b9a4cf41a30c9afb3eb9e834db05e6fae0b72bcdd804e1dccf",
+      "backend/src/main/java/io/typeforge/identity/Actor.java": "2368f8d3e6117561ee9d379fb23983b94de9b84277e3cd1727df0428ceb84a7d",
+      "backend/src/main/java/io/typeforge/identity/IdentityController.java": "244f87af028c8004757c0c2846e3f79e06e810c43456b6aaf376d55766bfbafa",
+      "backend/src/main/java/io/typeforge/identity/IdentityService.java": "2b5de2f7b34395e7cedc9a0e0f940f4c0307552c86c4a40ba1f5f2cc08bde5a0",
+      "backend/src/main/java/io/typeforge/identity/package-info.java": "7d26e93ec4d3b1ec2f96dc157ae037a7d4a6168aed9fac370ee8b0f2d311b128",
+      "backend/src/main/java/io/typeforge/ingestion/KnowledgeIngestion.java": "5bd31a792e4d8ad92be58793daf9ca3f6496c3d0f85062e516a8cc0177fbe2d2",
+      "backend/src/main/java/io/typeforge/ingestion/package-info.java": "3d2038742e582e90ae6036c1a70ffe9ddbea6a4c249ede65f999673ed003c80e",
+      "backend/src/main/java/io/typeforge/lab/TypeRelationEvaluator.java": "469b429d2a1a0ef4c64786d90cc9080d2f448328417d95d0fea2076218ac0f98",
+      "backend/src/main/java/io/typeforge/lab/package-info.java": "981b09a8575d7d05f5d9cee4b37eb873bbcad67ef9a33bc526a228ec8c3c2020",
+      "backend/src/main/java/io/typeforge/learning/LearningEvidenceProjection.java": "e0d76a9357a48fdcd41d8b0aaa4b76508ba5d1f5eac7e77f201d5004f7dade30",
+      "backend/src/main/java/io/typeforge/learning/LearningProjection.java": "62ac5e2703f35129dd704a44210e936ce767f1b465f0008158769777b536a40d",
+      "backend/src/main/java/io/typeforge/learning/package-info.java": "e97686784e25bb38e270922e1e0fdb98c5e401c293032bc6a851f607daa8c843",
+      "backend/src/main/java/io/typeforge/notebook/NotebookCompiler.java": "8a523d3467fab6c555e592725cc3ba175fbde47e16c748afdda3461a680841ad",
+      "backend/src/main/java/io/typeforge/notebook/NotebookController.java": "d72d71d535a3cf9c079a9f713fa69d2890f9872cac78083b9a787db2ea31b386",
+      "backend/src/main/java/io/typeforge/notebook/NotebookService.java": "9335441ccbae32788e52ba812d1f5ae90cbb1a263362d7a10b28750a6c208bad",
+      "backend/src/main/java/io/typeforge/notebook/package-info.java": "59742096175a9225621d1c316b9ec58e8e869814924e27447dd058b10b510a4b",
+      "backend/src/main/java/io/typeforge/operations/DemoContentInitializer.java": "d9191b33d00488f1a9cf232a6b7a8e64cf338ccf7d950faa2ada867ca1f6d19f",
+      "backend/src/main/java/io/typeforge/operations/FrameworkController.java": "785f75854a35932bee00a13aeb7203192e3ecc173b7bcde329729b9f654628b8",
+      "backend/src/main/java/io/typeforge/operations/ProblemHandler.java": "36b4a2077d28c260dc84e2e514167c914f62afe968145112975932a7a55159bc",
+      "backend/src/main/java/io/typeforge/operations/RequestBodyLimit.java": "4a2dd6b8d860169ddac856212e3c492a454e553f1fdda80fbaa9f2fe264cae0d",
+      "backend/src/main/java/io/typeforge/operations/RuntimeConfiguration.java": "71aebce3c7641cf3d044a35768a9336a2f5e2a34825ac47ec332ac471102b34d",
+      "backend/src/main/java/io/typeforge/operations/ScaffoldSecurity.java": "e965e087f6d324ae53f169f4159a3a31b550afa11999ed4a3f4184fc3fbb163e",
+      "backend/src/main/java/io/typeforge/operations/events/ActivityProjection.java": "21d43292e627f51dfd8d8fe61e5b32619879919ee8bc6e4e9658cacb50175204",
+      "backend/src/main/java/io/typeforge/operations/events/DomainEventConsumer.java": "d5adcf6fb24ecad15aa4d06dc8dc8db2a7a45d3d03843001d754fdfe43556195",
+      "backend/src/main/java/io/typeforge/operations/events/EventJournal.java": "642261696b1821cee834bedd3495bb8b5f654942a4370e970dc8358414a5f9b5",
+      "backend/src/main/java/io/typeforge/operations/events/OutboxDispatcher.java": "e424c4dbce4e70bd08fbdb00fd71343dad4a12b2c5ee322a875e66af093178bf",
+      "backend/src/main/java/io/typeforge/operations/migrations/h2/PortableMigration.java": "e3ff573dae2eb7fafb717869693cede627d4e4e14eaa184108f95331d24dc666",
+      "backend/src/main/java/io/typeforge/operations/migrations/h2/V001__baseline.java": "0f11a3c3f363d3638570a18ee97b9988095ca26e90cdf643a11bf12b51094853",
+      "backend/src/main/java/io/typeforge/operations/migrations/h2/V002__agent_workspace.java": "1ba0cfbee3c890c5fd6a4ba3cd916c80d15aeb8cefd12ff61d7a57645931a3a6",
+      "backend/src/main/java/io/typeforge/operations/migrations/h2/V003__runtime_integrity.java": "443d0bd30dab7e1b123f698a3b70eef3252e00109c810e04cad48e68cb1ba1a1",
+      "backend/src/main/java/io/typeforge/operations/package-info.java": "3f0b7537451598561daaceae51d4ae9fbd30e3ca2601e2a458d6e75d79084569",
+      "backend/src/main/java/io/typeforge/orchestration/AgentTool.java": "858c103342bbe01412b81b8192e070318a6eb913166f40b19e6a4dc8441d727c",
+      "backend/src/main/java/io/typeforge/orchestration/DurableAgentRuntime.java": "69cae66ea594decc0ad4981ca4ac3c50d72a01c4d133bbed53e1ec1b0287ab92",
+      "backend/src/main/java/io/typeforge/orchestration/OrchestrationConfiguration.java": "ca1facef2af2fa77be118903265d7d5ba474df3b86fc69ac81afe1e1a71f042b",
+      "backend/src/main/java/io/typeforge/orchestration/PlanValidator.java": "3ddd6d2c979e45f8ac3a1b90a8115efa3f46d7399c181fffc7082a9c489f8004",
+      "backend/src/main/java/io/typeforge/orchestration/TaskPlan.java": "8239ca8949037758482c87a5d928bb9712287c702c0cfe59bc3b2213edd900d4",
+      "backend/src/main/java/io/typeforge/orchestration/package-info.java": "3c07be3ffa95bca12508efd061fc6b284009a348ce25c359539a0873567d9adf",
+      "backend/src/main/java/io/typeforge/publishing/ContentPublisher.java": "2fa3baa28d64c785e22fa64a8de8dfda657406cf092c37a3c30bd8d35f7d27d0",
+      "backend/src/main/java/io/typeforge/publishing/package-info.java": "41749862865fc3a422a18a119bf6d7946d569a6e27b364d24dba1f2c909d1bd4",
+      "backend/src/main/java/io/typeforge/retrieval/KnowledgeRetriever.java": "02c9470edc154c00c8b91d4035dc12493e8bf5fd6f390d8406fe41e8e1c62d92",
+      "backend/src/main/java/io/typeforge/retrieval/LocalKnowledgeSearch.java": "ca3908b9257f9acf40dc396d635555d2ad41825940b96d8f1cccd09c074c1be5",
+      "backend/src/main/java/io/typeforge/retrieval/SearchController.java": "a575d3522710deb0337db6e9f59c0bc8c6f332ce125721b22ef847410235526f",
+      "backend/src/main/java/io/typeforge/retrieval/package-info.java": "dbb7607cfab93b877b7bcef9e194a5dbb4fe9de78e5e575aea4f2b5d5dd29619",
+      "backend/src/main/java/io/typeforge/shared/DomainException.java": "082cc2de9ae03d18062a81841af788fa080263ce6cd3c992b2c3e4e1da1b240c",
+      "backend/src/main/java/io/typeforge/shared/JsonCodec.java": "bfac8130cf10845f6bd408e39c01a8324cef8e63d4417ebeca783a4f268498cd",
+      "backend/src/main/java/io/typeforge/shared/Page.java": "63eab6c27b254d37e6d42eed6900f221ccbd1f856aaa0c28d4b1e26a8305b9d8",
+      "backend/src/main/java/io/typeforge/shared/SchemaCatalog.java": "fa996a88559f99cef790bae415e3d421195264f4c303c5575e4575ebfc741475",
+      "backend/src/main/java/io/typeforge/shared/Transfers.java": "9005ca6a67ed3d26515c737af416179140401f479f64e0ba0d08ae378df2cdb2",
+      "backend/src/main/java/io/typeforge/tutor/EvidenceWorkflow.java": "85e27c6a7e8319b643545da1a13ac65955736f458420efc790051ab8f1aff175",
+      "backend/src/main/java/io/typeforge/tutor/LocalContextTool.java": "26dbf5e53a9a8d2a4f28e5353c05ed807ea40710f26b0a0ce2a94e8d92799ae8",
+      "backend/src/main/java/io/typeforge/tutor/LocalSearchTool.java": "f5f8f9c2655938731fd94b4a944a52b27e3241e3b42c0a2f9d3c21c31009a881",
+      "backend/src/main/java/io/typeforge/tutor/RunController.java": "138ce5fbc8372a4f054c64f76963c0e9707202170b28d07f23efe0a8ac67a954",
+      "backend/src/main/java/io/typeforge/tutor/TutorGateway.java": "a7869a2226ae1201423085c2016b60cb5ea017a9d7f5d96b4d644f7e015c31d4",
+      "backend/src/main/java/io/typeforge/tutor/package-info.java": "f191f41c88b106db60c739e15a4021cfaabacb2485521489ec34ef99cbeae497",
+      "backend/src/main/java/io/typeforge/workspace/ReferenceInvalidator.java": "dd84f4dea8c07e3a25fcc262d5528556be840bc321f29c32ba1ab47964ce910b",
+      "backend/src/main/java/io/typeforge/workspace/WorkspaceAccess.java": "56aa179d0c7a8f6e504509062b431a5d72b49f5615f04d8e5f9654e4c07d5d2d",
+      "backend/src/main/java/io/typeforge/workspace/WorkspaceContextStore.java": "a3ce2ae25847f6c59f5cd63c5eea6b0d7aa91d56322285546f5487a10df1d5b1",
+      "backend/src/main/java/io/typeforge/workspace/WorkspaceController.java": "e07922ba842ea0f5046b0addb39b6cc0083608b55225ae8915b3f36dde1524f6",
+      "backend/src/main/java/io/typeforge/workspace/WorkspaceService.java": "9d5c9e3844a9e6b26c6b28e17ffbafd1d169f9fa0c216a2b9697a10a7abedf87",
+      "backend/src/main/java/io/typeforge/workspace/package-info.java": "56efa7e12800e1ce6592170d79489fa34e734977ae35ba1a76504180da2faa14",
+      "backend/src/main/resources/application-mysql.properties": "dd56728bcfd182ea09ee8af05ba25bfc9cdfd3d269d890374f7cc14dca6e5240",
+      "backend/src/main/resources/application-test.properties": "fc3503887760beceda7ccb2898904d7f3d490a76c71cc8583fdc8241921ede2f",
+      "backend/src/main/resources/application.properties": "496075f08a5b0e09236f505f4b84dab6b2ceeb354473eac0f11ff9ff524da4a6",
+      "backend/src/test/java/io/typeforge/AgentPlanTest.java": "30534f099cf7c2ec75ba351bfb7c029a452574a0c7daf2e6e0ca214284bba8b1",
+      "backend/src/test/java/io/typeforge/DurableAgentRuntimeTest.java": "1a968f4202069f03eea435a5412a463872f28b33a21cbb8b21d4048def1236f9",
+      "backend/src/test/java/io/typeforge/EvidenceWorkflowRecoveryTest.java": "9e84547cddd76e647e7cfbec6c821b444a3d0c17f1270c7b09411f456306aebb",
+      "backend/src/test/java/io/typeforge/FrameworkHttpTest.java": "507dc96d448a219549dd7064688643d7515d88fb1bff051b18eb58f5566aaf1c",
+      "backend/src/test/java/io/typeforge/FullLearningLoopIntegrationTest.java": "6a102e97b0971a3284121dd02b2ca06ea33c86cf71169ee57d2ba2f6bee97f65",
+      "backend/src/test/java/io/typeforge/GenericEdgeCasesTest.java": "eedf58512e17ee23f13c78767b4d0d8db367c099664b5d6bdb7eaa30ad35018a",
+      "backend/src/test/java/io/typeforge/GenericSemanticsTest.java": "edd96f9d51b39d9c5d314a515f06b137485c4f46d343ff518b3c561eb95dc18d",
+      "backend/src/test/java/io/typeforge/KnowledgeRuntimeTest.java": "dfb15e3ba693115a189cd951f3797308ea96dd1e2be269d281fa6af5b882aecf",
+      "backend/src/test/java/io/typeforge/LocalLearningToolsTest.java": "44a30e9ae5c384fda9bb3c7a5b4a935b6fcb9f56a6cc999d5b6e4685a9547edc",
+      "backend/src/test/java/io/typeforge/RootArchitectureInvariantsTest.java": "88950ad57c42812eb1ff126ab3f37d706dfa38193be75e8592eeeca25be8ee35",
+      "backend/src/test/java/io/typeforge/TransactionIsolationTest.java": "b0b4385f5032b645138d9d27c88aa2555edf204db792682e26b8a5cb60f1f003",
+      "backend/src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker": "8eca853a5a457f17e0479b71dfbe95f2a13aff9eeff250261ecdc8ca9b847a6a",
+      "contracts/README.md": "5916397492c6bca78a16fd90bf00ab2e391ade316b783fe00536c89a281dd1aa",
+      "contracts/modules.json": "6e81a1451a8bfd39c922f102c4bfb2850f67b70fa02d0af65e2d74c53b03706d",
+      "contracts/openapi.json": "4cd31dec1ff659a9f0585c0c0f0035bd39800991442de10bed2a2e2c881621f2",
+      "database/README.md": "23423d675eb7ad42f433eb173c44fa19f9c60799d7ec0a06c30f26641caa4302",
+      "database/V001__baseline.sql": "e1a1cbb328f092f3b7788cfd57d846d526e0cd8a3de3fefde42cf11879b47896",
+      "database/V002__agent_workspace.sql": "1c13efbb02105da2daa8b38898fba87185bb5751c2992fe00c7c501b13abe730",
+      "database/V003__runtime_integrity.sql": "7270c47cb6d93910ce6d9e6da390fc9608454493296272676e7248bd9ef426fa",
+      "database/agent-data-dictionary.md": "c5c7feca350b4132712b3c08918e900c05862c32128aa8a4be6a0b02a6c09500",
+      "database/data-dictionary.md": "be042a2a0e6666f86e36d26939103eb7cdf4cb40d97210b78dd5908ac94dc2b1",
+      "database/runtime-data-dictionary.md": "66555328793c036bc7765970d8d93b412239fb4c2aca5aefb1af309682a44c98",
+      "database/seed-demo.sql": "640dd344bbaabcc81491e720c5e2a6e47ba1687f9cdef31c7c6ed71fdf52953f",
+      "docs/00-blueprint.md": "e88568688c897bcebde61156d3fab2e443aa4181f2798a3084ed04f868ef9549",
+      "docs/01-architecture.md": "6933acc9cf66288618520337c6e98714ca25a35b2c71befbcd376f7ad827cfb2",
+      "docs/02-modules.md": "11451d9bd4d000a830a58c96569a42017b4e733c63bc605fa8a7384d0f9ed784",
+      "docs/03-data.md": "c75638f00eefb49067cc5ab55097e36e67c6051621e0a025ba6c03b03e2a6bec",
+      "docs/04-api.md": "f4213ee7d610a54e5b2d3ed5270ad37bb1360fca000aeed1643f913c5d049575",
+      "docs/05-knowledge.md": "e615832f6c48de7d7d79717ebd4fda123f1d6407205d8460011cde6ffb4cada5",
+      "docs/06-agent.md": "386916cd861c0c589d93e102421281e57329a85e14f509ea52b8db29d5e989f8",
+      "docs/07-frontend.md": "fc950ac50428c1585594debcc41f5b55a50ab98f4dca135362fe53d67441fb89",
+      "docs/08-quality.md": "1f922a68fce377c1696722119a7799b2671e41675d6c94680447a9d67f76f2eb",
+      "docs/09-team-plan.md": "a141381f3ee2e70780bf10f93a4fea15484f8be8c0074f63574cb82540f31123",
+      "docs/10-agent-cluster.md": "bda783ab465605a4e72fd015974de75ce6bd97741f9c980041cc545f2b399dae",
+      "docs/11-learning-artifacts.md": "2d6febe46defd52203688b6c450a511f1bfc3a2050467dd8126b37bd2ee1ebd0",
+      "docs/12-reference-research.md": "ea0866f8312c387bafa4a5c034c02ca53e28b44792c236eee83dbd7643edb127",
+      "docs/13-architecture-upgrade.md": "0565c22208dfe74d8a916c91dabb3eef1d13df28e7b462e6db3d4737283f7710",
+      "docs/14-research-decisions.md": "467e1aaaeef9fe83d6ba826540f3d33bdf6daefb468c24ff91018648fe81e2bf",
+      "docs/15-frontend-state-network.md": "3ffecc05597de564bfb246f2cddebdc2d19b5d6dc6c2dbcc11dd0f623575a148",
+      "docs/16-course-delivery.md": "0e3844e52dc955c603a3fa48c3c7eb4f8ce4c8748436be0a1a8efe99ae75dc42",
+      "evidence/ai-context.md": "2c4b0830e0e139f34324bc9dedfd7f42440d0d0897cbb4641e147f388b00cef0",
+      "evidence/baseline-review.md": "9f549de4aabc78d6879aa952d0241f1bb3c2207adea7e61a9348549201bdcbdb",
+      "evidence/check-results.json": "56c51980aef4430249f61310e59d9191109d48f1e492716e1438235f2fe82d80",
+      "evidence/course-acceptance-matrix.csv": "8734d2bb893ac11deb72d3bc45aafeffba16299a44263e7ae1f2452eb7e42c3e",
+      "evidence/inputs.md": "cc887c1ca8c0fba3b85894c0aa883b19a577d89277eaf8efe4fbd938e93a2e46",
+      "evidence/traceability.csv": "7cf6c80377d4114376e6d0b7c55db91198f4bae6732ad92222eec5aabc156245",
+      "frontend/README.md": "db4eed3ea99eb791da95e731f8266981abca567f51853cb386ecec15877e39e5",
+      "frontend/design-tokens.json": "f19d384620f4dbfeb05ff4ca1716786fa10e2895c26ea5af94fe57010081b87f",
+      "frontend/reference-ledger.csv": "0b7d54a915a30c71dd1036f9f84634290ce60b7f5670e3bd6bed98b81f825afd",
+      "frontend/state-contract.json": "4484aa2fdce37c40b39cf434df697130a1671c48f0f585fc2f363d284e81f27a",
+      "knowledge/concepts.json": "ef9d54f094b461df3a8611936f44a4417b2f57c8376964b0b44da12ed3fdab80",
+      "knowledge/runtime-lessons.json": "c54679c7cf3417b7025551fa0f0790dc56f66580f99dde9b3eaa79b53a2dea9b",
+      "knowledge/sources.json": "9dd3d387d1870a4b9cc2f817d9fba87765da3d65b04b080553992a15885ff355",
+      "requirements-dev.txt": "f05b125ce5fe722d3b07c7d39216074421794588c88c31b8d21c11275b84d960",
+      "scripts/prepare_ci_mysql.py": "0b33d95b72966d47003c794ed663f0c5fdafa821b3e9ab88f8e7568791fedc0d",
+      "scripts/smoke_runtime.py": "01c0937c309d5dd2f476e65aadf1f5ece24f1aeb98990fb83e1e781efaed33d3",
+      "scripts/verify.py": "83be73b95bf56afc532fa2d4ecbf24b893a6e4760714596e66652b32e7363651",
+      "scripts/verify_mysql.py": "31f9adaf0e46e42e400693f9459abcea334cdfd53ebadbf12a45e8bf6ec24626",
+      "scripts/verify_transaction_isolation.py": "7bb6409f45f8983746bfe6b478a8e897144360cde078661710fbdb8fa09c6f8b"
+    }
+  },
+  "java": {
+    "command": "mvn -B -ntp -f backend/pom.xml verify",
+    "result": "PASS",
+    "tests": 168,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "jarSha256": "3cc2e6b2efe401c13bd2847a7ad37d879830da89068ea7f6924e7c302ce3ea3b",
+    "suites": [
+      {
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "io.typeforge.AgentPlanTest",
+        "seconds": 0.04,
+        "testCases": [
+          "rejectsDuplicateDependency",
+          "writerWaitsForActiveReader",
+          "rejectsInconsistentRecoveryState",
+          "ordersDependenciesDeterministically",
+          "rejectsOversizedPlan",
+          "rejectsNonpositiveBudget",
+          "acceptsTwentyFourStepBoundary",
+          "rejectsSelfDependency",
+          "rejectsEmptyPlan",
+          "onlyOptionalOutputsCannotCompleteGoal",
+          "requiredWorkCannotDependOnSkippableWork",
+          "rejectsUnknownRole",
+          "multipleReadersCanRunTogether",
+          "sameArtifactWritesAreSerialized",
+          "rejectsUnboundedConcurrency",
+          "rejectsUnadmittedToolEvenForKnownRole",
+          "readyBatchRespectsFanInAndParallelLimit",
+          "rejectsAlreadyConflictingLeases",
+          "rejectsMissingAcceptanceAndTooManyModelIterations",
+          "rejectsUnknownOrOverlappingSchedulerState",
+          "rejectsCycleEvenInDisconnectedSubgraph",
+          "rejectsMissingDependency",
+          "rejectsDuplicateStepIds",
+          "readerWaitsForActiveWriter",
+          "inputCollectionsCannotMutatePlan"
+        ]
+      },
+      {
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "io.typeforge.DurableAgentRuntimeTest",
+        "seconds": 0.989,
+        "testCases": [
+          "stableExecutionKeysAndSettlementPreventDuplicateCharges",
+          "unknownExternalEffectRetainsReservationAcrossCrashAndCannotBeBlindlyRetried",
+          "replanCannotIncreaseBudgetOrEvadeUnknownExternalEffects",
+          "expiredLeaseCanBeReclaimedButOldWorkerCannotCommit",
+          "withdrawnContextStopsBothNewClaimsAndPreviouslyIssuedCompletions",
+          "idempotencyReplaysSameRunAndRejectsDifferentPayloadWithoutWriting",
+          "snapshotServiceFailureIsNotSilentlyReportedAsAnEmptySuccessfulClaim",
+          "observedProviderOverrunIsNotDiscardedOrSilentlyAdjustedDown",
+          "ancestorWorkspaceWriteBlocksArtifactReadAcrossDifferentRuns",
+          "concurrentSchedulersCannotClaimTheSamePersistedStep",
+          "pauseRevokesEpochAndResumeDoesNotExtendDeadline",
+          "failedRequiredBranchSkipsDependentsAndPreservesCompletedPartialWork",
+          "overdueRunTerminatesEvenWhenItsSnapshotHasAlsoBeenRevoked",
+          "planAndReceiptsSurviveReconstructingRuntimeWithSameDatabase",
+          "retriesAreBoundedAndFailedNodesDoNotStarveRemainingIndependentSteps",
+          "aChangedDependencyInvalidatesItsPreviouslyCompletedSuccessors",
+          "anotherOwnerCannotReadOrControlRunEvenWhenAllIdentifiersAreKnown",
+          "invalidatedContextFencesLeasesButRetainsUnknownProviderReservations",
+          "deadlineProducesFailureAndFencesLateCallbacks",
+          "graphAndRoleValidationCannotGrantAnUnregisteredCapability",
+          "forgedAndRetiredEvidenceCannotCompleteRequiredWork",
+          "crossWorkspaceResourceScopeIsRejectedBeforeCreatingAnyRun",
+          "replanRetainsHistoryReusesOnlyVerifiedUnchangedWorkAndDoesNotResetLimits",
+          "differentSnapshotPreventsReusingOtherwiseIdenticalCompletedSteps",
+          "cancellationReleasesOnlyUndispatchedReservationsAndKeepsLateBillingAccountable",
+          "concurrentReservationsCannotOversellTheRunBudget"
+        ]
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "io.typeforge.EvidenceWorkflowRecoveryTest",
+        "seconds": 1.443,
+        "testCases": [
+          "aReconstructedWorkerResumesAnExpiredClaimWithoutRepeatingCommittedSteps",
+          "aFullBatchOfRevokedSnapshotsCannotPermanentlyStarveAHealthyWorkspace"
+        ]
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "io.typeforge.FrameworkHttpTest",
+        "seconds": 18.292,
+        "testCases": [
+          "healthActuallyQueriesDatabaseWithoutClaimingProviderReadiness",
+          "noBusinessOrAdminRouteIsAccidentallyPublic",
+          "exposesHonestPartialRuntimeStatus"
+        ]
+      },
+      {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "io.typeforge.FullLearningLoopIntegrationTest",
+        "seconds": 9.545,
+        "testCases": [
+          "jsonSizeAndIntegerBoundsApplyBeforeNarrowingOrObjectMaterialization",
+          "pauseResumeCancelUseEpochFencingAndSteeringRequiresAnActualPlanner",
+          "unsupportedCodeGradingCreatesNoLearningFactOrOutboxEvent",
+          "absentEvidenceCannotBecomeAFabricatedAnswerOrCompletedRun",
+          "actualSpringMappingsMatchImplementedContractExactly",
+          "persistedEventsReplayBySequenceAndRevisionConflictsDoNotLoseTheDraft",
+          "ownershipCsrfAndServerFactsAreEnforcedAtHttpBoundary",
+          "bodyLimitAlsoRejectsUnknownLengthStreamingRequests",
+          "realLearningJourneyKeepsGradesEvidenceArtifactsAndRunsConnected"
+        ]
+      },
+      {
+        "tests": 24,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "io.typeforge.GenericEdgeCasesTest",
+        "seconds": 3.866,
+        "testCases": [
+          "anInterfaceCanBeTheLeftmostErasureBound",
+          "arraysAreCovariantButValidateTheirActualComponentTypeAtRuntime",
+          "compileTimeWildcardPermissionDoesNotGuaranteeCollectionMutability",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[1]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[2]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[3]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[4]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[5]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[6]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[7]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[8]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[9]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[10]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[11]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[12]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[13]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[14]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[15]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[16]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[17]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[18]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[19]",
+          "verifiesTeachingClaimUsingPinnedLanguageRelease(Fixture)[20]",
+          "differentGenericArgumentsDoNotCreateDifferentRuntimeClasses"
+        ]
+      },
+      {
+        "tests": 34,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "io.typeforge.GenericSemanticsTest",
+        "seconds": 2.458,
+        "testCases": [
+          "validatesWithRealJavac(String, String, boolean, boolean)[1]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[2]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[3]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[4]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[5]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[6]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[7]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[8]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[9]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[10]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[11]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[12]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[13]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[14]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[15]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[16]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[17]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[18]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[19]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[20]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[21]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[22]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[23]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[24]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[25]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[26]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[27]",
+          "validatesWithRealJavac(String, String, boolean, boolean)[28]",
+          "pecsCopiesIntoBroaderContainer",
+          "rawAliasCanCauseRuntimeCastFailure",
+          "compilerGeneratesBridgeForErasedOverride",
+          "declarationSignatureCanRetainTypeArguments",
+          "boundedTypeParameterErasesToItsLeftmostBound",
+          "extendsIsNotImmutable"
+        ]
+      },
+      {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "io.typeforge.KnowledgeRuntimeTest",
+        "seconds": 1.303,
+        "testCases": [
+          "tamperedPublishedBodyFailsIntegrityInsteadOfReturningStaleHashEvidence",
+          "reinitializationDoesNotDuplicateOrOverwritePublishedFixtures",
+          "releaseFilterCannotSeeAnotherReleasesCardsOrExercises",
+          "demoInitializerIsOptInAndCreatesNoPretendStudentsOrHumanReview",
+          "lexicalRetrievalHasRealScoresAndReturnsNoMatchWithoutFabricatingEvidence",
+          "publishedSqlContentHasSixteenConceptsCardsAndTwelveExercises",
+          "chineseBigramQueriesAndConceptFilterUseOnlyMatchingPublishedCards",
+          "englishIdentifiersRemainSearchableWhenAdjacentToChineseWithoutWhitespace",
+          "exercisePaginationHasNoDuplicatesOrSkippedItems",
+          "exerciseResponseDoesNotLeakAnswerSpecificationOrNestedOptionSecrets",
+          "invalidQueryAndLimitAreRejectedAtTheServiceBoundary"
+        ]
+      },
+      {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "io.typeforge.LocalLearningToolsTest",
+        "seconds": 1.1,
+        "testCases": [
+          "workflowPersistsHashesOfTheRealSchemaInputsForBothTypedTools",
+          "contextToolReturnsTheExistingValidatedSnapshotWithoutCreatingState",
+          "toolInputAndOutputSchemasRejectInvalidValuesBeforeReturningData",
+          "anotherPublishedReleaseIsRejectedEvenWithARealAdmittedExecution",
+          "inputHashAndRunEpochMustMatchTheActualAdmittedToolExecution",
+          "privateOrUnadmittedSnapshotsCannotBeReadByKnowingTheirIds",
+          "searchToolReturnsSchemaValidatedRealSourceHashesWithinTheFixedRelease",
+          "zeroEvidenceRemainsAnExplicitEmptyToolResult"
+        ]
+      },
+      {
+        "tests": 24,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "io.typeforge.RootArchitectureInvariantsTest",
+        "seconds": 19.161,
+        "testCases": [
+          "embeddedArtifactAndReviewLinksCannotBypassTheTypedInputManifest",
+          "timestampTiesAndReverseUuidOrderCannotStarveTheWorkspaceHead",
+          "aConsumerFailureRollsBackItsProjectionAndReceiptTogether",
+          "concurrentEditsPreserveTheLosingDraftInsteadOfOverwritingTheWinner",
+          "duplicateOutboxDeliveryDoesNotDoubleLearningEvidenceOrActivity",
+          "delayedEarlierSuccessCannotCloseANewerMistakeFromAnotherWorkspace",
+          "incompleteLegacyIndexIsRejectedWithoutClaimingPartialRevocationSucceeded",
+          "cyclicDerivationIsRejectedWithoutCreatingAnImmediatelyStaleRevision",
+          "sourceHashChecksTheActualSourceAndDoesNotAcceptPlausibleLookingHex",
+          "aRetryingWorkspaceDoesNotStarveUnrelatedWorkspaceStreams",
+          "mergedAncestorPathsDeduplicateSourcesAndRejectConflictingVersionsExplicitly",
+          "equalTimestampEvidenceDoesNotInventAnOrderFromRandomIds",
+          "repeatedCorrectAnswersInSameFamilyDoNotEraseTheFirstIndependentFailure",
+          "snapshotIndirectionCannotBypassRevocableArtifactLineage",
+          "unavailablePrivateDiagnosticAndSolutionAdaptersDoNotPretendToValidateIds",
+          "oversizedLegacyGraphRequiresExplicitRepairInsteadOfUnboundedOrPartialMutation",
+          "memoryRevocationInvalidatesTransitiveArtifactsAndOldSnapshotInTheSameTransaction",
+          "indirectFanoutCannotEvadeTheAncestorBoundAndReplacingItsRootFreesCapacity",
+          "delayedEarlierMistakeFindsTheLaterIndependentCorrectionAcrossWorkspaces",
+          "actualOtherLearnerReviewCannotBeLinkedByKnowingItsUuid",
+          "sameOwnerAcrossWorkspacesUsesOneParentFirstOrderForWritesAndProjection",
+          "counterfactualCandidatesMustBeCurrentMembersOfTheWorkspaceRelease",
+          "directFanoutAdmissionStopsBeforeAStoredMemoryCanBecomeUnrevocable",
+          "notebookAttemptMustMatchTheLinkedExerciseVersion"
+        ]
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "io.typeforge.TransactionIsolationTest",
+        "seconds": 0.627,
+        "testCases": [
+          "transactionTemplateUsesReadCommittedJdbcConnection",
+          "readAfterOwnerLockSeesCommittedWorkspaceChange"
+        ]
+      }
+    ]
+  },
+  "contractsAndArchitecture": {
+    "result": "PASS",
+    "checksPassed": 516,
+    "errors": [],
+    "operations": 72,
+    "implementedOperations": 41,
+    "plannedOperations": 31,
+    "schemas": 126,
+    "conceptSeeds": 16,
+    "frontendReferences": 209,
+    "sqlTables": 56,
+    "expertRoles": 14,
+    "toolCapabilities": 16
+  },
+  "mysqlSchema": {
+    "result": "PASS",
+    "engine": "MySQL 8.4.13",
+    "mode": "external-isolated-server",
+    "tables": 56,
+    "checks": [
+      {
+        "check": "query actual database engine version",
+        "result": "PASS"
+      },
+      {
+        "check": "inspect isolated verification schema",
+        "result": "PASS"
+      },
+      {
+        "check": "reset explicitly marked task-owned verification schema only",
+        "result": "PASS"
+      },
+      {
+        "check": "V001__baseline.sql applies on MySQL 8.4.13",
+        "result": "PASS"
+      },
+      {
+        "check": "V002__agent_workspace.sql applies on MySQL 8.4.13",
+        "result": "PASS"
+      },
+      {
+        "check": "V003__runtime_integrity.sql applies on MySQL 8.4.13",
+        "result": "PASS"
+      },
+      {
+        "check": "draft seeds import",
+        "result": "PASS"
+      },
+      {
+        "check": "table count query",
+        "result": "PASS"
+      },
+      {
+        "check": "concept count",
+        "result": "PASS"
+      },
+      {
+        "check": "knowledge seed count",
+        "result": "PASS"
+      },
+      {
+        "check": "no falsely active release",
+        "result": "PASS"
+      },
+      {
+        "check": "font range CHECK rejects invalid input",
+        "result": "PASS"
+      },
+      {
+        "check": "self prerequisite CHECK rejects cycle edge",
+        "result": "PASS"
+      },
+      {
+        "check": "foreign key rejects missing concept",
+        "result": "PASS"
+      },
+      {
+        "check": "independent reviewer CHECK",
+        "result": "PASS"
+      },
+      {
+        "check": "valid version membership fixture",
+        "result": "PASS"
+      },
+      {
+        "check": "composite FK rejects wrong published exercise revision",
+        "result": "PASS"
+      },
+      {
+        "check": "score cannot exceed maximum",
+        "result": "PASS"
+      },
+      {
+        "check": "valid attempt links to release membership",
+        "result": "PASS"
+      },
+      {
+        "check": "duplicate attempt primary key rejected",
+        "result": "PASS"
+      },
+      {
+        "check": "event receipt fixture",
+        "result": "PASS"
+      },
+      {
+        "check": "consumer event uniqueness enforced",
+        "result": "PASS"
+      },
+      {
+        "check": "citation version fixture",
+        "result": "PASS"
+      },
+      {
+        "check": "citation cannot refer to chunk outside release",
+        "result": "PASS"
+      },
+      {
+        "check": "citation to actual release member succeeds",
+        "result": "PASS"
+      },
+      {
+        "check": "workspace context fixture c397",
+        "result": "PASS"
+      },
+      {
+        "check": "workspace context fixture 5bf9",
+        "result": "PASS"
+      },
+      {
+        "check": "semantic event fixture",
+        "result": "PASS"
+      },
+      {
+        "check": "second workspace event fixture",
+        "result": "PASS"
+      },
+      {
+        "check": "run cannot reference goal from another workspace",
+        "result": "PASS"
+      },
+      {
+        "check": "run cannot reference context from another workspace",
+        "result": "PASS"
+      },
+      {
+        "check": "trigger event cannot cross workspace",
+        "result": "PASS"
+      },
+      {
+        "check": "valid run admits goal and context from same workspace",
+        "result": "PASS"
+      },
+      {
+        "check": "same event cannot spawn second run",
+        "result": "PASS"
+      },
+      {
+        "check": "concurrent budget oversubscription constrained",
+        "result": "PASS"
+      },
+      {
+        "check": "concurrent token oversubscription constrained",
+        "result": "PASS"
+      },
+      {
+        "check": "unknown run state rejected",
+        "result": "PASS"
+      },
+      {
+        "check": "second workspace run fixture",
+        "result": "PASS"
+      },
+      {
+        "check": "task step fixture c2d7",
+        "result": "PASS"
+      },
+      {
+        "check": "task step fixture 2f37",
+        "result": "PASS"
+      },
+      {
+        "check": "task step fixture 2579",
+        "result": "PASS"
+      },
+      {
+        "check": "task step fixture 1ff5",
+        "result": "PASS"
+      },
+      {
+        "check": "dependency cannot cross agent run",
+        "result": "PASS"
+      },
+      {
+        "check": "dependency cannot cross plan revision",
+        "result": "PASS"
+      },
+      {
+        "check": "self task edge rejected",
+        "result": "PASS"
+      },
+      {
+        "check": "valid task dependency succeeds",
+        "result": "PASS"
+      },
+      {
+        "check": "artifact asset fixture 6e1c",
+        "result": "PASS"
+      },
+      {
+        "check": "artifact asset fixture 8bf6",
+        "result": "PASS"
+      },
+      {
+        "check": "artifact cannot attach asset from another workspace",
+        "result": "PASS"
+      },
+      {
+        "check": "same-workspace asset reference succeeds",
+        "result": "PASS"
+      },
+      {
+        "check": "artifact dependency cannot cross workspace",
+        "result": "PASS"
+      },
+      {
+        "check": "artifact goal cannot cross workspace",
+        "result": "PASS"
+      },
+      {
+        "check": "first artifact write lease succeeds",
+        "result": "PASS"
+      },
+      {
+        "check": "second concurrent artifact write lease rejected",
+        "result": "PASS"
+      },
+      {
+        "check": "tool execution admission fixture",
+        "result": "PASS"
+      },
+      {
+        "check": "tool execution key cannot be admitted twice",
+        "result": "PASS"
+      },
+      {
+        "check": "durable expert message fixture",
+        "result": "PASS"
+      },
+      {
+        "check": "expert inbox message de-duplication enforced",
+        "result": "PASS"
+      },
+      {
+        "check": "workspace attempt evidence links to immutable attempt",
+        "result": "PASS"
+      },
+      {
+        "check": "one attempt cannot be counted in two workspaces",
+        "result": "PASS"
+      },
+      {
+        "check": "workspace evidence requires actual attempt",
+        "result": "PASS"
+      },
+      {
+        "check": "independent family evidence fixture",
+        "result": "PASS"
+      },
+      {
+        "check": "repeated family cannot inflate independent evidence",
+        "result": "PASS"
+      },
+      {
+        "check": "zero evidence denominator rejected",
+        "result": "PASS"
+      },
+      {
+        "check": "correct weight cannot exceed total",
+        "result": "PASS"
+      },
+      {
+        "check": "durable workspace projection fixture",
+        "result": "PASS"
+      },
+      {
+        "check": "negative projection cursor rejected",
+        "result": "PASS"
+      },
+      {
+        "check": "negative activity total rejected",
+        "result": "PASS"
+      },
+      {
+        "check": "artifact lineage stores pinned source reference",
+        "result": "PASS"
+      },
+      {
+        "check": "artifact lineage cannot claim different workspace",
+        "result": "PASS"
+      },
+      {
+        "check": "artifact lineage requires actual output revision",
+        "result": "PASS"
+      },
+      {
+        "check": "artifact lineage requires supported source kind",
+        "result": "PASS"
+      },
+      {
+        "check": "artifact lineage requires positive source revision",
+        "result": "PASS"
+      },
+      {
+        "check": "same immutable artifact cannot repin same source identity",
+        "result": "PASS"
+      },
+      {
+        "check": "local evidence workflow binds admitted run",
+        "result": "PASS"
+      },
+      {
+        "check": "duplicate local workflow cannot replace admitted input",
+        "result": "PASS"
+      },
+      {
+        "check": "local evidence workflow cannot bind nonexistent run",
+        "result": "PASS"
+      },
+      {
+        "check": "bounded outbox retry metadata persists",
+        "result": "PASS"
+      },
+      {
+        "check": "native JSON answer remains structured object",
+        "result": "PASS"
+      },
+      {
+        "check": "native JSON column rejects malformed documents",
+        "result": "PASS"
+      }
+    ],
+    "schemaSha256": {
+      "V001__baseline.sql": "e1a1cbb328f092f3b7788cfd57d846d526e0cd8a3de3fefde42cf11879b47896",
+      "V002__agent_workspace.sql": "1c13efbb02105da2daa8b38898fba87185bb5751c2992fe00c7c501b13abe730",
+      "V003__runtime_integrity.sql": "7270c47cb6d93910ce6d9e6da390fc9608454493296272676e7248bd9ef426fa"
+    },
+    "seedSha256": "640dd344bbaabcc81491e720c5e2a6e47ba1687f9cdef31c7c6ed71fdf52953f",
+    "scope": "V001/V002/V003 migrations and schema integrity on real MySQL; application HTTP and transaction smoke tests run separately"
+  },
+  "mysqlIsolation": {
+    "result": "PASS",
+    "execution": "targeted-real-mysql",
+    "testClass": "io.typeforge.TransactionIsolationTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "engine": "MySQL",
+    "caseNames": [
+      "transactionTemplateUsesReadCommittedJdbcConnection",
+      "readAfterOwnerLockSeesCommittedWorkspaceChange"
+    ],
+    "mavenExitCode": 0,
+    "engineVersion": "8.4.13",
+    "evidence": {
+      "jdbcIsolation": 2,
+      "autoCommit": false,
+      "serverIsolation": "READ-COMMITTED",
+      "initialRead": "before",
+      "afterOwnerLock": "after",
+      "repeatableReadControl": "before",
+      "writerCommitted": true
+    },
+    "durationSeconds": 23.126
+  },
+  "httpAndRestart": {
+    "h2": {
+      "result": "PASS",
+      "profile": "h2",
+      "checks": [
+        {
+          "phase": "before-restart",
+          "check": "application answers HTTP health after database initialization",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "unauthenticated reads and missing-CSRF writes are denied",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "framework does not claim complete product readiness",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "registration and login resolve the same persisted user",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "public identity grants learner role only",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "capabilities distinguish working local services from unconfigured model/compiler/media",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "opt-in demo release becomes available",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "published demo contains all 16 versioned concepts with evidence",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "public exercise DTOs omit answer specifications and hidden grading data",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "packaged demo oracle matches an exposed question",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "idempotent workspace retry preserves identity and ordered stream",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "learner preference is labeled user-stated rather than inferred mastery",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "incorrect first choice is server-graded and version-pinned",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "idempotent grading retry does not create another attempt",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "outbox applies independent learning evidence",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "one wrong family contributes one sample and zero correct weight",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "graded error produces a pending evidence-linked review",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "repeat practice after feedback is not counted as independent",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "repeat-practice outbox catches up",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "repeating the same exercise family cannot farm mastery samples",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "notebook persists a draft DSL with actual attempt and knowledge provenance",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "local retrieval returns real versioned sources without inventing an answer",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "context includes the saved goal, preference and notebook",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "registered deterministic evidence workflow completes",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "durable steps carry verified outputs and no invented model charges",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "unconfigured language-model steering explicitly fails",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "untrusted code is refused without a compiler worker",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "registration and login resolve the same persisted user",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "another authenticated learner cannot access private workspace/evidence/artifact/run IDs",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "ordered workspace projection catches up without dead letters",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "workspace events form a durable contiguous semantic stream",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "agent execution history has a strictly ordered durable cursor",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "application answers HTTP health after database initialization",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "persisted credentials survive process restart and require a fresh session",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "workspace and release binding survive restart",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "immutable graded attempt survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "notebook DSL and provenance hash survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "durable run and output references survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "workspace event stream survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "agent execution history survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "learning evidence projection survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "evidence-linked reviews survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "user-stated memory survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "capabilities distinguish working local services from unconfigured model/compiler/media",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "capability honesty survives restart",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "logout invalidates subsequent private-resource access",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "application logs contain no unexpected server or scheduled-worker errors",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "packaged jar stayed unchanged throughout verification",
+          "result": "PASS"
+        }
+      ],
+      "startedAt": "2026-11-13T17:59:53.756271+00:00",
+      "jarSha256": "3cc2e6b2efe401c13bd2847a7ad37d879830da89068ea7f6924e7c302ce3ea3b",
+      "engine": "H2 persistent file (not MySQL)",
+      "unexpectedLogErrors": [],
+      "finishedAt": "2026-11-13T18:00:15.012654+00:00",
+      "scope": "Real HTTP authentication, learning/artifact/evidence linkage and process-restart persistence; no model/media/compiler adapters are simulated",
+      "httpRequests": 70,
+      "shutdown": "graceful process termination, then restart against the same database"
+    },
+    "mysql": {
+      "result": "PASS",
+      "profile": "mysql",
+      "checks": [
+        {
+          "phase": "prepare",
+          "check": "independent client confirms actual MySQL 8.4 server",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "application answers HTTP health after database initialization",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "unauthenticated reads and missing-CSRF writes are denied",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "framework does not claim complete product readiness",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "registration and login resolve the same persisted user",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "public identity grants learner role only",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "capabilities distinguish working local services from unconfigured model/compiler/media",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "opt-in demo release becomes available",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "published demo contains all 16 versioned concepts with evidence",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "public exercise DTOs omit answer specifications and hidden grading data",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "packaged demo oracle matches an exposed question",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "idempotent workspace retry preserves identity and ordered stream",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "learner preference is labeled user-stated rather than inferred mastery",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "incorrect first choice is server-graded and version-pinned",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "idempotent grading retry does not create another attempt",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "outbox applies independent learning evidence",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "one wrong family contributes one sample and zero correct weight",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "graded error produces a pending evidence-linked review",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "repeat practice after feedback is not counted as independent",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "repeat-practice outbox catches up",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "repeating the same exercise family cannot farm mastery samples",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "notebook persists a draft DSL with actual attempt and knowledge provenance",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "local retrieval returns real versioned sources without inventing an answer",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "context includes the saved goal, preference and notebook",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "registered deterministic evidence workflow completes",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "durable steps carry verified outputs and no invented model charges",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "unconfigured language-model steering explicitly fails",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "untrusted code is refused without a compiler worker",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "registration and login resolve the same persisted user",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "another authenticated learner cannot access private workspace/evidence/artifact/run IDs",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "ordered workspace projection catches up without dead letters",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "workspace events form a durable contiguous semantic stream",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "agent execution history has a strictly ordered durable cursor",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "HTTP-created app_user row is present in actual MySQL",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "HTTP-created learning_workspace row is present in actual MySQL",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "HTTP-created exercise_attempt row is present in actual MySQL",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "HTTP-created learning_artifact row is present in actual MySQL",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "HTTP-created agent_run row is present in actual MySQL",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "application answers HTTP health after database initialization",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "persisted credentials survive process restart and require a fresh session",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "workspace and release binding survive restart",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "immutable graded attempt survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "notebook DSL and provenance hash survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "durable run and output references survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "workspace event stream survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "agent execution history survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "learning evidence projection survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "evidence-linked reviews survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "user-stated memory survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "capabilities distinguish working local services from unconfigured model/compiler/media",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "capability honesty survives restart",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "HTTP-created app_user row is present in actual MySQL",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "HTTP-created learning_workspace row is present in actual MySQL",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "HTTP-created exercise_attempt row is present in actual MySQL",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "HTTP-created learning_artifact row is present in actual MySQL",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "HTTP-created agent_run row is present in actual MySQL",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "logout invalidates subsequent private-resource access",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "application logs contain no unexpected server or scheduled-worker errors",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "packaged jar stayed unchanged throughout verification",
+          "result": "PASS"
+        }
+      ],
+      "startedAt": "2026-11-13T17:59:56.259810+00:00",
+      "jarSha256": "3cc2e6b2efe401c13bd2847a7ad37d879830da89068ea7f6924e7c302ce3ea3b",
+      "engine": "MySQL 8.4.13",
+      "unexpectedLogErrors": [],
+      "finishedAt": "2026-11-13T18:00:22.298399+00:00",
+      "scope": "Real HTTP authentication, learning/artifact/evidence linkage and process-restart persistence; no model/media/compiler adapters are simulated",
+      "httpRequests": 70,
+      "shutdown": "graceful process termination, then restart against the same database"
+    }
+  },
+  "remoteCi": {
+    "status": "VERIFY_IN_GITHUB_ACTIONS",
+    "workflow": ".github/workflows/baseline.yml",
+    "note": "This file records local execution. The exact pushed commit's Actions run is the independent Java 17/Ubuntu/Docker result."
+  },
+  "notVerified": [
+    "browser frontend or SSE",
+    "real model calls or multi-agent learning quality",
+    "untrusted code sandbox",
+    "media generation or binary document exports",
+    "formal human content review",
+    "production load/SLO/backup recovery",
+    "hard process-kill recovery of external paid side effects",
+    "final course grading or individual student contribution"
+  ]
+}

@@ -2,7 +2,7 @@
   {
     "id": "retrieveContext",
     "effect": "READ",
-    "status": "planned",
+    "status": "implemented",
     "admission": "session owner + workspace + role capability + run epoch + budget",
     "inputValidation": "strict JSON Schema; reject unknown properties",
     "concurrency": "parallel reads; writes require admitted scope and revision fence",
@@ -11,7 +11,8 @@
     "outputSchemaId": "ContextSnapshot",
     "timeoutMillis": 5000,
     "concurrencySafe": true,
-    "cancellation": "cooperative request + mandatory epoch/lease commit fence; worker hard deadline enforced separately"
+    "cancellation": "cooperative request + mandatory epoch/lease commit fence; worker hard deadline enforced separately",
+    "runtimeScope": "Only the fixed local EvidenceWorkflow. Typed adapter input/output schemas and current run/lease/execution guard are enforced; no autonomous model dispatch."
   },
   {
     "id": "inspectRun",
@@ -30,7 +31,7 @@
   {
     "id": "searchEvidence",
     "effect": "READ",
-    "status": "planned",
+    "status": "implemented",
     "admission": "session owner + workspace + role capability + run epoch + budget",
     "inputValidation": "strict JSON Schema; reject unknown properties",
     "concurrency": "parallel reads; writes require admitted scope and revision fence",
@@ -39,7 +40,8 @@
     "outputSchemaId": "SearchResult",
     "timeoutMillis": 5000,
     "concurrencySafe": true,
-    "cancellation": "cooperative request + mandatory epoch/lease commit fence; worker hard deadline enforced separately"
+    "cancellation": "cooperative request + mandatory epoch/lease commit fence; worker hard deadline enforced separately",
+    "runtimeScope": "Only the fixed local EvidenceWorkflow. Typed adapter input/output schemas and current run/lease/execution guard are enforced; no autonomous model dispatch."
   },
   {
     "id": "getOwnLearning",

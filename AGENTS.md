@@ -1,7 +1,7 @@
 # 后续开发约定
 
 - 先读 README、docs/00-blueprint.md 与当前模块设计，再修改实现。
-- 当前为架构基线；除 health/framework，业务模块均 planned。新增能力只有经过真实验证才改状态。
+- 当前为 v0.3 持久学习运行底座；以 contracts/openapi.json 的 x-status、capabilities 及 evidence/runtime-review.md 为准。模块仅 partial/planned，未接入模型/前端/隔离执行器的能力不可用；新增能力只有经过真实验证才改状态。
 - 不在 API JVM 编译或运行用户输入。测试中的 JavaCompiler 仅用于仓库内固定案例。
 - 知识、题目、判分与引用都保存版本；不得覆盖历史成绩或伪造来源/模型输出/个人贡献。
 - 用户身份来自会话；每个私人资源验证归属；公共 DTO 不返回标准答案、隐藏测试或密钥。

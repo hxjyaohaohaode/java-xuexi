@@ -1,4 +1,4 @@
-name: Architecture baseline checks
+name: Durable runtime verification
 on:
   push:
   pull_request:
@@ -6,25 +6,102 @@ permissions:
   contents: read
 jobs:
   contracts-and-data:
-    runs-on: ubuntu-latest
+    name: Contracts and real MySQL integrity
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install -r requirements-dev.txt
-      - run: python scripts/verify.py
-      - run: python scripts/verify_mysql.py
+      - name: Install contract validation dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Verify contracts, data and documentation
+        run: python scripts/verify.py
+      - name: Verify MySQL migrations and integrity in an isolated container
+        run: python scripts/verify_mysql.py
+      - name: Upload SQL verification report only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mysql-schema-verification
+          path: .work/mysql-verification.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
   java-semantics-and-http:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    name: Java semantics and persistent HTTP runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.4.13
+        env:
+          MYSQL_DATABASE: typeforge_runtime
+          # Bootstrap root is socket-only inside this fresh disposable container.
+          # The preparation step creates a random, database-scoped application login.
+          MYSQL_ROOT_HOST: localhost
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+        ports:
+          - "127.0.0.1:33060:3306"
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=30
+          --memory=1g
+          --cpus=1
+          --tmpfs=/var/lib/mysql:rw,size=512m
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
           cache: maven
           cache-dependency-path: backend/pom.xml
-      - run: mvn -B -ntp -f backend/pom.xml verify
+      - name: Verify Java semantics, transactions and package the runtime
+        run: mvn -B -ntp -f backend/pom.xml verify
+      - name: Verify HTTP linkage and restart persistence on H2 files
+        run: python scripts/smoke_runtime.py --profile h2
+      - name: Ensure an independent MySQL client is available
+        run: |
+          if ! command -v mysql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install --yes --no-install-recommends mysql-client
+          fi
+          mysql --version
+      - name: Generate and mask disposable CI credentials
+        run: |
+          python - <<'PY'
+          import os
+          import secrets
+          password = secrets.token_urlsafe(32)
+          print("::add-mask::" + password)
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as output:
+              output.write("TYPEFORGE_CI_MYSQL_PASSWORD=" + password + "\n")
+          PY
+      - name: Prepare the scoped MySQL runtime connection
+        env:
+          TYPEFORGE_CI_MYSQL_CONTAINER: ${{ job.services.mysql.id }}
+          TYPEFORGE_CI_MYSQL_PORT: "33060"
+        run: python scripts/prepare_ci_mysql.py
+      - name: Verify HTTP linkage and restart persistence on real MySQL
+        run: python scripts/smoke_runtime.py --profile mysql
+      - name: Verify real MySQL transaction isolation and lock handoff
+        run: python scripts/verify_transaction_isolation.py
+      - name: Upload sanitized runtime and isolation reports only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: persistent-http-smoke-verification
+          path: |
+            .work/smoke-runtime-h2.json
+            .work/smoke-runtime-mysql.json
+            .work/mysql-isolation-verification.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14

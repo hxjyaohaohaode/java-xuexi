@@ -1,0 +1,690 @@
+{
+  "schemaVersion": "1.0",
+  "reviewedAt": "2026-11-13",
+  "purpose": "逐项区分能力协议、真实适配器与运行可用性。静态登记不构成权限授予，也不能由模型更改。",
+  "statusDefinitions": {
+    "planned": "计划能力；没有已验证的可调用适配器。",
+    "port": "已有端口或输入输出协议；不等于工具执行器已注册或通过验收。",
+    "implemented": "只有实现、相关真实测试与证据一起通过，维护者才能设置此状态。",
+    "partial": "部分基础协议/源版本已实现；必要的资产或执行适配器尚缺，不能当完整成品能力。"
+  },
+  "availabilityRule": "实际可调用 = status为implemented 且 enabled 且 adapterReady 且配置有效 且当前请求通过权限/范围/预算/版本/租约校验。任何静态字段不得替代运行时鉴权。",
+  "verificationBoundary": "本轮只有两个确定性只读工具接入固定EvidenceWorkflow并验证；通用工具分派、LLM角色、媒体provider不可用。业务HTTP不自动授权Agent调用。最终运行证据见evidence/runtime-review.md。",
+  "publicReference": {
+    "schemaId": "ContextRef",
+    "fields": [
+      "kind",
+      "id",
+      "revision",
+      "contentHash"
+    ],
+    "trustedServerResolution": [
+      "ownerId",
+      "workspaceId",
+      "releaseId"
+    ],
+    "rule": "owner来自会话与数据库；hash用于一致性而非授权。"
+  },
+  "sourceOfToolSchemas": "contracts/openapi.json#/components/schemas",
+  "capabilities": [
+    {
+      "id": "retrieveContext",
+      "moduleIds": [
+        "M15",
+        "M01"
+      ],
+      "status": "implemented",
+      "enabled": true,
+      "adapterReady": true,
+      "description": "读取同空间固定上下文，只有真实引用通过解析后才返回。",
+      "inputSchemaId": "ToolResourceInput",
+      "outputSchemaId": "ContextSnapshot",
+      "effect": "READ",
+      "concurrencySafe": true,
+      "availabilityRequires": [
+        "Authorized published release and matching owner/workspace",
+        "Valid persisted snapshot",
+        "Schema-validated typed local adapter",
+        "Current run epoch, step lease and reserved running execution"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission"
+      ],
+      "fallback": "返回上下文不可用；不得补造历史。",
+      "verificationEvidence": [
+        "backend/src/test/java/io/typeforge/LocalLearningToolsTest.java",
+        "backend/src/test/java/io/typeforge/FullLearningLoopIntegrationTest.java",
+        "backend/src/test/java/io/typeforge/EvidenceWorkflowRecoveryTest.java",
+        "evidence/runtime-review.md"
+      ],
+      "admissionScope": "Only fixed local EvidenceWorkflow; current running run/step/lease/tool execution and input hash must match. No public worker endpoint."
+    },
+    {
+      "id": "inspectRun",
+      "moduleIds": [
+        "M13",
+        "M01"
+      ],
+      "status": "port",
+      "enabled": false,
+      "adapterReady": false,
+      "description": "读取持久运行、步骤与使用量，不由对话文本推断完成。",
+      "inputSchemaId": "ToolResourceInput",
+      "outputSchemaId": "AgentRun",
+      "effect": "READ",
+      "concurrencySafe": true,
+      "availabilityRequires": [
+        "持久运行查询",
+        "资源归属",
+        "AgentRun输出校验"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission",
+        "artifact-base-revision-on-write"
+      ],
+      "fallback": "显示实际运行状态或明确不可用。",
+      "verificationEvidence": []
+    },
+    {
+      "id": "searchEvidence",
+      "moduleIds": [
+        "M08",
+        "M02",
+        "M10"
+      ],
+      "status": "implemented",
+      "enabled": true,
+      "adapterReady": true,
+      "description": "按发布和权限筛选证据后检索，返回版本和来源。",
+      "inputSchemaId": "ToolSearchInput",
+      "outputSchemaId": "SearchResult",
+      "effect": "READ",
+      "concurrencySafe": true,
+      "availabilityRequires": [
+        "Authorized published release and matching owner/workspace",
+        "Valid persisted snapshot",
+        "Schema-validated typed local adapter",
+        "Current run epoch, step lease and reserved running execution"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission"
+      ],
+      "fallback": "返回检索能力不可用或没有证据，不自动改成无引用回答。",
+      "verificationEvidence": [
+        "backend/src/test/java/io/typeforge/LocalLearningToolsTest.java",
+        "backend/src/test/java/io/typeforge/FullLearningLoopIntegrationTest.java",
+        "backend/src/test/java/io/typeforge/EvidenceWorkflowRecoveryTest.java",
+        "evidence/runtime-review.md"
+      ],
+      "admissionScope": "Only fixed local EvidenceWorkflow; current running run/step/lease/tool execution and input hash must match. No public worker endpoint."
+    },
+    {
+      "id": "getOwnLearning",
+      "moduleIds": [
+        "M06",
+        "M05",
+        "M01"
+      ],
+      "status": "port",
+      "enabled": false,
+      "adapterReady": false,
+      "description": "读取本人真实判分投影，区分独立和辅助样本。",
+      "inputSchemaId": "ToolLearningInput",
+      "outputSchemaId": "Progress",
+      "effect": "READ",
+      "concurrencySafe": true,
+      "availabilityRequires": [
+        "持久学习投影",
+        "幂等消费",
+        "本人数据归属"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission",
+        "artifact-base-revision-on-write"
+      ],
+      "fallback": "允许一般知识阅读，但不能声称已做个性化判断。",
+      "verificationEvidence": []
+    },
+    {
+      "id": "requestCompile",
+      "moduleIds": [
+        "M04",
+        "M03",
+        "M05"
+      ],
+      "status": "port",
+      "enabled": false,
+      "adapterReady": false,
+      "description": "创建受限编译作业；源hash、JDK和flags与结果绑定。",
+      "inputSchemaId": "CompileInput",
+      "outputSchemaId": "CompileJob",
+      "effect": "JOB_OR_CANDIDATE_WRITE",
+      "concurrencySafe": false,
+      "availabilityRequires": [
+        "隔离worker",
+        "资源和网络限制",
+        "作业幂等",
+        "诊断输出校验"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission",
+        "artifact-base-revision-on-write"
+      ],
+      "fallback": "明确编译未运行；不得在API JVM执行用户源码。",
+      "verificationEvidence": []
+    },
+    {
+      "id": "getOwnAttempt",
+      "moduleIds": [
+        "M05",
+        "M01"
+      ],
+      "status": "port",
+      "enabled": false,
+      "adapterReady": false,
+      "description": "读取本人固定版本提交及可公开诊断。",
+      "inputSchemaId": "ToolResourceInput",
+      "outputSchemaId": "Attempt",
+      "effect": "READ",
+      "concurrencySafe": true,
+      "availabilityRequires": [
+        "持久提交读取",
+        "所有者校验",
+        "隐藏答案裁剪"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission",
+        "artifact-base-revision-on-write"
+      ],
+      "fallback": "返回未找到或无权限，避免泄露资源存在性。",
+      "verificationEvidence": []
+    },
+    {
+      "id": "composeDocument",
+      "moduleIds": [
+        "M14",
+        "M13",
+        "M08"
+      ],
+      "status": "port",
+      "enabled": false,
+      "adapterReady": false,
+      "description": "创建带输入引用的Document DSL候选版本。",
+      "inputSchemaId": "ToolComposeDocumentInput",
+      "outputSchemaId": "ArtifactRevision",
+      "effect": "JOB_OR_CANDIDATE_WRITE",
+      "concurrencySafe": false,
+      "availabilityRequires": [
+        "Document DSL校验",
+        "证据引用解析",
+        "作品CAS",
+        "已配置生成适配器"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission",
+        "artifact-base-revision-on-write"
+      ],
+      "fallback": "允许手工创建或编辑文档源；不伪称智能生成。",
+      "verificationEvidence": []
+    },
+    {
+      "id": "composeSlides",
+      "moduleIds": [
+        "M14",
+        "M13",
+        "M08"
+      ],
+      "status": "port",
+      "enabled": false,
+      "adapterReady": false,
+      "description": "创建带证据的SlideDeck DSL；源作品和PPTX分别验收。",
+      "inputSchemaId": "ToolComposeSlidesInput",
+      "outputSchemaId": "ArtifactRevision",
+      "effect": "JOB_OR_CANDIDATE_WRITE",
+      "concurrencySafe": false,
+      "availabilityRequires": [
+        "SlideDeck DSL校验",
+        "作品CAS",
+        "生成适配器",
+        "独立导出与版式检查"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission",
+        "artifact-base-revision-on-write"
+      ],
+      "fallback": "文档表达或手工幻灯片源可作为明确替代，不能伪造PPTX。",
+      "verificationEvidence": []
+    },
+    {
+      "id": "composeDiagram",
+      "moduleIds": [
+        "M14",
+        "M13",
+        "M03"
+      ],
+      "status": "port",
+      "enabled": false,
+      "adapterReady": false,
+      "description": "从已核验关系构建Diagram DSL，精确关系图不依赖装饰图生成。",
+      "inputSchemaId": "ToolComposeDiagramInput",
+      "outputSchemaId": "ArtifactRevision",
+      "effect": "JOB_OR_CANDIDATE_WRITE",
+      "concurrencySafe": false,
+      "availabilityRequires": [
+        "Diagram DSL校验",
+        "关系事实核验",
+        "受控SVG或图形renderer"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission",
+        "artifact-base-revision-on-write"
+      ],
+      "fallback": "返回结构化关系描述；没有renderer则不声明图片已生成。",
+      "verificationEvidence": []
+    },
+    {
+      "id": "generateImage",
+      "moduleIds": [
+        "M14",
+        "M13"
+      ],
+      "status": "planned",
+      "enabled": false,
+      "adapterReady": false,
+      "description": "创建图像模型作业与可追溯素材，不作类型事实证据。",
+      "inputSchemaId": "ToolImageInput",
+      "outputSchemaId": "MediaToolJob",
+      "effect": "JOB_OR_CANDIDATE_WRITE",
+      "concurrencySafe": false,
+      "availabilityRequires": [
+        "图像provider",
+        "预算预留",
+        "外部job对账",
+        "素材安全验证"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission",
+        "artifact-base-revision-on-write"
+      ],
+      "fallback": "明确不可用；经学生选择可使用已有素材或确定性图解。",
+      "verificationEvidence": []
+    },
+    {
+      "id": "synthesizeAudio",
+      "moduleIds": [
+        "M14",
+        "M13"
+      ],
+      "status": "planned",
+      "enabled": false,
+      "adapterReady": false,
+      "description": "将固定脚本按句合成语音，保留术语、音色和字幕关联。",
+      "inputSchemaId": "ToolComposeAudioInput",
+      "outputSchemaId": "MediaToolJob",
+      "effect": "JOB_OR_CANDIDATE_WRITE",
+      "concurrencySafe": false,
+      "availabilityRequires": [
+        "TTS provider",
+        "音色白名单",
+        "预算与对账",
+        "可播放性及术语检查"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission",
+        "artifact-base-revision-on-write"
+      ],
+      "fallback": "提供脚本文字；不能返回空音频或假音频URL。",
+      "verificationEvidence": []
+    },
+    {
+      "id": "composeTimeline",
+      "moduleIds": [
+        "M14",
+        "M13"
+      ],
+      "status": "port",
+      "enabled": false,
+      "adapterReady": false,
+      "description": "生成固定素材引用的Timeline DSL，不接受任意命令行。",
+      "inputSchemaId": "ToolComposeTimelineInput",
+      "outputSchemaId": "ArtifactRevision",
+      "effect": "JOB_OR_CANDIDATE_WRITE",
+      "concurrencySafe": false,
+      "availabilityRequires": [
+        "Timeline DSL校验",
+        "素材引用解析",
+        "时间边界校验",
+        "版本CAS"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission",
+        "artifact-base-revision-on-write"
+      ],
+      "fallback": "返回可编辑分镜结构；视频文件仍不可用。",
+      "verificationEvidence": []
+    },
+    {
+      "id": "renderVideo",
+      "moduleIds": [
+        "M14",
+        "M13",
+        "M12"
+      ],
+      "status": "planned",
+      "enabled": false,
+      "adapterReady": false,
+      "description": "隔离worker编译Timeline为视频文件并验证音画字幕。",
+      "inputSchemaId": "ToolRenderInput",
+      "outputSchemaId": "ExportJob",
+      "effect": "JOB_OR_CANDIDATE_WRITE",
+      "concurrencySafe": false,
+      "availabilityRequires": [
+        "隔离渲染worker",
+        "固定素材和字体",
+        "资源限额",
+        "帧与音轨检查",
+        "导出作业对账"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission",
+        "artifact-base-revision-on-write"
+      ],
+      "fallback": "保留源作品及已完成媒介，整体为部分完成。",
+      "verificationEvidence": []
+    },
+    {
+      "id": "composeInteraction",
+      "moduleIds": [
+        "M16",
+        "M14",
+        "M05"
+      ],
+      "status": "port",
+      "enabled": false,
+      "adapterReady": false,
+      "description": "构建白名单交互块，真实提交仍由练习服务判分。",
+      "inputSchemaId": "ToolComposeInteractionInput",
+      "outputSchemaId": "ArtifactRevision",
+      "effect": "JOB_OR_CANDIDATE_WRITE",
+      "concurrencySafe": false,
+      "availabilityRequires": [
+        "Interaction/Notebook DSL校验",
+        "允许action分派",
+        "真实练习入口",
+        "版本和引用校验"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission",
+        "artifact-base-revision-on-write"
+      ],
+      "fallback": "保留静态阅读版本并明确交互未启用。",
+      "verificationEvidence": []
+    },
+    {
+      "id": "previewArtifact",
+      "moduleIds": [
+        "M14",
+        "M12"
+      ],
+      "status": "port",
+      "enabled": false,
+      "adapterReady": false,
+      "description": "只预览被授权的固定作品版本，安全renderer不携带主站凭据。",
+      "inputSchemaId": "ToolPreviewInput",
+      "outputSchemaId": "ToolPreviewResult",
+      "effect": "READ",
+      "concurrencySafe": true,
+      "availabilityRequires": [
+        "受控renderer",
+        "素材权限",
+        "预览与源revision绑定"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission",
+        "artifact-base-revision-on-write"
+      ],
+      "fallback": "展示源内容和预览不可用，不用旧图冒充当前版本。",
+      "verificationEvidence": []
+    },
+    {
+      "id": "validateInteraction",
+      "moduleIds": [
+        "M16",
+        "M14",
+        "M12"
+      ],
+      "status": "planned",
+      "enabled": false,
+      "adapterReady": false,
+      "description": "实际执行交互状态和关键操作，输出行为检查报告。",
+      "inputSchemaId": "ToolPreviewInput",
+      "outputSchemaId": "ToolInteractionResult",
+      "effect": "JOB_OR_CANDIDATE_WRITE",
+      "concurrencySafe": false,
+      "availabilityRequires": [
+        "浏览器测试runner",
+        "确定性测试用例",
+        "隔离预览origin",
+        "报告绑定revision/hash"
+      ],
+      "runtimeGuards": [
+        "authenticated-owner",
+        "workspace-scope",
+        "resolved-resource-references",
+        "registered-role-tool",
+        "input-output-schema",
+        "current-run-epoch",
+        "active-lease-for-execution",
+        "budget-admission",
+        "artifact-base-revision-on-write"
+      ],
+      "fallback": "维持未验证状态，不用JSON可解析替代行为通过。",
+      "verificationEvidence": []
+    }
+  ],
+  "artifactFormats": [
+    {
+      "kind": "DOCUMENT",
+      "sourceStatus": "implemented",
+      "sourceSchemaId": "DocumentDsl",
+      "exportFormats": [
+        "DOCX",
+        "PDF",
+        "MARKDOWN"
+      ],
+      "exportStatus": "planned",
+      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+    },
+    {
+      "kind": "SLIDES",
+      "sourceStatus": "implemented",
+      "sourceSchemaId": "SlideDsl",
+      "exportFormats": [
+        "PPTX"
+      ],
+      "exportStatus": "planned",
+      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+    },
+    {
+      "kind": "DIAGRAM",
+      "sourceStatus": "implemented",
+      "sourceSchemaId": "DiagramDsl",
+      "exportFormats": [
+        "SVG",
+        "PNG"
+      ],
+      "exportStatus": "planned",
+      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+    },
+    {
+      "kind": "IMAGE",
+      "sourceStatus": "partial",
+      "sourceSchemaId": "ImageDsl",
+      "exportFormats": [
+        "PNG"
+      ],
+      "exportStatus": "planned",
+      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+    },
+    {
+      "kind": "AUDIO",
+      "sourceStatus": "partial",
+      "sourceSchemaId": "AudioDsl",
+      "exportFormats": [
+        "MP3",
+        "WAV"
+      ],
+      "exportStatus": "planned",
+      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+    },
+    {
+      "kind": "VIDEO",
+      "sourceStatus": "partial",
+      "sourceSchemaId": "VideoDsl",
+      "exportFormats": [
+        "MP4",
+        "WEBM"
+      ],
+      "exportStatus": "planned",
+      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+    },
+    {
+      "kind": "INTERACTION",
+      "sourceStatus": "implemented",
+      "sourceSchemaId": "InteractionDsl",
+      "exportFormats": [
+        "HTML"
+      ],
+      "exportStatus": "planned",
+      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+    },
+    {
+      "kind": "NOTEBOOK",
+      "sourceStatus": "implemented",
+      "sourceSchemaId": "InteractionDsl",
+      "exportFormats": [
+        "HTML"
+      ],
+      "exportStatus": "planned",
+      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+    }
+  ],
+  "researchDecisions": "docs/14-research-decisions.md",
+  "architectureInvariants": "docs/13-architecture-upgrade.md",
+  "localWorkflow": {
+    "adapterVersion": "local-evidence-v1",
+    "entryOperationId": "createEvidenceRun",
+    "tools": [
+      "retrieveContext",
+      "searchEvidence"
+    ],
+    "modelCalls": false,
+    "generalToolDispatcher": false,
+    "output": "Authorized snapshot and reviewed knowledge references; no generated natural-language answer"
+  }
+}

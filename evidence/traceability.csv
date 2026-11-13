@@ -1,17 +1,17 @@
 module,owner,java_package,operation_ids,tables,current_checks,future_acceptance
-M01,B,identity,getCsrf;register;login;getSession;logout;getPreferences;updatePreferences,app_user;user_preference,框架保护路由、SQL范围/唯一约束,双用户会话/CSRF/权限/退出与偏好
-M02,A,curriculum,listConcepts;getConcept,concept;concept_edge;release_concept;knowledge_chunk,16概念DAG、来源、种子、schema,16概念覆盖、来源/退役、实际页面
+M01,B,identity,getCsrf;register;login;getSession;logout;getPreferences;updatePreferences,app_user;user_preference,真实HTTP会话/CSRF轮换/跨用户404/退出；BCrypt与活动用户核对,双用户会话/CSRF/权限/退出与偏好
+M02,A,curriculum,listConcepts;getConcept;getActiveRelease,concept;concept_edge;release_concept;knowledge_chunk,16卡12题演示发布；内容hash和来源；DTO答案隔离；游标与发布过滤,16概念覆盖、来源/退役、实际页面
 M03,B,lab,createLab;getLab,lab_session,javac正反例、LabInput分支,8类实际实验、有限规则和javac一致
 M04,B,compiler,submitCompile;getCompile;cancelCompile,compile_job,固定可信JavaCompiler语义测试,真实不可信代码隔离、超时/OOM/取消
-M05,B,exercise,listExercises;getExercise;submitAttempt;getAttempt,exercise;exercise_concept;exercise_attempt,提交DTO负例、SQL成员/分数约束,客观判分、多题型、答案隔离与幂等
-M06,B,learning,recordReading;getProgress;listReviews;updateReview,learning_event;learner_concept;review_item;event_receipt,事件去重SQL,独立/提示区分、重放一致与复练
+M05,B,exercise,listExercises;getExercise;submitAttempt;getAttempt,exercise;exercise_concept;exercise_attempt;workspace_attempt,真实客观判分/幂等/同family复答；拒绝未配置CODE；workspace发布一致,客观判分、多题型、答案隔离与幂等
+M06,B,learning,recordReading;getProgress;listReviews;updateReview,learning_event;learner_concept;review_item;event_receipt;learning_family_evidence,同事务outbox与receipt投影；独立family证据；跨workspace乱序与发生时间回归,独立/提示区分、重放一致与复练
 M07,A,ingestion,createSource,knowledge_source;knowledge_chunk;chunk_source,来源元数据与种子诚实状态,raw-cleaned-card流水线、人工核验
-M08,A,retrieval,searchKnowledge,index_snapshot;retrieval_log,检索协议与引用SQL,真实BM25、40gold set、Recall/MRR
+M08,A,retrieval,searchKnowledge,index_snapshot;retrieval_log,真实中文二元词/英文BM25；无证据为空；发布过滤；typed工具输入输出schema,真实BM25、40gold set、Recall/MRR
 M09,A,tutor,createConversation;listConversations;getConversation;createTutorRequest;getTutorRequest;cancelTutorRequest,conversation;tutor_request;tutor_message;message_citation,引用schema、16未运行评测设计,真实问答/提示/来源蕴含与错误分析
 M10,A,publishing,createChunkRevision;createExerciseRevision;reviewContent;createRelease;getRelease;publishRelease;activateHistoricalRelease,content_release;release_chunk;release_exercise;content_review;active_release,作者自审/版本成员SQL负例,版本事务、索引就绪、回退与内容审核
 M11,A+B,evidence,,audit_event,文档链接、需求追踪、真实检查记录,两人真实提交、评审、八类材料与答辩
-M12,B,operations,getHealth;getFramework,idempotency_record;outbox_event;event_receipt;audit_event,构建、HTTP、隔离MySQL验证、CI配置,实际部署/备份恢复、负载/故障/依赖扫描
-M13,A,orchestration,createAgentRun;getAgentRun;commandAgentRun;listRunEvents,agent_run;agent_step;agent_step_dependency;agent_message;tool_execution;agent_run_event,Java DAG/能力/并发内核、预算/依赖/消息SQL,持久调度、epoch/CAS、真实模型30案例对照
-M14,B,artifacts,listArtifacts;createArtifact;getArtifact;saveArtifactRevision;getArtifactRevision;createExport;getExport;cancelExport;createAssetUpload;completeAssetUpload;getAssetDownload,learning_artifact;artifact_revision;artifact_write_lease;asset_object;artifact_asset;export_job;agent_verdict;artifact_dependency,8类DSL正负例、跨空间/租约SQL,所有媒介真实编辑/预览/导出与安全渲染
-M15,A,workspace,createWorkspace;listWorkspaces;getWorkspace;updateWorkspace;recordWorkspaceEvent;createContextSnapshot;createLearningGoal;listWorkspaceMemories;revokeMemory,learning_workspace;learning_goal;workspace_event;context_snapshot;learner_memory,事件输入/schema、目标/快照跨空间SQL,即时上下文、消息接续、记忆撤回、隐私
-M16,B,notebook,buildInteractiveNotebook;dispatchNotebookAction,notebook_entry,受控动作/schema负例,六类块、变式验证、实际交互与成绩回流
+M12,B,operations,getHealth;getFramework;getCapabilities,idempotency_record;outbox_event;event_receipt;audit_event,健康SQL/统一错误/前置JSON字节上限/解析深度/整数界限；重启烟测与真实MySQL,实际部署/备份恢复、负载/故障/依赖扫描
+M13,A,orchestration,createAgentRun;getAgentRun;commandAgentRun;listRunEvents;createEvidenceRun,agent_run;agent_step;agent_step_dependency;agent_message;tool_execution;agent_run_event;local_evidence_workflow,持久DAG/并行范围/租约/epoch/预算/未知结算/重规划内核/撤回收敛；固定证据工作流,持久调度、epoch/CAS、真实模型30案例对照
+M14,B,artifacts,listArtifacts;createArtifact;getArtifact;saveArtifactRevision;getArtifactRevision;createExport;getExport;cancelExport;createAssetUpload;completeAssetUpload;getAssetDownload,learning_artifact;artifact_revision;artifact_write_lease;asset_object;artifact_asset;export_job;agent_verdict;artifact_dependency;artifact_input_reference,严格DSL和typed输入引用；私有嵌入引用拒绝；CAS/派生环/同步STALE传播,所有媒介真实编辑/预览/导出与安全渲染
+M15,A,workspace,createWorkspace;listWorkspaces;getWorkspace;updateWorkspace;recordWorkspaceEvent;listWorkspaceEvents;createContextSnapshot;createLearningGoal;listWorkspaceMemories;stateMemory;revokeMemory;getWorkspaceProjection,learning_workspace;learning_goal;workspace_event;context_snapshot;learner_memory;workspace_projection,workspace归属/顺序事件/幂等/不可变上下文/偏好撤回/投影新鲜度,即时上下文、消息接续、记忆撤回、隐私
+M16,B,notebook,buildInteractiveNotebook;dispatchNotebookAction;createNotebookDraft,notebook_entry,本人真实错题→NOTEBOOK源稿→版本与引用；不冒充浏览器或媒体导出,六类块、变式验证、实际交互与成绩回流

@@ -119,8 +119,14 @@ public final class PlanValidator {
         return List.copyOf(selected);
     }
 
-    private static boolean conflicts(TaskPlan.Step a, TaskPlan.Step b) {
-        return a.writeScopes().stream().anyMatch(s -> b.writeScopes().contains(s) || b.readScopes().contains(s))
-                || b.writeScopes().stream().anyMatch(a.readScopes()::contains);
+    public static boolean conflicts(TaskPlan.Step a, TaskPlan.Step b) {
+        return a.writeScopes().stream().anyMatch(left -> b.writeScopes().stream().anyMatch(right -> overlaps(left, right))
+                || b.readScopes().stream().anyMatch(right -> overlaps(left, right)))
+                || b.writeScopes().stream().anyMatch(left -> a.readScopes().stream().anyMatch(right -> overlaps(left, right)));
+    }
+
+    /** Segment boundaries matter: slide/1 must conflict with slide/1/text, but not slide/10. */
+    public static boolean overlaps(String left, String right) {
+        return left.equals(right) || left.startsWith(right + "/") || right.startsWith(left + "/");
     }
 }

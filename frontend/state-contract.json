@@ -1,0 +1,233 @@
+{
+  "schemaVersion": "1.0",
+  "purpose": "Frontend state coordination design; not an implemented browser client or replacement HTTP schema",
+  "frontendImplemented": false,
+  "wireContract": "contracts/openapi.json",
+  "scopeKey": [
+    "authenticatedPrincipalScope",
+    "workspaceId",
+    "releaseId",
+    "resourceKind",
+    "resourceId"
+  ],
+  "stateLayers": [
+    {
+      "id": "serverFacts",
+      "owner": "backend-domain-services",
+      "clientWritePolicy": "replace-only-with-validated-authoritative-snapshot"
+    },
+    {
+      "id": "pendingCommands",
+      "owner": "client-command-coordinator",
+      "clientWritePolicy": "idempotency-key-and-input-snapshot-must-survive-unknown-network-result"
+    },
+    {
+      "id": "localDrafts",
+      "owner": "learner",
+      "clientWritePolicy": "server-events-never-overwrite-dirty-draft"
+    },
+    {
+      "id": "ephemeralInteraction",
+      "owner": "mounted-view",
+      "clientWritePolicy": "dispose-on-unmount-and-do-not-use-as-mastery-evidence"
+    },
+    {
+      "id": "capabilitiesAndPreferences",
+      "owner": "authorized-server-configuration-and-user-preferences",
+      "clientWritePolicy": "client-cannot-grant-tool-capability"
+    },
+    {
+      "id": "transportAndVerification",
+      "owner": "data-coordinator-and-server-verifier",
+      "clientWritePolicy": "job-completed-is-not-content-verified"
+    }
+  ],
+  "entityVersions": [
+    {
+      "schema": "Workspace",
+      "idFields": [
+        "id"
+      ],
+      "versionFields": [
+        "revision",
+        "eventSequence"
+      ],
+      "scopeFields": [
+        "releaseId"
+      ]
+    },
+    {
+      "schema": "AgentRun",
+      "idFields": [
+        "id"
+      ],
+      "versionFields": [
+        "runEpoch",
+        "planRevision"
+      ],
+      "scopeFields": [
+        "workspaceId"
+      ],
+      "releaseBinding": "Resolve fixed releaseId from the authorized Workspace; AgentRun has snapshotId and steps, not a duplicated releaseId."
+    },
+    {
+      "schema": "Artifact",
+      "idFields": [
+        "id"
+      ],
+      "versionFields": [
+        "currentRevision"
+      ],
+      "scopeFields": [
+        "workspaceId"
+      ]
+    },
+    {
+      "schema": "ArtifactRevision",
+      "idFields": [
+        "artifactId"
+      ],
+      "versionFields": [
+        "revision",
+        "contentHash"
+      ],
+      "scopeFields": []
+    },
+    {
+      "schema": "Attempt",
+      "idFields": [
+        "id"
+      ],
+      "versionFields": [
+        "exerciseRevision"
+      ],
+      "scopeFields": [
+        "releaseId",
+        "exerciseId"
+      ]
+    }
+  ],
+  "eventStreams": {
+    "run": {
+      "operationId": "listRunEvents",
+      "scope": "runId-from-request-path",
+      "sequenceField": "sequence",
+      "cursorParameter": "after",
+      "payloadPolicy": "invalidation-and-refetch; RunEvent is not a complete entity snapshot",
+      "onDuplicate": "ignore",
+      "onGap": "resync-before-advancing-cursor",
+      "onExpiredCursor": "refetch-snapshot-then-reconnect"
+    },
+    "workspace": {
+      "status": "implemented-polling-contract; frontend-not-implemented",
+      "checkpointField": "Workspace.eventSequence",
+      "scope": "workspaceId",
+      "payloadPolicy": "server-authoritative-facts-only",
+      "operationId": "listWorkspaceEvents",
+      "sequenceField": "sequence",
+      "cursorParameter": "after",
+      "onDuplicate": "ignore",
+      "onGap": "resync-before-advancing-cursor"
+    },
+    "globalSequenceComparisonAllowed": false,
+    "sseImplemented": false
+  },
+  "clientCommandStates": [
+    "DRAFT",
+    "SENDING",
+    "ACKNOWLEDGED",
+    "UNKNOWN",
+    "REJECTED"
+  ],
+  "clientViewStates": [
+    "LOADING",
+    "READY",
+    "EMPTY",
+    "STALE",
+    "OFFLINE",
+    "FORBIDDEN",
+    "NOT_CONFIGURED",
+    "FAILED"
+  ],
+  "truthGates": {
+    "http202": "accepted-not-completed",
+    "networkTimeout": "unknown-not-rejected",
+    "compileResult": "applies-only-to-submitted-source-hash",
+    "attemptScore": "requires-GRADED-server-state",
+    "infrastructureFailure": "does-not-count-as-learner-error",
+    "artifactVerification": "requires-explicit-server-reviewStatus",
+    "cancelRequest": "requires-server-acknowledgement",
+    "generatedUi": "complete-schema-and-resource-validation-before-mount"
+  },
+  "optimisticPolicies": [
+    {
+      "operation": "theme-and-panel-preference",
+      "preview": true,
+      "failure": "show-unsynced-or-restore-last-confirmed"
+    },
+    {
+      "operation": "artifact-edit",
+      "preview": true,
+      "failure": "preserve-draft-and-present-current-server-revision"
+    },
+    {
+      "operation": "attempt-compile-run-export",
+      "preview": false,
+      "failure": "reconcile-with-same-idempotency-key"
+    },
+    {
+      "operation": "pause-cancel-steer",
+      "preview": false,
+      "failure": "keep-pending-indicator-and-preserve-user-instruction"
+    },
+    {
+      "operation": "memory-revocation",
+      "preview": true,
+      "failure": "restore-item-and-explain-revocation-not-confirmed"
+    }
+  ],
+  "userPriority": {
+    "artifactBaseRevisionRequired": true,
+    "staleAgentResultCanOverwriteUserDraft": false,
+    "oldEpochCanPublishCurrentResult": false,
+    "conflictResolution": [
+      "compare",
+      "rebase-explicitly",
+      "save-copy",
+      "discard-by-user-choice"
+    ]
+  },
+  "generatedUi": {
+    "allowArbitraryJavascript": false,
+    "allowModelSelectedImports": false,
+    "allowUnknownDslVersion": false,
+    "partialJsonMayMountInteractiveControls": false,
+    "actionsRequireServerAuthorization": true
+  },
+  "accessibility": {
+    "inputMethodCompositionMustBlockSubmit": true,
+    "dragRequiresKeyboardAlternative": true,
+    "touchRequiresHoverAlternative": true,
+    "backgroundEventsMayStealFocus": false,
+    "reducedMotionDisablesContinuousAnimation": true,
+    "stateMustHaveTextNotOnlyColor": true,
+    "privateCacheClearedOnLogout": true
+  },
+  "browserAcceptanceCases": [
+    "duplicate-event-does-not-double-grade",
+    "gap-enters-resync",
+    "old-epoch-cannot-overwrite-current-run",
+    "workspace-switch-discards-old-response",
+    "retry-unknown-command-reuses-idempotency-key",
+    "version-conflict-preserves-local-draft",
+    "infrastructure-error-not-graded-as-wrong",
+    "missing-provider-has-not-configured-state",
+    "logout-clears-private-cache",
+    "keyboard-touch-ime-and-reduced-motion-complete-the-same-learning-flow"
+  ],
+  "verification": {
+    "jsonSyntax": "validated-by-author",
+    "browser": "NOT_RUN",
+    "serviceIntegration": "requires-final-integration-report"
+  }
+}

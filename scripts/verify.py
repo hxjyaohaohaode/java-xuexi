@@ -33,7 +33,20 @@ operations = [(p,m,o) for p,methods in spec['paths'].items() for m,o in methods.
 ids = [o['operationId'] for _,_,o in operations]
 check(len(ids) == len(set(ids)), 'operationId values are unique')
 implemented = {(p,m) for p,m,o in operations if o['x-status']=='implemented'}
-check(implemented == {('/health','get'),('/framework','get')}, 'only two implemented scaffold endpoints')
+controller_routes=set()
+for source in (ROOT/'backend/src/main/java').rglob('*Controller.java'):
+    code=source.read_text(encoding='utf-8')
+    prefix_match=re.search(r'@RequestMapping\("([^"]+)"\)\s*public class',code)
+    prefix=prefix_match.group(1) if prefix_match else ''
+    for method,path in re.findall(r'@(Get|Post|Put|Patch|Delete)Mapping\("([^"]+)"\)',code):
+        full=prefix+path
+        if full.startswith('/api/v1/'):
+            controller_routes.add((full[len('/api/v1'):],method.lower()))
+check(implemented == controller_routes, 'implemented OpenAPI operations match every actual controller route exactly')
+check(len(implemented) > 2, 'persistent business runtime is represented in the contract')
+index=(ROOT/'contracts/README.md').read_text(encoding='utf-8')
+indexed=set(re.findall(r'^\| (GET|POST|PUT|PATCH|DELETE) \| `([^`]+)` \| `([^`]+)` \| (M\d{2}) \| (implemented|planned) \|$',index,re.M))
+check(indexed=={(m.upper(),p,o['operationId'],o['tags'][0],o['x-status']) for p,m,o in operations},'human-readable API index matches exact operation status and route')
 for path, method, operation in operations:
     check(operation['x-status'] in {'planned','implemented'}, f'{method} {path} has honest status')
     parameters = operation.get('parameters', [])
@@ -49,7 +62,7 @@ check('answer' in schemas['Attempt']['properties'] and 'answerSpec' not in schem
 def validator(name):
     return Draft202012Validator({'$ref':'#/components/schemas/'+name,'components':spec['components']}, format_checker=FormatChecker())
 valid_id='13e88a06-8116-4e51-a885-6242ad086660'
-valid_attempt={'releaseId':valid_id,'exerciseId':valid_id,'exerciseRevision':1,'answer':{'kind':'CODE','source':'class Demo {}'}}
+valid_attempt={'workspaceId':valid_id,'releaseId':valid_id,'exerciseId':valid_id,'exerciseRevision':1,'answer':{'kind':'CODE','source':'class Demo {}'}}
 v=validator('AttemptInput')
 check(v.is_valid(valid_attempt), 'code submission example is valid')
 check(not v.is_valid({**valid_attempt,'userId':valid_id}), 'client cannot add user identity to submission DTO')
@@ -95,13 +108,33 @@ check(len(modules)==16 and {o['tags'][0] for _,_,o in operations} <= {m['id'] fo
 for module in modules:
     check((ROOT/f"backend/src/main/java/io/typeforge/{module['package']}/package-info.java").exists(), f"{module['id']} package boundary exists")
 
+# Verify actual source imports, not merely a package inventory. Domain module dependencies must be acyclic.
+module_graph={m['package']:set() for m in modules};module_graph['shared']=set()
+for source in (ROOT/'backend/src/main/java/io/typeforge').rglob('*.java'):
+    code=source.read_text(encoding='utf-8')
+    package=re.search(r'^package io\.typeforge\.([a-z]+)',code,re.M)
+    if package and package.group(1) in module_graph:
+        origin=package.group(1)
+        module_graph[origin].update(target for target in re.findall(r'import (?:static )?io\.typeforge\.([a-z]+)\.',code) if target!=origin and target in module_graph)
+visiting=set();done=set();cycles=[]
+def walk_module(name,path):
+    if name in visiting:cycles.append(' -> '.join(path+[name]));return
+    if name in done:return
+    visiting.add(name)
+    for dependency in sorted(module_graph[name]):walk_module(dependency,path+[name])
+    visiting.remove(name);done.add(name)
+for name in module_graph:walk_module(name,[])
+check(not cycles,'actual Java module imports are acyclic: '+('; '.join(cycles) if cycles else 'PASS'))
+
 sql='\n'.join(p.read_text(encoding='utf-8') for p in sorted((ROOT/'database').glob('V*.sql')))
 table_names=re.findall(r'CREATE TABLE (\w+)',sql)
 dictionary='\n'.join(p.read_text(encoding='utf-8') for p in (ROOT/'database').glob('*data-dictionary.md'))
-check(len(table_names)==51 and len(set(table_names))==51,'51 unique SQL tables')
+check(len(table_names)==56 and len(set(table_names))==56,'56 unique SQL tables including additive runtime integrity migration')
 check(all('## '+t+' ' in dictionary for t in table_names),'all SQL tables documented')
 for table,body in re.findall(r'CREATE TABLE (\w+) \((.*?)\) ENGINE=InnoDB',sql,re.S):
-    section=dictionary.split('## '+table+' ',1)[1].split('\n## ',1)[0]
+    marker='## '+table+' '
+    if marker not in dictionary:continue  # The explicit all-tables check above already records this as a failure.
+    section=dictionary.split(marker,1)[1].split('\n## ',1)[0]
     columns=re.findall(r"^  (\w+) .+ COMMENT '[^']*'",body,re.M)
     documented_columns=set(re.findall(r'^\| `?([a-z][a-z0-9_]*)`? \|',section,re.M))
     check(set(columns)==documented_columns,table+' dictionary covers exactly all columns')
@@ -120,7 +153,23 @@ check(len(tool_ids)==len(tools),'unique tool capability registry')
 check(all(set(r['allowedTools']) <= tool_ids for r in roles),'expert tools resolve to admitted registry')
 check(all(t['inputSchemaId'] in schemas and t['outputSchemaId'] in schemas for t in tools),'every tool has resolvable input/output schema')
 check(all(0 < t['timeoutMillis'] <= policy['complexRun']['maxWallMillis'] for t in tools),'tool deadlines fit overall run bound')
-check(all(r['status']=='planned' for r in roles+tools),'agent registry honestly remains planned')
+check(all(r['status']=='planned' for r in roles),'LLM expert roles stay planned until an actual model adapter is admitted')
+check({t['id'] for t in tools if t['status']=='implemented'}=={'retrieveContext','searchEvidence'},'only two deterministic read tools are implemented')
+capabilities=read_json('agent/capability-matrix.json')
+check({c['id'] for c in capabilities['capabilities']}==tool_ids,'capability matrix covers exactly registered tool ids')
+check(all(not c['enabled'] or (c['status']=='implemented' and c['adapterReady'] and c['verificationEvidence']) for c in capabilities['capabilities']),'enabled tools require an adapter and verification evidence')
+check(all(m['status']==('partial' if any(o['tags'][0]==m['id'] and o['x-status']=='implemented' for _,_,o in operations) else 'planned') for m in modules),'module status distinguishes partial runtime from planned product scope')
+state=read_json('frontend/state-contract.json')
+check(state.get('frontendImplemented') is False,'frontend state contract does not pretend UI implementation')
+for entity in state['entityVersions']:
+    fields=set(entity['idFields']+entity['versionFields']+entity['scopeFields'])
+    check(fields <= set(schemas[entity['schema']]['properties']),entity['schema']+' frontend state fields exist in the current wire contract')
+for name in ('run','workspace'):
+    stream=state['eventStreams'][name]
+    op=next(o for _,_,o in operations if o['operationId']==stream['operationId'])
+    check(op['x-status']=='implemented' and stream['cursorParameter'] in {p['name'] for p in op.get('parameters',[])},name+' polling cursor agrees with the actual API')
+check(not validator('WorkspaceUpdate').is_valid({'expectedRevision':4294967297,'title':'Overflow','guidanceMode':'QUIET'}),'int32 revision overflow rejected before narrowing')
+check(not validator('RunCommand').is_valid({'kind':'PAUSE','expectedPlanRevision':1,'expectedRunEpoch':18446744073709551617}),'epoch overflow rejected before narrowing')
 check(policy['maxPlanNodes']==24 and policy['maxConcurrentSteps']==3,'policy limits agree with Java kernel')
 plan=read_json('agent/example-plan.json')
 check(validator('AgentPlan').is_valid(plan),'complex learning task plan matches strict schema')
@@ -156,7 +205,7 @@ for path in ROOT.rglob('*.md'):
         if not target or re.match(r'^[a-zA-Z]+:',target):continue
         check((path.parent/unquote(target)).exists(),f'local link resolves: {path.relative_to(ROOT)} -> {target}')
 
-report={'result':'PASS' if not errors else 'FAIL','checksPassed':len(checks),'errors':errors,'operations':len(operations),'schemas':len(schemas),'conceptSeeds':len(concepts),'frontendReferences':len(ledger),'sqlTables':len(table_names),'expertRoles':len(roles),'toolCapabilities':len(tools)}
+report={'result':'PASS' if not errors else 'FAIL','checksPassed':len(checks),'errors':errors,'operations':len(operations),'implementedOperations':len(implemented),'plannedOperations':len(operations)-len(implemented),'schemas':len(schemas),'conceptSeeds':len(concepts),'frontendReferences':len(ledger),'sqlTables':len(table_names),'expertRoles':len(roles),'toolCapabilities':len(tools)}
 (ROOT/'.work').mkdir(exist_ok=True)
 (ROOT/'.work/verification.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 print(json.dumps(report,ensure_ascii=False,indent=2))

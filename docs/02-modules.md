@@ -1,12 +1,14 @@
 # 模块详细设计与实现路线
 
-所有业务模块当前均为规划，Java 端口只表达边界，不代表实现。A/B 是两位真实成员待认领的职责标签，不预设姓名或能力差别。每个模块均包含实现、异常与验收；总体依赖见 [架构](01-architecture.md)。
+v0.3 已落地部分数据库应用服务、业务 HTTP 与持久运行控制；逐模块状态以 [modules.json](../contracts/modules.json) 为准，逐操作状态见 [OpenAPI](../contracts/openapi.json)，真实验证见 [本轮记录](../evidence/runtime-review.md)。本章“子功能/实现/验收”描述完整目标，另列“当前”部分说明已落地范围；端口存在不能单独证明实现。A/B 是两位真实成员待认领的职责标签，不预设姓名或能力差别；总体依赖见 [架构](01-architecture.md)。
 
 ## M01 身份、权限与偏好（B）
 
 **子功能**：注册/登录/退出；当前会话；学习者、编辑、维护者角色；密码修改后会话失效；深浅主题、减少动效、编辑器字号；本人数据导出与删除申请。
 
-**实现**：Spring Security 会话 + HttpOnly/Secure/SameSite Cookie，生产同源部署；CSRF token 保护写入，开发跨域只允许固定 origin。密码使用框架支持的自适应散列；用户名规范化后唯一，角色由后端授予。注册限流，错误文案避免泄露账号存在性。当前骨架只有 deny-all 安全边界，尚未实现登录。
+**实现**：Spring Security 会话 + HttpOnly/Secure/SameSite Cookie，生产同源部署；CSRF token 保护写入，跨域仅在明确配置后放行。密码使用框架支持的自适应散列；用户名规范化后唯一，角色由后端授予。注册限流、密码修改、完整偏好与账号管理仍须补充。
+
+**当前**：`IdentityService/IdentityController` 已实现注册、登录、退出和会话查询，登录轮换会话并清除旧 CSRF token；`ScaffoldSecurity` 对业务 API 要求认证，对管理/内部路由拒绝。默认 servlet 会话不是持久数据库会话；回环 HTTP 开发的 Secure cookie 默认关闭，HTTPS 部署显式开启。
 
 **数据与接口**：`app_user/user_preference`；`/auth/session`、`/auth/register`、`/auth/csrf`、`/me/preferences`。对每个 attempt/job/conversation 查询都加 userId 归属条件；管理员身份也不能默认读取全部私人会话。
 
@@ -16,7 +18,7 @@
 
 **子功能**：16 概念前置 DAG、学习路线、左右代码对照、常见误区、来源展开、已学/未学状态、章节小测、术语跳转。每张知识卡固定“问题→规则→正例→反例→限制→来源→练习”结构。
 
-**实现**：`ConceptQueryService` 按发布快照返回内容；前置关系发布前做环检测。知识正文为受控 Markdown，禁用 HTML 或统一白名单净化；代码只做转义显示。阅读位置与知识完成度分开保存，停留时间不直接换成掌握分。
+**实现**：当前 `CurriculumService` 按发布快照读取概念、卡片和关联练习，核对知识卡来源与正文 hash；公共题目只返回允许的字段。前置图的正式发布审核、阅读位置和 Markdown 页面仍属后续；实现页面时禁用 HTML 或统一白名单净化，代码转义显示，停留时间不直接换成掌握分。
 
 **数据与接口**：`concept/concept_edge/knowledge_chunk/release_chunk`；GET `/concepts`、`/concepts/{id}`；POST `/learning-events`。返回 `releaseId/chunkRevision/sourceRefs/relatedExerciseIds`。
 
@@ -54,6 +56,8 @@
 
 **判分**：选择题用标准集合，填空用有约束的归一化，代码题用固定编译/测试与静态规则组合。编译通过不自动等于正确；“应该拒绝的非法调用是否被拒绝”也要作为反向测试。例：PECS copy 题既验证合法调用，又验证不安全调用不能编译。AI 只提出解释，不产生最终分数。
 
+**当前**：`LearningService` 实现选择题集合精确判分、合法选项检查、固定 workspace/release/题目 revision、幂等提交与反馈。代码和文本判分尚未开放；对未配置题型返回明确能力不可用，不能借固定测试编译器执行用户输入。
+
 **重构流程**：读取 raw API → 标记 unchecked 风险 → 设计泛型签名 → 验证原有合法行为 → 验证不安全调用被阻止 → 对比修改。提示阶梯分概念提示、定位提示、局部骨架、完整解答，记录 hintLevel；查看答案不回写成独立掌握。
 
 **数据与接口**：`exercise/exercise_concept/release_exercise/exercise_attempt`，GET `/exercises`、`/exercises/{id}`；POST `/attempts`，GET `/attempts/{id}`。公共 DTO 排除 answerSpec、隐藏用例和评分密钥；提交锁定 revision 与 release。
@@ -64,11 +68,11 @@
 
 **子功能**：概念进展、最近提交、错因分布、提示依赖、独立完成率、复习清单、前后对照、记录导出。展示每项建议的原因，例如“通配符读写近三次独立题错两次”。
 
-**实现**：消费 `AttemptGraded`，按 userId+conceptId 更新投影。首版采用透明启发式，不宣称科学诊断：仅取最近 5 道不同题目家族的独立提交，按 1/2/3 难度权重计算加权正确率；样本 <3 标为“证据不足”。同题重试与提示后完成只计练习活动，不稀释独立正确率。阅读记录单独计数。
+**当前实现**：`LearningEvidenceProjection` 消费服务端 `ATTEMPT_GRADED`，按 userId+conceptId 更新 `family-first-v1` 投影。每个题目家族只保留首次独立样本，权重来自 `exercise_concept`，原始作答保存在 `learning_family_evidence`；样本 <3 标为“证据不足”。同题家族反馈后的重试属于练习，不覆盖首次样本，也不能刷高独立统计。活动计数与学习证据分开，当前没有“最近五题”窗口或难度 1/2/3 额外加权；算法升级须重新评测并标版本。
 
-**复习规则**：错误概念优先，再按前置未掌握、最后练习时间排序；初始建议 1/3/7 日复练，学习者可调整，不使用虚假“精准记忆曲线”。算法版本和分子/分母可查看。事件重放可重建投影，不能把自增累计值作为唯一事实。
+**复习规则**：当前错误作答产生次日复习建议，另一个题目家族的首次独立正确证据可完成相关待复习项；客户端只能忽略复习项，不能自行宣告掌握。前置排序、可调整的 1/3/7 日计划是后续目标，不使用虚假“精准记忆曲线”。算法版本与分子/分母可查看，投影滞后显式返回；事件和来源样本支持重建，不能把累计值作为唯一事实。
 
-**数据与接口**：`learning_event/learner_concept/review_item/event_receipt/outbox_event`；GET `/me/progress`、`/me/reviews`。只允许服务端评分事件提高掌握度，客户端阅读事件不能伪造成绩。
+**数据与接口**：`learning_event/learner_concept/learning_family_evidence/workspace_attempt/review_item/event_receipt/outbox_event`；GET `/me/progress`、`/me/reviews`。只允许服务端评分事件贡献独立证据，客户端阅读事件不能伪造成绩。
 
 **验收**：同事件重复十次结果不变；两个设备同时提交不丢更新；FAILED 不降分；删除账户时个人投影与会话数据按策略清理；内容退役时保留历史并提供可解释的新题建议。
 
@@ -86,13 +90,13 @@
 
 **子功能**：关键词检索、类型符号保留、概念筛选、误区筛选、知识片段预览、来源链接、命中解释、查询回放、发布级索引。初版不要求向量数据库。
 
-**实现**：Tokenizer 区分中文词、Java 标识符、`? extends`、`? super`、`List<T>`；概念同义词表处理 PECS/生产者/消费者；候选检索后按概念和版本过滤、BM25 排序、每源限额去重，返回 topK≤8。BM25 分数不转换成“置信度 98%”。无关/冲突证据宁可返回少量并明确不足。
+**当前实现**：`LocalKnowledgeSearch` 从真实已发布 SQL 卡片读取语料，先按 release/概念过滤，再以中文二元词、英文标识符与 `?` 分词计算 BM25，稳定排序，topK≤8。卡片必须有来源且正文 hash 一致；0 匹配返回空并标 `insufficientEvidence`，分数不当作正确率。概念同义词、代码符号组合词、每源限额和大规模索引仍属后续增强，不把当前分词描述成完整 Java 语法解析。
 
-**索引发布**：离线构建不可变目录，记录 releaseId、内容 hash、tokenizer/indexVersion；检查 gold set 后原子切换；旧索引保留到旧会话保留期结束。未来向量端口要同时记录 embedding model/dimension/normalization，不能混用不同空间。
+**索引发布目标**：离线构建不可变目录，记录 releaseId、内容 hash、tokenizer/indexVersion；检查 gold set 后原子切换。当前本地 BM25 每次读取有上限的已发布语料，使用明确的 indexVersion，不声称已经有离线索引发布管线。未来向量端口要同时记录 embedding model/dimension/normalization，不能混用不同空间。
 
 **数据与接口**：`index_snapshot/retrieval_log`；GET `/knowledge/search`；服务端 `KnowledgeRetriever.search(query, releaseId, filters, topK)` 返回带来源的 Evidence。
 
-**验收**：固定 gold set ≥40 问，覆盖术语、代码符号、误区、无答案；Recall@5≥0.90、MRR@5≥0.80 作为目标，空答案召回与错误引用单独报告。当前种子没有真实检索运行，不能填造指标。
+**验收**：固定 gold set ≥40 问，覆盖术语、代码符号、误区、无答案；Recall@5≥0.90、MRR@5≥0.80 作为目标，空答案召回与错误引用单独报告。已有检索服务集成案例验证版本隔离、中文查询、真实得分及无匹配，但尚无这套 gold set 的质量指标，不能填造达标数据。
 
 ## M09 教学专家与证据核验（A）
 
@@ -128,7 +132,7 @@
 
 **子功能**：配置校验、数据库迁移、状态健康、结构化日志、traceId、HTTP/模型/编译限流、备份恢复、依赖检查、CI、故障演练。
 
-**实现**：配置从环境读取，密钥只存在服务端；日志按路径/用户匿名 ID/耗时/状态/版本记录，不含密码或完整源码；readiness 依赖数据库与索引，模型故障单独标记而不让知识阅读全站失败。框架当前的 health 只说明进程存活，不能用于生产 readiness。
+**实现**：配置从环境读取，密钥只存在服务端；日志按路径/用户匿名 ID/耗时/状态/版本记录，不含密码或完整源码；完整 readiness 应覆盖已启用依赖。当前 health 实际执行数据库连通查询，capabilities 单独列出模型/编译/媒体不可用，但仍不能代表完整生产 readiness。outbox 已有有限重试和安全错误分类，生产限流、日志体系、备份恢复和压测继续补充。
 
 **性能验收初始负载**：2 核 4 GiB 以上测试环境，100 个虚拟学习者、10 万历史学习事件、64 卡/120 题；普通查询 p95<300ms、检索 p95<500ms 为目标，模型与排队延迟单列；负载、网络、数据规模必须同结果一起报告。不得在框架阶段宣称达标。
 
@@ -142,15 +146,17 @@
 
 **输入输出**：M15 提供 owner/workspace/goal/snapshot/release；M09/M14/M16 返回结果引用与校验报告；M13 返回 runId/planRevision/runEpoch、阶段、可用作品、消耗和限制。前端只提交目标/范围/预算，不提交任意角色权限或系统命令。GET事件分页从持久序号恢复，未来SSE复用同一事件。
 
-**已实现内核边界**：`PlanValidator` 可校验任务图并选择一批无资源冲突的就绪候选；它不是分布式锁、不运行模型、不持久化、不兑现预算。后续必须将候选抢占、run epoch、lease与权限放进数据库事务再发工具调用。
+**已实现内核边界**：`PlanValidator` 负责纯计划校验与候选选择；`DurableAgentRuntime` 另行落实持久计划/节点、事务抢占、run epoch、lease、预算预留/结算、执行结果准入与命令控制。两者职责不能混同。当前可执行适配器为确定性的本地证据工作流；自然语言规划、LLM、媒体和用户编译尚不可用，不能把 runtime 成功控制等同于专家智能已经验收。
 
-**数据/API**：agent_run/step/dependency/message/tool_execution/run_event；`/workspaces/{id}/agent-runs`、`/agent-runs/{id}`、`/commands`、`/events`。具体算法和中断恢复见 [集群设计](10-agent-cluster.md)。
+**数据/API**：agent_run/step/dependency/message/tool_execution/run_event/local_evidence_workflow。当前显式入口为 `/workspaces/{id}/evidence-runs`，运行读取/命令/事件使用 `/agent-runs/{id}` 相关路由；通用自然语言 `/workspaces/{id}/agent-runs` 保留为规划能力。具体状态以契约为准，算法与中断恢复见 [集群设计](10-agent-cluster.md)。
 
 **验收**：含独立子图的环也被拒绝；未知能力不放行；两步同时写作品不覆盖；迟到worker不能越过epoch；一个事件只触发一个run；工具结果未知先对账；用户改单一目标只失效对应分支；无进展或预算不足停止。
 
 ## M14 多模态学习创作工坊（B）
 
 **子系统**：作品目录、DSL校验、可编辑版本、素材导入/扫描/解析、模板、图文排版、音频分段、视频时间线、受控交互渲染、预览检查、导出与依赖失效。覆盖 DOCUMENT/SLIDES/DIAGRAM/IMAGE/AUDIO/VIDEO/INTERACTION/NOTEBOOK 八类，不把下载文件当作唯一源数据。
+
+**当前**：`ArtifactService` 保存并读取受控 DSL 源版本、检查 schema/语义与输入引用，`ArtifactInvalidation` 传播依赖过期。API 能编辑源结构不代表已有图形编辑器、渲染器、素材上传或可下载二进制作品；这些能力仍不可用。
 
 **实现**：每种 DSL 实现 `ArtifactStudio<T>` 与独立 renderer 适配器；源结构先验类型、引用、尺寸/时长，再生成候选预览。渲染 worker 只读取指定素材和固定版本，主 API 不执行浏览器/FFmpeg/Office 文件解析。导出键包含 sourceHash、模板/字体/渲染版本。修改结论使 FACT/SCRIPT 依赖失效，改颜色只使 LAYOUT 依赖失效。
 
@@ -163,6 +169,8 @@
 ## M15 学习工作空间与上下文记忆（A）
 
 **子系统**：个人空间、学习目标、标签画布、局部选区、指导强度、语义事件流、当前任务接续、上下文快照、短期摘要、学习事实引用与可撤回偏好。学生可直接学习、创作或要求专家协助。
+
+**当前**：空间、目标、顺序语义事件、快照、用户声明记忆与撤回已有 SQL/HTTP 实现，引用在同 owner/workspace/release 下核验。前端画布、自动防抖路由、主动模型指导和摘要/向量索引仍待实现；保存指导偏好不会隐式启动模型。
 
 **实现**：客户端仅上报页面切换、确认选区、求助、草稿变化；不允许上报“答对/编译成功”等事实。事件去重后按 workspace 行锁分配 sequence；规则先决定是否需要动作（观察/提示/接续/开任务/重规划），800ms防抖且同空间最多一个自动run，已有任务优先追加inbox。失败连续、明确求助、选区核验等才触发模型，不逐按键调用。
 
@@ -178,6 +186,6 @@
 
 **实现**：收集同用户同release的attempt，按 concept/误区/family分组；M09核验错因；M13规划生成；M14保存Notebook DSL；交互dispatcher只接受当前块白名单动作。变式必须先通过正确答案、正负编译案例与去重门禁，才创建有revision的练习；submitAnswer复用M05，requestCompile复用M04，requestHint复用M09。
 
-**数据/API**：notebook_entry与M14版本表、原始exercise_attempt；`/workspaces/{id}/notebooks` 返回 M13 run；`/notebooks/{id}/actions` 返回真实attempt/job/tutorRequest引用。不得从客户端“完成”按钮直接记独立掌握，也不能把隐藏答案写进首屏HTML。
+**当前数据/API**：`NotebookService` 通过 `/workspaces/{id}/notebook-drafts` 从同空间真实作答创建 NOTEBOOK 源稿及溯源关系，交互界面尚未实现。完整设计中的 `/workspaces/{id}/notebooks` 运行与 `/notebooks/{id}/actions` 仍以契约标记为准；不能把源稿保存说成六类交互块已经实测。不得从客户端“完成”按钮直接记独立掌握，也不能把隐藏答案写进首屏 HTML。
 
 **验收**：六种块鼠标/键盘/触屏皆可达；改上界后类型图、编译和解释一致；一个action重放只有一个提交；旧块版本返回冲突；能从生成的微课回到原错题证据；知识撤回使相关块STALE并引导核查。

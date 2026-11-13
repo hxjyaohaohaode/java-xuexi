@@ -4,14 +4,14 @@
     "package": "identity",
     "name": "身份、权限与偏好",
     "owner": "B",
-    "status": "planned"
+    "status": "partial"
   },
   {
     "id": "M02",
     "package": "curriculum",
     "name": "知识地图与阅读",
     "owner": "A",
-    "status": "planned"
+    "status": "partial"
   },
   {
     "id": "M03",
@@ -32,14 +32,14 @@
     "package": "exercise",
     "name": "练习与类型安全改造",
     "owner": "B",
-    "status": "planned"
+    "status": "partial"
   },
   {
     "id": "M06",
     "package": "learning",
     "name": "学习证据与复习",
     "owner": "B",
-    "status": "planned"
+    "status": "partial"
   },
   {
     "id": "M07",
@@ -53,7 +53,7 @@
     "package": "retrieval",
     "name": "检索与证据",
     "owner": "A",
-    "status": "planned"
+    "status": "partial"
   },
   {
     "id": "M09",
@@ -81,34 +81,34 @@
     "package": "operations",
     "name": "运行与安全",
     "owner": "B",
-    "status": "planned"
+    "status": "partial"
   },
   {
     "id": "M13",
     "package": "orchestration",
     "name": "动态专家编排与任务运行时",
     "owner": "A",
-    "status": "planned"
+    "status": "partial"
   },
   {
     "id": "M14",
     "package": "artifacts",
     "name": "多模态学习创作工坊",
     "owner": "B",
-    "status": "planned"
+    "status": "partial"
   },
   {
     "id": "M15",
     "package": "workspace",
     "name": "学习工作空间与上下文记忆",
     "owner": "A",
-    "status": "planned"
+    "status": "partial"
   },
   {
     "id": "M16",
     "package": "notebook",
     "name": "高交互错题集与复练作品",
     "owner": "B",
-    "status": "planned"
+    "status": "partial"
   }
 ]

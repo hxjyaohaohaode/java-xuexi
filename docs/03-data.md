@@ -2,7 +2,7 @@
 
 ## 1. 结构
 
-数据库含 [V001](../database/V001__baseline.sql) 的31张课程表和 [V002](../database/V002__agent_workspace.sql) 的20张工作空间表，共51张。字段、约束与索引见 [课程字典](../database/data-dictionary.md)及[Agent字典](../database/agent-data-dictionary.md)。这是可实际建库的设计基线；应用尚未连接数据库，不能将建表成功等同于业务实现完成。
+数据库迁移包含 [V001 课程表](../database/V001__baseline.sql)、[V002 工作空间表](../database/V002__agent_workspace.sql)及 [V003 运行时完整性](../database/V003__runtime_integrity.sql)。V003 新增 5 张运行时关联/投影表并扩展 outbox 重试字段。字段、约束与索引见 [课程字典](../database/data-dictionary.md)、[Agent 字典](../database/agent-data-dictionary.md)及[运行时字典](../database/runtime-data-dictionary.md)。v0.3 后端已通过 JDBC/Flyway 真实连接数据库并写入工作空间、作答、事件、任务和作品版本；表存在不代表所有预留业务都已实现。
 
 ```mermaid
 erDiagram
@@ -43,6 +43,10 @@ erDiagram
 | exercise_attempt | M05 | M06/M09 | 固定发布和题版本；终态判分不可覆盖 |
 | compile_job / lab_session | M04/M03 | M05/M09 | 归属与 release 一致；租约 CAS |
 | learning_event / learner_concept / review_item | M06 | 本人仪表盘/M09 | 事实与投影分离；重复不加分 |
+| workspace_attempt / learning_family_evidence | M05/M06 | M15/M16 | 作答归属明确；每人每概念每题家族最多一个独立样本 |
+| workspace_projection | M12 事件消费者 | M15/本人空间 | 连续游标与活动计数；不作为掌握度 |
+| artifact_input_reference | M14 | M15/M16/失效服务 | 同空间输入血缘、固定 revision/hash、多态引用逐项授权 |
+| local_evidence_workflow | M09 本地证据适配器 | M13 | 私有 query、固定 adapter 版本；不代表 LLM 调用 |
 | outbox_event / event_receipt | 发布事件模块/对应消费者 | M12 | at-least-once + 事务内去重 |
 | conversation / tutor_request / tutor_message / message_citation | M09 | 本人导师页 | 不跨用户、跨发布引用 |
 | retrieval_log / audit_event / idempotency_record | M08/M12/请求模块 | 授权维护者 | 日志最小化，幂等按用户和操作隔离 |
@@ -66,7 +70,7 @@ erDiagram
 
 ## 5. 迁移、保留与删除
 
-V001 只应用到空数据库，后续增加 V002/V003；不改写已经执行过的迁移。应用阶段接入 Flyway 并使用 schema history，部署前备份、校验迁移兼容性。当前独立验证脚本不连接任何用户已有数据库。
+Flyway 已接入并按 V001→V002→V003 管理 schema history；默认 H2 使用兼容适配，MySQL Profile 使用原始 SQL。不改写已经执行过的迁移，不把已手工建表的库当成空库再次初始化。部署前备份并校验迁移兼容性；当前独立验证脚本只使用自己创建的临时库，不连接用户已有数据库。真实引擎与验证结果见 [v0.3 验收记录](../evidence/runtime-review.md)。
 
 业务建议保留策略：私人临时代码/编译输出 30 天、对话 90 天（用户可提前删）、审计最小元数据 180 天；这是待两人确认的项目配置，不是法律期限。成绩事实与发布快照保留至课程验收完成并根据用户选择导出/删除。`RESTRICT` 避免误级联，删除账户要按依赖顺序删除私有记录或经明确策略匿名化；知识作者署名和审计可采用无个人身份的已删除主体，不能直接删掉被 FK 引用的账户。
 
@@ -74,7 +78,9 @@ outbox 与 receipt 要共同考虑重放窗口，不能先删除 receipt 再把�
 
 ## 6. 当前测试数据
 
-`seed-demo.sql` 仅插入禁用的占位作者、8 条来源索引、16 个概念、16 张草稿卡、草稿发布和概念快照。没有可登录默认口令，没有“假通过”的审核、已发布知识库、学习成绩或模型回答；当前 active_release 为空是预期状态。
+`seed-demo.sql` 仍只插入禁用的占位作者、来源索引、概念、草稿卡、草稿发布和概念快照，用于独立 SQL 检查；只加载该脚本时 active_release 为空。
+
+另有显式 `demo` Profile 的 `DemoContentInitializer`：事务保存 16 个概念、16 张原创知识卡、12 道题与演示发布。它的作者禁用，来源标记 `demo-authored-code-reviewed`，没有可登录默认口令、学生成绩、模型回答或伪造 `content_review`。存储状态 `REVIEWED` 不能被解释成已完成正式双人审核；内容正文和审计明确这一限制。标准 Profile 不自动启用此 fixture，后续正式发布仍需实现完整审核管线。
 
 ## Agent 与作品数据链
 

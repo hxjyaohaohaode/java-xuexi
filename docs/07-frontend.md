@@ -1,5 +1,7 @@
 # 前端样式、页面与交互规范
 
+本章保留v0.2的样式与组件研究。架构深化新增的跨模块状态、版本、重放、草稿冲突与生成UI约束见 [工作空间状态协议](15-frontend-state-network.md) 和 [机器可读设计摘要](../frontend/state-contract.json)。当前没有正式前端实现；后端能力增加不会自动改变组件的浏览器验收状态。
+
 ## 1. 研究范围与证据边界
 
 已逐条阅读用户《前端组件交互参考.md》的 1–209 条，完整取舍见 [209 条研究台账](../frontend/reference-ledger.csv)。四个核心候选已读取官方 TS + Tailwind 源文件：#68 LineSidebar、#69 AnimatedList、#92 SpotlightCard、#102 Stepper。其余候选仅完成目录与业务适配研究，**没有宣称已运行 209 个演示、完成触屏验收或复制组件**。
@@ -131,3 +133,11 @@ React Bits 当前为 [MIT + Commons Clause](https://github.com/DavidHDev/react-b
 **#110 RefineFrame**：[源码](https://github.com/DavidHDev/react-bits/blob/4e0d091d3b1ea8b7aadef33716a8d99d164ae4ce/src/ts-tailwind/Micro/RefineFrame/RefineFrame.tsx)。React/Hugeicons，无motion依赖；queued/generating/refining/complete/error映射模糊、饱和度、尺寸与Canvas渐进预览，rAF在适当状态停止，并清理监听。只用于媒体预览，不模糊学生正在阅读的代码。外层role=img及子内容aria-hidden不适合放整套可交互编辑器；将预览、文字状态和真实重试按钮拆成可访问结构。跨域素材须走获授权资源，Canvas可读性与失败行为单独验证。
 
 **#127 ScrubField**：[源码](https://github.com/DavidHDev/react-bits/blob/4e0d091d3b1ea8b7aadef33716a8d99d164ae4ce/src/ts-tailwind/Micro/ScrubField/ScrubField.tsx)。React+motion/react；保留越界阻力、松手回弹、Shift粗调/Alt细调、键盘上下/Home/End和Esc回退，使用lg尺寸达到44px。onChange只更新本地预览，onCommit才提交时间线版本，不能拖动每像素调用模型。源码blur用字符过滤再parseFloat，可能把`1e3`变为`13`；本产品采用明确数值语法和Number.isFinite校验，并显示非法输入。与外部revision冲突时保留草稿供比较；不能把受控值同步当作并发处理。
+
+## 11. 状态网是组件迁移的接入边界
+
+每个采用组件必须说明它读取哪种服务端事实、发出哪种业务意图、持有何种本地草稿。装饰状态不得写入学习事实。导航、任务线、作品画布、错题、掌握度和记忆视图通过统一实体版本与事件协调器联动，避免各页面各自轮询、各自缓存一份旧上下文。
+
+新增候选#78/#88可服务工作空间标签与Dock，#121可服务移动错题归档，#174可服务复练路径，#203可服务学习趋势。它们仅完成本轮参考描述的适配研究，仍待源码、依赖、许可和真实交互验证；#203只借用指标与趋势层次，不能复制心率语义。本轮再次完整核对1–209条，无新增“已运行”条目。
+
+接入时以 [状态协议第五节](15-frontend-state-network.md#5-需要可操作的五条联动)的五条业务链为验收单位。每个链路既检查正常路径，也检查断线、旧版本、权限变化、重复响应、模型未配置及中文输入法，确认同一真实状态在所有相关视图一致呈现。

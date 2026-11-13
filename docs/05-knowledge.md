@@ -4,7 +4,7 @@
 
 以 [JLS 17 类型章节](https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html)、[JLS 17 类与泛型方法](https://docs.oracle.com/javase/specs/jls/se17/html/jls-8.html)、[javac 17 文档](https://docs.oracle.com/en/java/javase/17/docs/specs/man/javac.html) 为规则依据，以 Oracle 教程帮助教学表达。教程标注为 JDK 8，教学行为另用本项目 JDK 17 实测，不把教程当作“最新 Java”说明。后续博客只能作辅助来源，冲突回到规范和可复现代码。
 
-`knowledge/sources.json` 是原始来源索引，**不是原始全文数据集**；当前未下载或发布整套教材/官方文档。`knowledge/concepts.json` 是本项目原创的精简种子；扩充时分别保存 raw（在许可允许范围内）、cleaned、cards、indexes，不能把来源网址列表充当已构建的检索知识库。
+`knowledge/sources.json` 是原始来源索引，**不是原始全文数据集**；当前未下载或发布整套教材/官方文档。`knowledge/concepts.json` 是原创概念种子，`knowledge/runtime-lessons.json` 另含 16 张原创知识卡、12 道客观题与补充规范来源。`demo` Profile 把这些内容写入实际发布成员表，`LocalKnowledgeSearch` 执行真实词项 BM25；原始全文数据集、完整清洗管线与正式双人审核仍未完成。扩充时分别保存 raw（许可允许范围内）、cleaned、cards、indexes，不能用来源网址列表冒充全文采集。
 
 ## 2. 概念组织
 
@@ -27,6 +27,7 @@ G04 → G07 上界 → G08 多重边界。G02/G06 → G14 擦除与桥接 → G1
 | 泛型能彻底消除 ClassCastException | raw/unchecked、反射等可突破边界；泛型不替代运行时输入校验 | raw 污染固定反例 |
 | 泛型代码编译无错误就是安全 | 同时检查 unchecked/rawtypes 警告以及行为；不要掩盖 warning | `-Xlint` 与负向用例 |
 | `new List<String>[n]` 可用 | 非可具体化元素的泛型数组创建受限；`new List<?>[n]` 情况不同 | 编译正反例 |
+| 所有带类型实参的 instanceof 在 Java 17 都非法 | Java 16 起放宽部分合法细化；静态类型为 `List<Integer>` 时可检查 `ArrayList<Integer>`，不能据此宣称运行时逐项核验泛型实参 | Java 15/17 对照编译与 [JLS 17 §15.20.2](https://docs.oracle.com/javase/specs/jls/se17/html/jls-15.html#jls-15.20.2) |
 | `@SafeVarargs` 会自动检查类型安全 | 是作者责任声明且有适用限制；不能靠注解修复堆污染 | JLS/API 与反例 |
 | 捕获能让两个 `List<?>` 的元素任意互换 | 每次捕获有自身未知类型，必须证明关系 | helper 成功与跨列表失败例 |
 | 重载只要泛型实参不同就可区分 | 相同擦除签名会冲突，例如 List<String>/List<Integer> | 编译失败例 |
@@ -49,4 +50,6 @@ G04 → G07 上界 → G08 多重边界。G02/G06 → G14 擦除与桥接 → G1
 
 引用有效 → 概念图无环 → 条件表述完整 → 示例在指定 JDK 上验证 → 正反向判分测试 → 两人交叉核查 → 索引覆盖测试 → 发布快照。模型输出不是审核结论。编译器与讲解冲突时停止发布并定位版本、语法上下文和运行模式。
 
-本次 `GenericSemanticsTest` 只验证固定案例，覆盖关键易错边界；无法替代未来所有教材和题库的逐项校验。种子也不能代替最终 64 卡、48 示例与全量题库。
+`GenericSemanticsTest` 与 `GenericEdgeCasesTest` 验证仓库内固定案例及版本差异，不能替代未来所有教材和题库的逐项校验；`KnowledgeRuntimeTest` 则检验真实 SQL 发布读取、检索、来源哈希和答案边界。具体运行结果以 [v0.3 验收记录](../evidence/runtime-review.md) 为准，不以测试类存在推定通过。
+
+当前演示课程明示 `origin=demo-authored-code-reviewed`、`formalHumanReview=false`，不生成 `content_review`。演示初始化为开发提供可运行内容，不能代替本节正式门禁，也不能代替最终 64 卡、48 示例和完整题库。公开题目 DTO 不输出标准答案；答案与解析保留在服务端，判分后的本人反馈按业务规则展示。
