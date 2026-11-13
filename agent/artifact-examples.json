@@ -1,0 +1,212 @@
+[
+  {
+    "kind": "DOCUMENT",
+    "schemaVersion": "1.0",
+    "title": "PECS解释",
+    "blocks": [
+      {
+        "id": "p1",
+        "kind": "PARAGRAPH",
+        "text": "先确定读写方向，再选择通配符。",
+        "evidenceRefs": [
+          {
+            "id": "13e88a06-8116-4e51-a885-6242ad086660",
+            "revision": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "SLIDES",
+    "schemaVersion": "1.0",
+    "aspect": "16:9",
+    "slides": [
+      {
+        "id": "s1",
+        "title": "生产者与消费者",
+        "elements": [
+          {
+            "id": "e1",
+            "kind": "TEXT",
+            "x": 0.1,
+            "y": 0.1,
+            "width": 0.8,
+            "height": 0.2,
+            "text": "从约束推导PECS",
+            "assetId": null,
+            "alt": "标题"
+          }
+        ],
+        "notes": "注意extends不等于不可修改",
+        "evidenceRefs": [
+          {
+            "id": "13e88a06-8116-4e51-a885-6242ad086660",
+            "revision": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "DIAGRAM",
+    "schemaVersion": "1.0",
+    "nodes": [
+      {
+        "id": "a",
+        "label": "Integer",
+        "typeExpression": "Integer"
+      },
+      {
+        "id": "b",
+        "label": "Number",
+        "typeExpression": "Number"
+      }
+    ],
+    "edges": [
+      {
+        "from": "a",
+        "to": "b",
+        "relation": "SUBTYPE",
+        "verdict": "ALLOWED",
+        "evidenceRefs": [
+          {
+            "id": "13e88a06-8116-4e51-a885-6242ad086660",
+            "revision": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "IMAGE",
+    "schemaVersion": "1.0",
+    "assetId": "13e88a06-8116-4e51-a885-6242ad086660",
+    "alt": "表示不同类型容器的装饰插图",
+    "purpose": "DECORATIVE",
+    "factEvidenceRefs": []
+  },
+  {
+    "kind": "AUDIO",
+    "schemaVersion": "1.0",
+    "segments": [
+      {
+        "id": "n1",
+        "text": "读取和写入需要分别分析。",
+        "voiceId": "configured-course-voice",
+        "rate": 1,
+        "assetId": null,
+        "evidenceRefs": [
+          {
+            "id": "13e88a06-8116-4e51-a885-6242ad086660",
+            "revision": 1
+          }
+        ]
+      }
+    ],
+    "pronunciation": [
+      {
+        "term": "PECS",
+        "spoken": "生产者使用extends，消费者使用super"
+      }
+    ]
+  },
+  {
+    "kind": "VIDEO",
+    "schemaVersion": "1.0",
+    "width": 1280,
+    "height": 720,
+    "fps": "30",
+    "clips": [
+      {
+        "id": "c1",
+        "track": "SUBTITLE",
+        "startMillis": 0,
+        "durationMillis": 3000,
+        "assetId": null,
+        "text": "泛型不变性",
+        "sourceRefs": []
+      }
+    ]
+  },
+  {
+    "kind": "INTERACTION",
+    "schemaVersion": "1.0",
+    "blocks": [
+      {
+        "id": "b1",
+        "prompt": "预测这段泛型代码的行为",
+        "conceptIds": [
+          "13e88a06-8116-4e51-a885-6242ad086660"
+        ],
+        "exerciseRef": null,
+        "attemptId": "13e88a06-8116-4e51-a885-6242ad086660",
+        "allowedActions": [
+          "predict",
+          "requestCompile",
+          "requestHint"
+        ],
+        "evidenceRefs": [
+          {
+            "id": "13e88a06-8116-4e51-a885-6242ad086660",
+            "revision": 1
+          }
+        ],
+        "kind": "TYPE_FLOW",
+        "config": {
+          "sourceType": "List<Integer>",
+          "targetType": "List<? extends Number>",
+          "parameters": [
+            {
+              "name": "T",
+              "candidates": [
+                "Integer",
+                "Number"
+              ]
+            }
+          ],
+          "operations": [
+            "ASSIGN",
+            "READ",
+            "WRITE"
+          ]
+        },
+        "revision": 1
+      }
+    ]
+  },
+  {
+    "kind": "NOTEBOOK",
+    "schemaVersion": "1.0",
+    "blocks": [
+      {
+        "id": "b1",
+        "prompt": "预测这段泛型代码的行为",
+        "conceptIds": [
+          "13e88a06-8116-4e51-a885-6242ad086660"
+        ],
+        "exerciseRef": null,
+        "attemptId": "13e88a06-8116-4e51-a885-6242ad086660",
+        "allowedActions": [
+          "predict",
+          "requestCompile",
+          "requestHint"
+        ],
+        "evidenceRefs": [
+          {
+            "id": "13e88a06-8116-4e51-a885-6242ad086660",
+            "revision": 1
+          }
+        ],
+        "kind": "ERROR_CONTEXT",
+        "config": {
+          "studentReason": "误以为容器随元素类型协变",
+          "originalSource": "class Demo {}",
+          "sourceHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "diagnosticIds": []
+        },
+        "revision": 1
+      }
+    ]
+  }
+]

@@ -1,0 +1,90 @@
+[
+  {
+    "id": "379d060d-174f-5fa5-9bde-c5a5c05c9688",
+    "code": "S01",
+    "title": "Java Language Specification 17, Chapter 4",
+    "url": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html",
+    "version": "17",
+    "retrievedOn": "2026-11-13",
+    "usage": "link-and-original-summary; no full text redistributed",
+    "rawFileHash": null,
+    "rawCollected": false
+  },
+  {
+    "id": "61199d2f-965a-5d9c-98c7-49d385084648",
+    "code": "S02",
+    "title": "JLS 17, Classes and generic methods",
+    "url": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-8.html",
+    "version": "17",
+    "retrievedOn": "2026-11-13",
+    "usage": "link-and-original-summary; no full text redistributed",
+    "rawFileHash": null,
+    "rawCollected": false
+  },
+  {
+    "id": "62104c2a-965d-5f1e-902a-f5a2ca5c8ea5",
+    "code": "S03",
+    "title": "JLS 17, Interfaces",
+    "url": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-9.html",
+    "version": "17",
+    "retrievedOn": "2026-11-13",
+    "usage": "link-and-original-summary; no full text redistributed",
+    "rawFileHash": null,
+    "rawCollected": false
+  },
+  {
+    "id": "a427c703-d271-5d59-bc11-560b55ea4460",
+    "code": "S04",
+    "title": "JLS 17, Type Inference",
+    "url": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-18.html",
+    "version": "17",
+    "retrievedOn": "2026-11-13",
+    "usage": "link-and-original-summary; no full text redistributed",
+    "rawFileHash": null,
+    "rawCollected": false
+  },
+  {
+    "id": "18f6840e-7dbf-52cf-ba96-8efcad818d1b",
+    "code": "S05",
+    "title": "Oracle Wildcard Guidelines",
+    "url": "https://docs.oracle.com/javase/tutorial/java/generics/wildcardGuidelines.html",
+    "version": "JDK 8 tutorial; verify on 17",
+    "retrievedOn": "2026-11-13",
+    "usage": "link-and-original-summary; no full text redistributed",
+    "rawFileHash": null,
+    "rawCollected": false
+  },
+  {
+    "id": "4c3fcb6e-1504-52b5-a0fb-21c5888fc4dc",
+    "code": "S06",
+    "title": "Oracle Wildcard Capture",
+    "url": "https://docs.oracle.com/javase/tutorial/java/generics/capture.html",
+    "version": "JDK 8 tutorial; verify on 17",
+    "retrievedOn": "2026-11-13",
+    "usage": "link-and-original-summary; no full text redistributed",
+    "rawFileHash": null,
+    "rawCollected": false
+  },
+  {
+    "id": "5d3530f9-e25d-5671-b3b4-53048331fc90",
+    "code": "S07",
+    "title": "Oracle Bridge Methods",
+    "url": "https://docs.oracle.com/javase/tutorial/java/generics/bridgeMethods.html",
+    "version": "JDK 8 tutorial; verify on 17",
+    "retrievedOn": "2026-11-13",
+    "usage": "link-and-original-summary; no full text redistributed",
+    "rawFileHash": null,
+    "rawCollected": false
+  },
+  {
+    "id": "50de207a-c0ce-5f5e-9a53-fe85a90bb2e6",
+    "code": "S08",
+    "title": "Oracle Restrictions on Generics",
+    "url": "https://docs.oracle.com/javase/tutorial/java/generics/restrictions.html",
+    "version": "JDK 8 tutorial; verify on 17",
+    "retrievedOn": "2026-11-13",
+    "usage": "link-and-original-summary; no full text redistributed",
+    "rawFileHash": null,
+    "rawCollected": false
+  }
+]

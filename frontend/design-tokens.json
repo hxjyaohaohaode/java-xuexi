@@ -1,0 +1,59 @@
+{
+  "status": "design-only",
+  "colors": {
+    "light": {
+      "canvas": "#F5F4F0",
+      "surface": "#FFFFFF",
+      "text": "#172B2E",
+      "muted": "#526568",
+      "accent": "#006B5E",
+      "warning": "#8A4B00",
+      "danger": "#B42318",
+      "border": "#CAD5D1",
+      "inputBorder": "#708885"
+    },
+    "dark": {
+      "canvas": "#111719",
+      "surface": "#1B2528",
+      "text": "#EDF5F2",
+      "muted": "#B0C1BF",
+      "accent": "#68D7BE",
+      "warning": "#FFCB82",
+      "danger": "#FFB4AB",
+      "border": "#445653",
+      "inputBorder": "#78918B"
+    }
+  },
+  "spacing": [
+    4,
+    8,
+    12,
+    16,
+    24,
+    32,
+    48
+  ],
+  "radius": {
+    "input": 8,
+    "card": 12,
+    "panel": 16
+  },
+  "motion": {
+    "feedbackMs": [
+      120,
+      220
+    ],
+    "panelMs": [
+      220,
+      320
+    ],
+    "maximumStepMs": 560,
+    "reducedMotion": "none"
+  },
+  "typography": {
+    "bodyPx": 16,
+    "bodyLineHeight": 1.65,
+    "codePx": 15
+  },
+  "minimumTargetPx": 44
+}

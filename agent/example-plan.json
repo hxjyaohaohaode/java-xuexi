@@ -1,0 +1,224 @@
+{
+  "runId": "13e88a06-8116-4e51-a885-6242ad086660",
+  "revision": 1,
+  "runEpoch": 1,
+  "goal": "将三道PECS错题转换成互动错题集、8页PPT与两分钟微课",
+  "budget": {
+    "maxTokens": 100000,
+    "maxWallMillis": 900000,
+    "maxCostMicros": 2000000,
+    "maxParallel": 3
+  },
+  "steps": [
+    {
+      "id": "research",
+      "role": "retrieval-researcher",
+      "dependencies": [],
+      "readScopes": [
+        "knowledge:release"
+      ],
+      "writeScopes": [],
+      "tools": [
+        "searchEvidence"
+      ],
+      "required": true,
+      "acceptance": [
+        "引用与输入版本一致",
+        "本步骤产物通过对应schema与质量门禁"
+      ],
+      "maxModelSteps": 3
+    },
+    {
+      "id": "code",
+      "role": "code-coach",
+      "dependencies": [],
+      "readScopes": [
+        "attempt:selection"
+      ],
+      "writeScopes": [],
+      "tools": [
+        "getOwnAttempt",
+        "requestCompile"
+      ],
+      "required": true,
+      "acceptance": [
+        "引用与输入版本一致",
+        "本步骤产物通过对应schema与质量门禁"
+      ],
+      "maxModelSteps": 3
+    },
+    {
+      "id": "teaching-plan",
+      "role": "learning-designer",
+      "dependencies": [
+        "research",
+        "code"
+      ],
+      "readScopes": [
+        "learning:own"
+      ],
+      "writeScopes": [],
+      "tools": [
+        "searchEvidence",
+        "getOwnLearning"
+      ],
+      "required": true,
+      "acceptance": [
+        "引用与输入版本一致",
+        "本步骤产物通过对应schema与质量门禁"
+      ],
+      "maxModelSteps": 3
+    },
+    {
+      "id": "fact-check",
+      "role": "fact-checker",
+      "dependencies": [
+        "teaching-plan"
+      ],
+      "readScopes": [],
+      "writeScopes": [],
+      "tools": [
+        "searchEvidence",
+        "requestCompile"
+      ],
+      "required": true,
+      "acceptance": [
+        "引用与输入版本一致",
+        "本步骤产物通过对应schema与质量门禁"
+      ],
+      "maxModelSteps": 3
+    },
+    {
+      "id": "slides",
+      "role": "slide-designer",
+      "dependencies": [
+        "fact-check"
+      ],
+      "readScopes": [],
+      "writeScopes": [
+        "artifact:slides"
+      ],
+      "tools": [
+        "composeSlides"
+      ],
+      "required": true,
+      "acceptance": [
+        "引用与输入版本一致",
+        "本步骤产物通过对应schema与质量门禁"
+      ],
+      "maxModelSteps": 3
+    },
+    {
+      "id": "notebook",
+      "role": "interactive-builder",
+      "dependencies": [
+        "fact-check"
+      ],
+      "readScopes": [],
+      "writeScopes": [
+        "artifact:notebook"
+      ],
+      "tools": [
+        "composeInteraction",
+        "requestCompile"
+      ],
+      "required": true,
+      "acceptance": [
+        "引用与输入版本一致",
+        "本步骤产物通过对应schema与质量门禁"
+      ],
+      "maxModelSteps": 3
+    },
+    {
+      "id": "audio",
+      "role": "audio-director",
+      "dependencies": [
+        "fact-check"
+      ],
+      "readScopes": [],
+      "writeScopes": [
+        "artifact:audio"
+      ],
+      "tools": [
+        "synthesizeAudio"
+      ],
+      "required": true,
+      "acceptance": [
+        "引用与输入版本一致",
+        "本步骤产物通过对应schema与质量门禁"
+      ],
+      "maxModelSteps": 3
+    },
+    {
+      "id": "timeline",
+      "role": "video-director",
+      "dependencies": [
+        "slides",
+        "audio"
+      ],
+      "readScopes": [
+        "artifact:slides",
+        "artifact:audio"
+      ],
+      "writeScopes": [
+        "artifact:video"
+      ],
+      "tools": [
+        "composeTimeline"
+      ],
+      "required": true,
+      "acceptance": [
+        "引用与输入版本一致",
+        "本步骤产物通过对应schema与质量门禁"
+      ],
+      "maxModelSteps": 3
+    },
+    {
+      "id": "video",
+      "role": "video-director",
+      "dependencies": [
+        "timeline"
+      ],
+      "readScopes": [
+        "artifact:video"
+      ],
+      "writeScopes": [
+        "export:video"
+      ],
+      "tools": [
+        "renderVideo"
+      ],
+      "required": true,
+      "acceptance": [
+        "引用与输入版本一致",
+        "本步骤产物通过对应schema与质量门禁"
+      ],
+      "maxModelSteps": 3
+    },
+    {
+      "id": "experience",
+      "role": "experience-reviewer",
+      "dependencies": [
+        "slides",
+        "notebook",
+        "video"
+      ],
+      "readScopes": [
+        "artifact:slides",
+        "artifact:notebook",
+        "export:video"
+      ],
+      "writeScopes": [],
+      "tools": [
+        "previewArtifact",
+        "validateInteraction"
+      ],
+      "required": true,
+      "acceptance": [
+        "引用与输入版本一致",
+        "本步骤产物通过对应schema与质量门禁"
+      ],
+      "maxModelSteps": 3
+    }
+  ]
+}

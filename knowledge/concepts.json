@@ -1,0 +1,243 @@
+[
+  {
+    "id": "7959293c-89e3-5008-8558-ffb778019308",
+    "code": "G01",
+    "title": "类型安全动机",
+    "summary": "泛型把部分不合法的类型组合提前交给编译器发现，不能替代运行时数据校验。",
+    "prerequisites": [],
+    "sourceRefs": [
+      "S01"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  },
+  {
+    "id": "8984d988-6da6-5988-9a7a-0e47a6d056df",
+    "code": "G02",
+    "title": "泛型类",
+    "summary": "在类声明引入类型参数，并在实例化和成员使用中保持参数关系。",
+    "prerequisites": [
+      "G01"
+    ],
+    "sourceRefs": [
+      "S02"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  },
+  {
+    "id": "415be795-6cb2-590a-a81a-29d7a6e67d10",
+    "code": "G03",
+    "title": "泛型接口",
+    "summary": "接口可声明类型参数，实现类可固定实参或继续保留自己的类型参数。",
+    "prerequisites": [
+      "G02"
+    ],
+    "sourceRefs": [
+      "S03"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  },
+  {
+    "id": "0b8a5da3-feca-5e99-85b5-1e5484f06ebe",
+    "code": "G04",
+    "title": "泛型方法",
+    "summary": "方法在返回类型之前声明自己的类型参数，其作用域与类类型参数区分。",
+    "prerequisites": [
+      "G02"
+    ],
+    "sourceRefs": [
+      "S02"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  },
+  {
+    "id": "827e8c6e-283d-5041-8c2e-ccaf137fda7e",
+    "code": "G05",
+    "title": "类型推断",
+    "summary": "编译器结合实参、目标类型与边界求解类型约束；并非所有调用都存在可用解。",
+    "prerequisites": [
+      "G04"
+    ],
+    "sourceRefs": [
+      "S04"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  },
+  {
+    "id": "fb93217f-2134-592a-8e1a-29647da4b015",
+    "code": "G06",
+    "title": "泛型不变性",
+    "summary": "Integer 与 Number 的继承关系不推出 List<Integer> 与 List<Number> 的继承关系。",
+    "prerequisites": [
+      "G02"
+    ],
+    "sourceRefs": [
+      "S01"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  },
+  {
+    "id": "a27578b2-0fd0-5b44-9872-2157b1c9919a",
+    "code": "G07",
+    "title": "类型参数上界",
+    "summary": "extends 可为类型参数设置类或接口边界，从而允许使用边界声明的成员。",
+    "prerequisites": [
+      "G04"
+    ],
+    "sourceRefs": [
+      "S01"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  },
+  {
+    "id": "6f59ac25-274e-5090-9448-93713ac68fd2",
+    "code": "G08",
+    "title": "多重边界",
+    "summary": "多个界用 & 连接；类界只能在首位，擦除由最左界决定。",
+    "prerequisites": [
+      "G07"
+    ],
+    "sourceRefs": [
+      "S01"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  },
+  {
+    "id": "6d6acb4c-93a7-582e-a4bb-b4863d847b7b",
+    "code": "G09",
+    "title": "无界通配符",
+    "summary": "List<?> 表示某个未知元素类型的列表；可读为 Object，不能任意写 Object。",
+    "prerequisites": [
+      "G06"
+    ],
+    "sourceRefs": [
+      "S01"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  },
+  {
+    "id": "508edac0-1d84-5f4a-a554-6919bc0d47b2",
+    "code": "G10",
+    "title": "上界通配符",
+    "summary": "? extends Number 允许安全读取 Number；通常不能写入新的非 null 值，但不是不可变承诺。",
+    "prerequisites": [
+      "G09"
+    ],
+    "sourceRefs": [
+      "S05"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  },
+  {
+    "id": "49cfe0e3-6a1e-589e-b16f-ab49dee0ef30",
+    "code": "G11",
+    "title": "下界通配符",
+    "summary": "? super Integer 可接收 Integer，安全读取通常仅保证 Object。",
+    "prerequisites": [
+      "G09"
+    ],
+    "sourceRefs": [
+      "S05"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  },
+  {
+    "id": "c8d80a01-b752-556d-955c-ea5bd996c886",
+    "code": "G12",
+    "title": "PECS",
+    "summary": "从容器生产读取值时考虑 extends，消费写入值时考虑 super；同时读写同一精确类型常用 T。",
+    "prerequisites": [
+      "G10",
+      "G11"
+    ],
+    "sourceRefs": [
+      "S05"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  },
+  {
+    "id": "5991935f-1634-5222-a334-faeea0b65360",
+    "code": "G13",
+    "title": "通配符捕获",
+    "summary": "辅助泛型方法可给同一个未知类型建立临时参数关系，不能任意统一两个独立捕获。",
+    "prerequisites": [
+      "G12"
+    ],
+    "sourceRefs": [
+      "S06"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  },
+  {
+    "id": "fe0f884f-e8d2-5198-b72e-291741076fe0",
+    "code": "G14",
+    "title": "擦除与桥接",
+    "summary": "编译后的擦除签名与可能生成的桥接方法维护多态关系；声明元数据可能保留泛型签名。",
+    "prerequisites": [
+      "G06",
+      "G08"
+    ],
+    "sourceRefs": [
+      "S07"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  },
+  {
+    "id": "75aeda23-330c-5781-8c77-c2fd06cbd6cb",
+    "code": "G15",
+    "title": "可具体化类型与数组",
+    "summary": "参数化类型通常不可具体化；new List<String>[n] 与 new List<?>[n] 的合法性不同。",
+    "prerequisites": [
+      "G14"
+    ],
+    "sourceRefs": [
+      "S08"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  },
+  {
+    "id": "848bb2a6-12c2-509d-911b-483e16924551",
+    "code": "G16",
+    "title": "raw、堆污染与可变参数",
+    "summary": "raw 和 unchecked 操作可能引入堆污染；SafeVarargs 是需要作者承担正确性责任的声明。",
+    "prerequisites": [
+      "G15"
+    ],
+    "sourceRefs": [
+      "S01",
+      "S08"
+    ],
+    "javaRelease": 17,
+    "revision": 1,
+    "status": "seed-not-published"
+  }
+]

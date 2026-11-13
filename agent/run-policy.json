@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0",
+  "status": "planned",
+  "maxPlanNodes": 24,
+  "maxConcurrentSteps": 3,
+  "maxModelStepsPerNode": 6,
+  "maxRepairRounds": 2,
+  "maxAutoRunsPerWorkspace": 1,
+  "eventDebounceMillis": 800,
+  "maxContextTokens": 12000,
+  "simpleAction": {
+    "maxToolCalls": 2,
+    "maxModelCalls": 2,
+    "maxOutputTokens": 1500,
+    "maxWallMillis": 45000
+  },
+  "complexRun": {
+    "maxTokens": 100000,
+    "maxWallMillis": 900000,
+    "maxCostMicros": 2000000,
+    "currency": "USD",
+    "note": "内部起始配额，不是价格或耗时预测；用户/服务端可下调，上调必须重新授权预算"
+  },
+  "requiredGuards": [
+    "owner-scope",
+    "role-tools",
+    "acyclic-plan",
+    "input-schema",
+    "snapshot-version",
+    "run-epoch",
+    "lease",
+    "atomic-budget-reservation",
+    "artifact-base-revision",
+    "output-schema",
+    "evidence-review"
+  ],
+  "finalOutputStatus": [
+    "COMPLETED",
+    "PARTIAL",
+    "FAILED",
+    "CANCELLED"
+  ]
+}

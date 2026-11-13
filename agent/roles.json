@@ -1,0 +1,152 @@
+[
+  {
+    "id": "conductor",
+    "name": "学习总协调",
+    "responsibility": "解析目标、选择专家、提出可校验计划",
+    "allowedTools": [
+      "retrieveContext",
+      "inspectRun"
+    ],
+    "status": "planned",
+    "authority": "current-owner-workspace-only"
+  },
+  {
+    "id": "learning-designer",
+    "name": "教学设计专家",
+    "responsibility": "学习目标、先修诊断、由浅入深的活动设计",
+    "allowedTools": [
+      "searchEvidence",
+      "getOwnLearning"
+    ],
+    "status": "planned",
+    "authority": "current-owner-workspace-only"
+  },
+  {
+    "id": "generics-expert",
+    "name": "泛型理论专家",
+    "responsibility": "类型规则、边界、反例与规范对应",
+    "allowedTools": [
+      "searchEvidence",
+      "requestCompile"
+    ],
+    "status": "planned",
+    "authority": "current-owner-workspace-only"
+  },
+  {
+    "id": "code-coach",
+    "name": "代码与编译专家",
+    "responsibility": "诊断复现、代码修复、API签名核验",
+    "allowedTools": [
+      "requestCompile",
+      "getOwnAttempt"
+    ],
+    "status": "planned",
+    "authority": "current-owner-workspace-only"
+  },
+  {
+    "id": "retrieval-researcher",
+    "name": "知识研究专家",
+    "responsibility": "查询分解、版本过滤、证据充分性",
+    "allowedTools": [
+      "searchEvidence"
+    ],
+    "status": "planned",
+    "authority": "current-owner-workspace-only"
+  },
+  {
+    "id": "learner-coach",
+    "name": "个性化学习教练",
+    "responsibility": "误区与提示记录驱动复练，不直接修改成绩",
+    "allowedTools": [
+      "getOwnLearning",
+      "getOwnAttempt"
+    ],
+    "status": "planned",
+    "authority": "current-owner-workspace-only"
+  },
+  {
+    "id": "document-author",
+    "name": "文档专家",
+    "responsibility": "结构化解释、可编辑章节、规范导出",
+    "allowedTools": [
+      "composeDocument"
+    ],
+    "status": "planned",
+    "authority": "current-owner-workspace-only"
+  },
+  {
+    "id": "slide-designer",
+    "name": "幻灯片专家",
+    "responsibility": "内容分镜、可编辑版式、讲解备注",
+    "allowedTools": [
+      "composeSlides"
+    ],
+    "status": "planned",
+    "authority": "current-owner-workspace-only"
+  },
+  {
+    "id": "visual-explainer",
+    "name": "图解与图片专家",
+    "responsibility": "准确类型图及可选生成插图",
+    "allowedTools": [
+      "composeDiagram",
+      "generateImage"
+    ],
+    "status": "planned",
+    "authority": "current-owner-workspace-only"
+  },
+  {
+    "id": "audio-director",
+    "name": "音频专家",
+    "responsibility": "讲解脚本、术语词典、分段语音",
+    "allowedTools": [
+      "synthesizeAudio"
+    ],
+    "status": "planned",
+    "authority": "current-owner-workspace-only"
+  },
+  {
+    "id": "video-director",
+    "name": "视频专家",
+    "responsibility": "分镜、时间线、素材复用、局部重渲染",
+    "allowedTools": [
+      "composeTimeline",
+      "renderVideo"
+    ],
+    "status": "planned",
+    "authority": "current-owner-workspace-only"
+  },
+  {
+    "id": "interactive-builder",
+    "name": "交互学习专家",
+    "responsibility": "受控DSL错题块、预测与复练联动",
+    "allowedTools": [
+      "composeInteraction",
+      "requestCompile"
+    ],
+    "status": "planned",
+    "authority": "current-owner-workspace-only"
+  },
+  {
+    "id": "fact-checker",
+    "name": "事实核验专家",
+    "responsibility": "核对规范、证据蕴含及编译事实",
+    "allowedTools": [
+      "searchEvidence",
+      "requestCompile"
+    ],
+    "status": "planned",
+    "authority": "current-owner-workspace-only"
+  },
+  {
+    "id": "experience-reviewer",
+    "name": "体验评审专家",
+    "responsibility": "溢出、焦点、交互可达及渲染质量",
+    "allowedTools": [
+      "previewArtifact",
+      "validateInteraction"
+    ],
+    "status": "planned",
+    "authority": "current-owner-workspace-only"
+  }
+]

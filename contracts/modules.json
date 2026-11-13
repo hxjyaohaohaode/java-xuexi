@@ -1,0 +1,114 @@
+[
+  {
+    "id": "M01",
+    "package": "identity",
+    "name": "身份、权限与偏好",
+    "owner": "B",
+    "status": "planned"
+  },
+  {
+    "id": "M02",
+    "package": "curriculum",
+    "name": "知识地图与阅读",
+    "owner": "A",
+    "status": "planned"
+  },
+  {
+    "id": "M03",
+    "package": "lab",
+    "name": "类型关系实验室",
+    "owner": "B",
+    "status": "planned"
+  },
+  {
+    "id": "M04",
+    "package": "compiler",
+    "name": "编译诊断与沙箱",
+    "owner": "B",
+    "status": "planned"
+  },
+  {
+    "id": "M05",
+    "package": "exercise",
+    "name": "练习与类型安全改造",
+    "owner": "B",
+    "status": "planned"
+  },
+  {
+    "id": "M06",
+    "package": "learning",
+    "name": "学习证据与复习",
+    "owner": "B",
+    "status": "planned"
+  },
+  {
+    "id": "M07",
+    "package": "ingestion",
+    "name": "数据集与知识加工",
+    "owner": "A",
+    "status": "planned"
+  },
+  {
+    "id": "M08",
+    "package": "retrieval",
+    "name": "检索与证据",
+    "owner": "A",
+    "status": "planned"
+  },
+  {
+    "id": "M09",
+    "package": "tutor",
+    "name": "教学专家与证据核验",
+    "owner": "A",
+    "status": "planned"
+  },
+  {
+    "id": "M10",
+    "package": "publishing",
+    "name": "内容审核与发布",
+    "owner": "A",
+    "status": "planned"
+  },
+  {
+    "id": "M11",
+    "package": "evidence",
+    "name": "协作评测与答辩证据",
+    "owner": "A+B",
+    "status": "planned"
+  },
+  {
+    "id": "M12",
+    "package": "operations",
+    "name": "运行与安全",
+    "owner": "B",
+    "status": "planned"
+  },
+  {
+    "id": "M13",
+    "package": "orchestration",
+    "name": "动态专家编排与任务运行时",
+    "owner": "A",
+    "status": "planned"
+  },
+  {
+    "id": "M14",
+    "package": "artifacts",
+    "name": "多模态学习创作工坊",
+    "owner": "B",
+    "status": "planned"
+  },
+  {
+    "id": "M15",
+    "package": "workspace",
+    "name": "学习工作空间与上下文记忆",
+    "owner": "A",
+    "status": "planned"
+  },
+  {
+    "id": "M16",
+    "package": "notebook",
+    "name": "高交互错题集与复练作品",
+    "owner": "B",
+    "status": "planned"
+  }
+]

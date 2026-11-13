@@ -1,0 +1,30 @@
+name: Architecture baseline checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  contracts-and-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python scripts/verify.py
+      - run: python scripts/verify_mysql.py
+  java-semantics-and-http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - run: mvn -B -ntp -f backend/pom.xml verify

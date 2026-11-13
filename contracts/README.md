@@ -1,0 +1,71 @@
+# API 操作索引
+
+机器契约：[openapi.json](openapi.json)。只有 health/framework 已实现；其余 planned 是后续开发契约。复杂跨表约束不能只依赖 JSON Schema。
+
+| 方法 | 路径（前缀 /api/v1） | operationId | 模块 | 状态 |
+|---|---|---|---|---|
+| GET | `/health` | `getHealth` | M12 | implemented |
+| GET | `/framework` | `getFramework` | M12 | implemented |
+| GET | `/auth/csrf` | `getCsrf` | M01 | planned |
+| POST | `/auth/register` | `register` | M01 | planned |
+| POST | `/auth/session` | `login` | M01 | planned |
+| GET | `/auth/session` | `getSession` | M01 | planned |
+| DELETE | `/auth/session` | `logout` | M01 | planned |
+| GET | `/me/preferences` | `getPreferences` | M01 | planned |
+| PUT | `/me/preferences` | `updatePreferences` | M01 | planned |
+| GET | `/concepts` | `listConcepts` | M02 | planned |
+| GET | `/concepts/{id}` | `getConcept` | M02 | planned |
+| GET | `/exercises` | `listExercises` | M05 | planned |
+| GET | `/exercises/{id}` | `getExercise` | M05 | planned |
+| POST | `/attempts` | `submitAttempt` | M05 | planned |
+| GET | `/attempts/{id}` | `getAttempt` | M05 | planned |
+| POST | `/compile-jobs` | `submitCompile` | M04 | planned |
+| GET | `/compile-jobs/{id}` | `getCompile` | M04 | planned |
+| POST | `/compile-jobs/{id}/cancel` | `cancelCompile` | M04 | planned |
+| POST | `/labs/sessions` | `createLab` | M03 | planned |
+| GET | `/labs/sessions/{id}` | `getLab` | M03 | planned |
+| POST | `/learning-events` | `recordReading` | M06 | planned |
+| GET | `/me/progress` | `getProgress` | M06 | planned |
+| GET | `/me/reviews` | `listReviews` | M06 | planned |
+| GET | `/knowledge/search` | `searchKnowledge` | M08 | planned |
+| PATCH | `/me/reviews/{id}` | `updateReview` | M06 | planned |
+| POST | `/tutor/conversations` | `createConversation` | M09 | planned |
+| GET | `/tutor/conversations` | `listConversations` | M09 | planned |
+| GET | `/tutor/conversations/{id}` | `getConversation` | M09 | planned |
+| POST | `/tutor/requests` | `createTutorRequest` | M09 | planned |
+| GET | `/tutor/requests/{id}` | `getTutorRequest` | M09 | planned |
+| POST | `/tutor/requests/{id}/cancel` | `cancelTutorRequest` | M09 | planned |
+| POST | `/admin/sources` | `createSource` | M07 | planned |
+| POST | `/admin/chunks` | `createChunkRevision` | M10 | planned |
+| POST | `/admin/exercises` | `createExerciseRevision` | M10 | planned |
+| POST | `/admin/reviews` | `reviewContent` | M10 | planned |
+| POST | `/admin/releases` | `createRelease` | M10 | planned |
+| GET | `/admin/releases/{id}` | `getRelease` | M10 | planned |
+| POST | `/admin/releases/{id}/publish` | `publishRelease` | M10 | planned |
+| POST | `/admin/releases/{id}/activate` | `activateHistoricalRelease` | M10 | planned |
+| POST | `/workspaces` | `createWorkspace` | M15 | planned |
+| GET | `/workspaces` | `listWorkspaces` | M15 | planned |
+| GET | `/workspaces/{id}` | `getWorkspace` | M15 | planned |
+| PATCH | `/workspaces/{id}` | `updateWorkspace` | M15 | planned |
+| POST | `/workspaces/{id}/events` | `recordWorkspaceEvent` | M15 | planned |
+| POST | `/workspaces/{id}/context` | `createContextSnapshot` | M15 | planned |
+| POST | `/workspaces/{id}/goals` | `createLearningGoal` | M15 | planned |
+| GET | `/workspaces/{id}/memories` | `listWorkspaceMemories` | M15 | planned |
+| POST | `/memories/{id}/revoke` | `revokeMemory` | M15 | planned |
+| POST | `/workspaces/{id}/agent-runs` | `createAgentRun` | M13 | planned |
+| GET | `/agent-runs/{id}` | `getAgentRun` | M13 | planned |
+| POST | `/agent-runs/{id}/commands` | `commandAgentRun` | M13 | planned |
+| GET | `/agent-runs/{id}/events` | `listRunEvents` | M13 | planned |
+| GET | `/workspaces/{id}/artifacts` | `listArtifacts` | M14 | planned |
+| POST | `/workspaces/{id}/artifacts` | `createArtifact` | M14 | planned |
+| GET | `/artifacts/{id}` | `getArtifact` | M14 | planned |
+| POST | `/artifacts/{id}/revisions` | `saveArtifactRevision` | M14 | planned |
+| GET | `/artifacts/{id}/revisions` | `getArtifactRevision` | M14 | planned |
+| POST | `/artifacts/{id}/exports` | `createExport` | M14 | planned |
+| GET | `/export-jobs/{id}` | `getExport` | M14 | planned |
+| POST | `/export-jobs/{id}/cancel` | `cancelExport` | M14 | planned |
+| POST | `/workspaces/{id}/assets` | `createAssetUpload` | M14 | planned |
+| POST | `/assets/{id}/complete` | `completeAssetUpload` | M14 | planned |
+| GET | `/assets/{id}/download` | `getAssetDownload` | M14 | planned |
+| POST | `/workspaces/{id}/notebooks` | `buildInteractiveNotebook` | M16 | planned |
+| POST | `/notebooks/{id}/actions` | `dispatchNotebookAction` | M16 | planned |

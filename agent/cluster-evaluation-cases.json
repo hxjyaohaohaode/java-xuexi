@@ -1,0 +1,362 @@
+[
+  {
+    "id": "CL01",
+    "scenario": "三道PECS错题→互动册+PPT+微课",
+    "expected": "任务图覆盖全部必需产物，引用同发布，独立复练回流",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL02",
+    "scenario": "只问List不变性",
+    "expected": "选短路径，不启动所有专家或媒体任务",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL03",
+    "scenario": "学生未求助但连续同误区失败",
+    "expected": "协作模式提供可关闭建议；安静模式不打断",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL04",
+    "scenario": "文本目标改为图解",
+    "expected": "重新路由图解专家，保留已验证事实",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL05",
+    "scenario": "只改PPT背景色",
+    "expected": "不重新调用泛型专家或重编译相同代码",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL06",
+    "scenario": "修改教学结论",
+    "expected": "使对应PPT页/旁白句/视频镜头过期并局部重做",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL07",
+    "scenario": "两位专家对extends读写意见矛盾",
+    "expected": "规范和javac裁决，不能多数投票",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL08",
+    "scenario": "检索到错误版本",
+    "expected": "拒绝混入当前release并给出证据缺口",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL09",
+    "scenario": "当前选区在请求中改变",
+    "expected": "旧结果保留原选区归属，不覆盖新选区",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL10",
+    "scenario": "相同事件重复送达",
+    "expected": "一个run或一次既有任务接续，不重复收费",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL11",
+    "scenario": "任务图隐藏子环",
+    "expected": "校验拒绝，不能部分执行有环计划",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL12",
+    "scenario": "模型要求shell工具",
+    "expected": "能力准入拒绝，不转发字符串命令",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL13",
+    "scenario": "并行写同一作品",
+    "expected": "租约+CAS串行提交，保留冲突候选",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL14",
+    "scenario": "用户中途暂停",
+    "expected": "提高epoch，停止新派发，旧worker不能提交",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL15",
+    "scenario": "暂停后恢复",
+    "expected": "重读快照、权限、预算和撤回状态",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL16",
+    "scenario": "模型响应超时结果未知",
+    "expected": "记录UNKNOWN先对账，避免盲目重试",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL17",
+    "scenario": "视频供应商失败",
+    "expected": "PPT与错题集仍可交付，run为PARTIAL",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL18",
+    "scenario": "费用预留并发竞争",
+    "expected": "原子检查不超预算，不隐藏已产生费用",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL19",
+    "scenario": "重复修复无进展",
+    "expected": "到修复上限停止并解释未通过条件",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL20",
+    "scenario": "服务重启后续作",
+    "expected": "根据持久作业号恢复，不重放已完成外部副作用",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL21",
+    "scenario": "读取他人作品ID",
+    "expected": "统一404，消息/缓存/素材均不能旁路",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL22",
+    "scenario": "输入资料夹带指令",
+    "expected": "仅作为资料，不提升工具权限或改成绩",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL23",
+    "scenario": "记忆撤回",
+    "expected": "新prompt、索引、摘要立即排除撤回内容",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL24",
+    "scenario": "错误推断的学习偏好",
+    "expected": "学生可修正；不当作客观成绩",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL25",
+    "scenario": "音频术语发音错误",
+    "expected": "重做单句并重新对齐字幕与视频",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL26",
+    "scenario": "PPT长代码溢出",
+    "expected": "布局门禁失败，重排/分页后再导出",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL27",
+    "scenario": "交互块含自由JS",
+    "expected": "schema/renderer拒绝，保留安全可编辑源",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL28",
+    "scenario": "错题块提前包含答案",
+    "expected": "教学门禁失败，分级提示不透出答案",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL29",
+    "scenario": "导出固定旧revision",
+    "expected": "明确标旧版本，不把旧job标为新版本成功",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "CL30",
+    "scenario": "离线学习包",
+    "expected": "阅读/媒体/受控交互可用，模型/编译需联网明示",
+    "variants": [
+      "single-agent",
+      "fixed-multi-agent",
+      "adaptive-cluster"
+    ],
+    "actual": null,
+    "status": "NOT_RUN"
+  }
+]
