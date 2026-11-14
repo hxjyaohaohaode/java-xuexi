@@ -226,10 +226,13 @@ function ArtifactEditor({ artifact }: { artifact: Artifact }) {
   );
   useEffect(() => {
     if (remote.data) {
+      const version = remote.data;
       setDraft((d) => {
-        const result = reconcileDraft(d, remote.data!);
+        // Ignore the whole obsolete snapshot, including references and conflict state.
+        if (version.revision < d.baseRevision) return d;
+        const result = reconcileDraft(d, version);
         setConflict(result.conflict);
-        return { ...result.draft, inputRefs: d.dirty ? d.inputRefs : remote.data!.inputRefs };
+        return { ...result.draft, inputRefs: d.dirty ? d.inputRefs : version.inputRefs };
       });
     }
   }, [remote.data]);
@@ -310,15 +313,18 @@ function ArtifactEditor({ artifact }: { artifact: Artifact }) {
     setSourcePicker(false);
     setSaved(false);
   };
-  const blocked = remote.data?.reviewStatus === 'STALE' || remote.data?.reviewStatus === 'REJECTED';
+  const currentRemote =
+    remote.data && remote.data.revision >= draft.baseRevision ? remote.data : null;
+  const blocked =
+    currentRemote?.reviewStatus === 'STALE' || currentRemote?.reviewStatus === 'REJECTED';
   return (
-    <>
+    <fieldset disabled={mutation.busy} aria-label="作品源稿编辑" style={{ minWidth: 0 }}>
       <header className="editor-heading">
         <div>
           <h2>{artifact.title}</h2>
           <div className="row wrap">
             <Badge>基线版本 {draft.baseRevision}</Badge>
-            {remote.data && <Status value={remote.data.reviewStatus} />}
+            {currentRemote && <Status value={currentRemote.reviewStatus} />}
             <span className="muted small">
               {remote.loading && draft.baseRevision === 0
                 ? '正在读取固定源版本'
@@ -359,24 +365,24 @@ function ArtifactEditor({ artifact }: { artifact: Artifact }) {
               >
                 读取最新版本
               </button>
-              {remote.data && (
+              {currentRemote && (
                 <>
                   <button
                     onClick={() => {
-                      setDraft((d) => ({ ...d, baseRevision: remote.data!.revision }));
+                      setDraft((d) => ({ ...d, baseRevision: currentRemote.revision }));
                       setConflict(false);
                       mutation.clearError();
                     }}
                   >
-                    已比较，保留本地稿并以版本 {remote.data.revision} 为基线
+                    已比较，保留本地稿并以版本 {currentRemote.revision} 为基线
                   </button>
                   <button
                     className="text-button"
                     onClick={() => {
                       setDraft({
-                        baseRevision: remote.data!.revision,
-                        content: remote.data!.content,
-                        inputRefs: remote.data!.inputRefs,
+                        baseRevision: currentRemote.revision,
+                        content: currentRemote.content,
+                        inputRefs: currentRemote.inputRefs,
                         dirty: false,
                       });
                       setConflict(false);
@@ -387,7 +393,7 @@ function ArtifactEditor({ artifact }: { artifact: Artifact }) {
                   </button>
                   <details>
                     <summary>查看服务器最新内容</summary>
-                    <SourcePreview content={remote.data.content} />
+                    <SourcePreview content={currentRemote.content} />
                   </details>
                 </>
               )}
@@ -410,7 +416,7 @@ function ArtifactEditor({ artifact }: { artifact: Artifact }) {
               <NotebookBlock
                 key={block.id}
                 artifact={artifact}
-                version={remote.data}
+                version={currentRemote}
                 block={block}
                 disabled={blocked || !can('NOTEBOOK_ACTIONS')}
               />
@@ -484,7 +490,7 @@ function ArtifactEditor({ artifact }: { artifact: Artifact }) {
           blocked={blocked}
         />
       )}
-    </>
+    </fieldset>
   );
 }
 function StructuredEditor({

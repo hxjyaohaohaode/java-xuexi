@@ -297,10 +297,25 @@ function GoalEditor({ goal, onChange }: { goal: Goal; onChange: () => void }) {
   );
 }
 let clearThemeListener: undefined | (() => void);
-export function applyPreference(preference: Preference) {
+let preferenceOwner: string | null = null;
+let appliedPreferenceRevision = -1;
+export function setPreferenceOwner(owner: string | null) {
+  if (owner === preferenceOwner) return;
+  clearThemeListener?.();
+  clearThemeListener = undefined;
+  preferenceOwner = owner;
+  appliedPreferenceRevision = -1;
+  delete document.documentElement.dataset.theme;
+  delete document.documentElement.dataset.reducedMotion;
+  document.documentElement.style.removeProperty('--code-font-size');
+}
+export function applyPreference(preference: Preference, owner: string) {
+  if (owner !== preferenceOwner || preference.revision <= appliedPreferenceRevision) return;
+  appliedPreferenceRevision = preference.revision;
   clearThemeListener?.();
   const media = matchMedia('(prefers-color-scheme: dark)');
   const apply = () => {
+    if (owner !== preferenceOwner || preference.revision !== appliedPreferenceRevision) return;
     const dark = preference.theme === 'dark' || (preference.theme === 'system' && media.matches);
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
     document.documentElement.dataset.reducedMotion = String(preference.reducedMotion);
@@ -313,7 +328,7 @@ export function applyPreference(preference: Preference) {
   } else clearThemeListener = undefined;
 }
 export function SettingsPage() {
-  const { workspace, capabilities, can, tick, refresh } = useWorkspace();
+  const { workspace, session, capabilities, can, tick, refresh } = useWorkspace();
   const preference = useResource<Preference>(can('USER_PREFERENCES') ? '/me/preferences' : null);
   const remoteWorkspace = useResource<Workspace>(`/workspaces/${workspace.id}`, tick);
   const [draft, setDraft] = useState<Preference | null>(null);
@@ -323,13 +338,13 @@ export function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const mutation = useMutation();
   useEffect(() => {
-    if (preference.data && !dirty) {
+    if (preference.data && !dirty && (!draft || preference.data.revision > draft.revision)) {
       setDraft(preference.data);
-      applyPreference(preference.data);
+      applyPreference(preference.data, session.userId);
     }
-  }, [preference.data, dirty]);
+  }, [preference.data, dirty, draft, session.userId]);
   const edit = (patch: Partial<Preference>) => {
-    if (draft) {
+    if (draft && !mutation.busy) {
       setDraft({ ...draft, ...patch });
       setDirty(true);
       setSaved(false);
@@ -369,10 +384,10 @@ export function SettingsPage() {
                       { headers: { 'If-Match': `"${draft.revision}"` } },
                     ),
                   (p) => {
-                    setDraft(p);
+                    setDraft((current) => (current && current.revision > p.revision ? current : p));
                     setDirty(false);
                     setSaved(true);
-                    applyPreference(p);
+                    applyPreference(p, session.userId);
                   },
                 );
               }}
@@ -380,6 +395,7 @@ export function SettingsPage() {
               <Field label="主题">
                 <select
                   value={draft.theme}
+                  disabled={mutation.busy}
                   onChange={(e) => edit({ theme: e.target.value as Preference['theme'] })}
                 >
                   <option value="system">跟随系统</option>
@@ -393,6 +409,7 @@ export function SettingsPage() {
                   min={14}
                   max={24}
                   value={draft.codeFontSize}
+                  disabled={mutation.busy}
                   onChange={(e) => edit({ codeFontSize: Number(e.target.value) })}
                 />
               </Field>
@@ -400,6 +417,7 @@ export function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={draft.reducedMotion}
+                  disabled={mutation.busy}
                   onChange={(e) => edit({ reducedMotion: e.target.checked })}
                 />
                 减少界面动效

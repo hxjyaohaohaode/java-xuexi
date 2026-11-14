@@ -107,7 +107,7 @@ export function Auth({ onSession }: { onSession: (session: Session) => void }) {
                 autoComplete="username"
                 autoCapitalize="none"
                 spellCheck={false}
-                pattern="[a-z0-9][a-z0-9_.-]{2,63}"
+                pattern="[a-z0-9][a-z0-9_.\-]{2,63}"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={mutation.busy}

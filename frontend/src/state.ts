@@ -33,6 +33,8 @@ export function reconcileDraft(
   draft: SourceDraft,
   remote: { revision: number; content: ArtifactContent },
 ) {
+  // A read started before a successful save must not rewind that save's baseline.
+  if (remote.revision < draft.baseRevision) return { draft, conflict: false };
   return draft.dirty
     ? { draft, conflict: remote.revision !== draft.baseRevision }
     : {

@@ -40,6 +40,7 @@ const failures = [];
 const pageErrors = [];
 const consoleErrors = [];
 const results = [];
+let failurePages = [];
 const expectedConflict = { url: '', active: false, responses: 0, consoleMessages: 0 };
 function monitor(p) {
   p.on('pageerror', (error) => pageErrors.push(error.message));
@@ -77,7 +78,7 @@ const check = async (name, work) => {
     results.push({ name, status: 'PASS' });
     console.log('PASS');
   } catch (error) {
-    results.push({ name, status: 'FAIL', error: String(error) });
+    results.push({ name, status: 'FAIL', error: sanitizeText(error) });
     failures.push(name);
     console.log('FAIL');
     throw error;
@@ -95,11 +96,90 @@ let workspaceA, artifactId;
 const username = `web_${Date.now().toString(36)}`;
 const password = `BrowserStudy-${crypto.randomUUID()}`;
 const docTitle = '浏览器验收 · 泛型学习讲义';
+const sanitizeText = (value) =>
+  String(value)
+    .replaceAll(username, '[redacted username]')
+    .replaceAll(password, '[redacted password]');
+// Field wraps its label, control and optional hint. A select's option text also
+// participates in getByLabel(), so match the actual title span and its own select.
+const fieldSelect = (p, title) =>
+  p
+    .locator('label.field')
+    .filter({ has: p.getByText(title, { exact: true }) })
+    .locator('select');
+const capturePage = async (p, filename) => {
+  await p.evaluate(async () => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+  await p.screenshot({ path: path.join(out, filename), fullPage: true });
+};
+const describeControls = async (p) => {
+  // Never collect input/textarea values, cookies, storage, headers or raw HTML.
+  const summary = await p.evaluate(() => {
+    const text = (value) =>
+      String(value || '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 180);
+    const visible = (el) => {
+      const rect = el.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden';
+    };
+    return {
+      route: location.pathname + location.hash,
+      headings: Array.from(document.querySelectorAll('h1,h2,h3'))
+        .filter(visible)
+        .slice(0, 30)
+        .map((el) => text(el.textContent)),
+      controls: Array.from(document.querySelectorAll('input,textarea,select,button,a[href]'))
+        .slice(0, 200)
+        .map((el) => ({
+          tag: el.tagName.toLowerCase(),
+          type: el.getAttribute('type'),
+          id: el.id || undefined,
+          ariaLabel: text(el.getAttribute('aria-label')) || undefined,
+          labels: Array.from(el.labels || []).map((label) =>
+            text(
+              label.querySelector(':scope > span')?.textContent ||
+                Array.from(label.childNodes)
+                  .filter((node) => node.nodeType === Node.TEXT_NODE)
+                  .map((node) => node.textContent)
+                  .join(' '),
+            ),
+          ),
+          text: el.matches('button,a') ? text(el.textContent) : undefined,
+          options: el.matches('select')
+            ? Array.from(el.options).map((option) => text(option.textContent))
+            : undefined,
+          disabled: 'disabled' in el ? el.disabled : undefined,
+          visible: visible(el),
+        })),
+    };
+  });
+  return JSON.parse(sanitizeText(JSON.stringify(summary)));
+};
 try {
   await check('register, login and create workspace through visible controls', async () => {
     await page.goto(base);
     await page.getByRole('button', { name: '注册', exact: true }).click();
-    await page.getByLabel('用户名', { exact: false }).fill(username);
+    const usernameInput = page.getByLabel('用户名', { exact: false });
+    const usernamePattern = await usernameInput.evaluate((input, fixture) => {
+      // HTML pattern uses Unicode sets and implicitly matches the entire value.
+      const pattern = new RegExp(`^(?:${input.pattern})$`, 'v');
+      return {
+        acceptsFixture: pattern.test(fixture),
+        acceptsAllAllowedPunctuation: pattern.test('student-name_01.test'),
+        acceptsWhitespace: pattern.test('bad name'),
+      };
+    }, username);
+    assert.deepEqual(usernamePattern, {
+      acceptsFixture: true,
+      acceptsAllAllowedPunctuation: true,
+      acceptsWhitespace: false,
+    });
+    await usernameInput.fill(username);
     await page.getByLabel('密码', { exact: false }).fill(password);
     await page.getByRole('button', { name: '注册并进入', exact: true }).click();
     await page.getByLabel('工作空间名称', { exact: true }).fill('浏览器验收 A');
@@ -109,7 +189,7 @@ try {
     assert.match(workspaceA, /^[a-f0-9-]{36}$/);
     await page.getByRole('button', { name: '记录已读', exact: true }).click();
     await page.getByText('服务端已记录本次阅读。', { exact: true }).waitFor();
-    await page.screenshot({ path: path.join(out, '01-learning-desktop.png'), fullPage: true });
+    await capturePage(page, '01-learning-desktop.png');
   });
   await check(
     'wrong answer creates evidence notebook and notebook submits a real new attempt',
@@ -147,10 +227,16 @@ try {
       await page.locator('.notebook-block .evidence-card').first().waitFor();
       await page.setViewportSize({ width: 390, height: 844 });
       assert.ok(await page.getByRole('button', { name: '提交复练', exact: true }).isVisible());
+      const radio = page.locator('.notebook-block .answer-option input[type="radio"]').first();
+      const radioBox = await radio.boundingBox();
+      assert.ok(radioBox && radioBox.width > 0 && radioBox.width < 32);
+      assert.ok(radioBox && radioBox.height > 0 && radioBox.height < 32);
+      const answerBox = await page.locator('.notebook-block .answer-option').first().boundingBox();
+      assert.ok(answerBox && answerBox.height >= 44);
       assert.ok(
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
       );
-      await page.screenshot({ path: path.join(out, '02-notebook-mobile.png'), fullPage: true });
+      await capturePage(page, '02-notebook-mobile.png');
       await page.setViewportSize({ width: 1440, height: 1000 });
     },
   );
@@ -159,7 +245,7 @@ try {
     async () => {
       await page.getByRole('button', { name: '新建作品', exact: true }).click();
       await page.getByLabel('作品名称', { exact: true }).fill(docTitle);
-      await page.getByLabel('源稿类型', { exact: true }).selectOption('DOCUMENT');
+      await fieldSelect(page, '源稿类型').selectOption('DOCUMENT');
       await page.getByRole('button', { name: '创建源稿', exact: true }).click();
       await page.getByRole('heading', { name: docTitle, exact: true }).waitFor();
       artifactId = decodeURIComponent(new URL(page.url()).hash.split('/')[1]);
@@ -169,7 +255,10 @@ try {
       await page.getByRole('button', { name: '保存版本', exact: true }).click();
       await page.getByText('服务端已保存版本 1。', { exact: true }).waitFor();
       await page.getByRole('button', { name: '预览', exact: true }).click();
-      await page.getByText(text, { exact: true }).waitFor();
+      const preview = page.locator('.document-preview .preserve-text');
+      await preview.waitFor();
+      assert.equal(await preview.textContent(), text);
+      assert.equal(await page.locator('.document-preview script').count(), 0);
       assert.equal(await page.evaluate(() => window.__unsafePreview), undefined);
       await page.getByRole('button', { name: '生成导出文件', exact: true }).click();
       await page.getByRole('link', { name: '下载 MARKDOWN', exact: true }).waitFor();
@@ -182,7 +271,7 @@ try {
       const exported = await readFile(destination, 'utf8');
       assert.ok(exported.includes('List&lt;Integer&gt;'));
       assert.ok(!exported.includes('<script>'));
-      await page.screenshot({ path: path.join(out, '03-document-desktop.png'), fullPage: true });
+      await capturePage(page, '03-document-desktop.png');
     },
   );
   await check(
@@ -280,10 +369,44 @@ try {
       await page.getByRole('heading', { name: '规则求值结果', exact: true }).waitFor();
       assert.ok(await page.locator('.lab-result').getByText('拒绝', { exact: true }).isVisible());
       await page.getByRole('link', { name: '偏好与能力', exact: true }).click();
-      await page.getByLabel('主题', { exact: true }).selectOption('light');
-      await page.getByLabel('减少界面动效', { exact: true }).check();
-      await page.getByRole('button', { name: '保存显示偏好', exact: true }).click();
-      await page.getByText('服务端已保存显示偏好。', { exact: true }).waitFor();
+      const initial = await context.request.get(`${base}/api/v1/me/preferences`);
+      assert.equal(initial.status(), 200);
+      let revision = (await initial.json()).revision;
+      const theme = fieldSelect(page, '主题');
+      const reducedMotion = page.getByLabel('减少界面动效', { exact: true });
+      for (const desired of [
+        { theme: 'dark', reducedMotion: true },
+        { theme: 'light', reducedMotion: false },
+      ]) {
+        await theme.selectOption(desired.theme);
+        if (desired.reducedMotion) await reducedMotion.check();
+        else await reducedMotion.uncheck();
+        const [response] = await Promise.all([
+          page.waitForResponse(
+            (r) => r.url() === `${base}/api/v1/me/preferences` && r.request().method() === 'PUT',
+          ),
+          page.getByRole('button', { name: '保存显示偏好', exact: true }).click(),
+        ]);
+        assert.equal(response.status(), 200);
+        const saved = await response.json();
+        assert.equal(saved.revision, revision + 1);
+        assert.equal(saved.theme, desired.theme);
+        assert.equal(saved.reducedMotion, desired.reducedMotion);
+        await page.getByText('服务端已保存显示偏好。', { exact: true }).waitFor();
+        assert.equal(await theme.inputValue(), desired.theme);
+        assert.equal(await reducedMotion.isChecked(), desired.reducedMotion);
+        assert.deepEqual(
+          await page.evaluate(() => ({
+            theme: document.documentElement.dataset.theme,
+            reducedMotion: document.documentElement.dataset.reducedMotion,
+          })),
+          { theme: desired.theme, reducedMotion: String(desired.reducedMotion) },
+        );
+        const persisted = await context.request.get(`${base}/api/v1/me/preferences`);
+        assert.equal(persisted.status(), 200);
+        assert.deepEqual(await persisted.json(), saved);
+        revision = saved.revision;
+      }
     },
   );
   await check(
@@ -318,9 +441,15 @@ try {
     },
   );
 } catch (error) {
-  console.error(String(error));
-  await writeFile(path.join(out, 'failure-dom.txt'), await page.locator('body').innerText()).catch(
-    () => {},
+  console.error(sanitizeText(error));
+  failurePages = await Promise.all(
+    context.pages().map(async (p) => {
+      try {
+        return await describeControls(p);
+      } catch (snapshotError) {
+        return { summaryUnavailable: sanitizeText(snapshotError) };
+      }
+    }),
   );
 } finally {
   const report = {
@@ -328,6 +457,7 @@ try {
     baseUrl: base,
     at: new Date().toISOString(),
     results,
+    failurePages,
     pageErrors,
     consoleErrors,
     expectedConflict: {
@@ -342,7 +472,10 @@ try {
       'No model provider was invoked; tutor used EVIDENCE_ONLY.',
     ],
   };
-  await writeFile(path.join(out, 'browser-report.json'), JSON.stringify(report, null, 2) + '\n');
+  await writeFile(
+    path.join(out, 'browser-report.json'),
+    sanitizeText(JSON.stringify(report, null, 2)) + '\n',
+  );
   await browser.close();
 }
 if (failures.length) process.exitCode = 1;

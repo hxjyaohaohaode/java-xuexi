@@ -1,19 +1,19 @@
 # v0.4 当前运行验收记录
 
-这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-14T04:24:09.780601+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
+这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-14T04:46:31.040831+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
 
 ## 实际结果
 
 | 门禁 | 已观察的结果 | 证明边界 |
 |---|---|---|
 | Java/Maven | 275 项，失败/错误/跳过均为 0 | 固定语言语义、SQL/HTTP、任务、导师协议夹具、内容发布与来源/导出回归 |
-| 契约与架构 | 584 项通过；84 个 implemented / 8 个 planned 操作 | 真实路由、schema、模块依赖、索引和文档对应；数量不是产品完成率 |
+| 契约与架构 | 583 项通过；84 个 implemented / 8 个 planned 操作 | 真实路由、schema、模块依赖、索引和文档对应；数量不是产品完成率 |
 | MySQL 8.4 | 119 项；69 张业务表；六条迁移 | 真实 MySQL 建表、复合外键、唯一性、CHECK、JSON与新增队列/审核/导出约束 |
 | MySQL 隔离 | 2 项 | 实际 READ COMMITTED、锁后可见已提交写入，并有 REPEATABLE READ 对照 |
 | MySQL 内容服务 | 14 项 | 实际 JDBC 引擎证明；人工录入、审核hash、发布/激活及并发服务在真实 MySQL 上复跑 |
-| H2 实际 HTTP/重启 | 63 项；93 次请求 | 单独进程、真实会话/CSRF、业务链、真实下载、重启保留与撤回后失效 |
-| MySQL 实际 HTTP/重启 | 74 项；96 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
-| 前端类型/构建/单元 | 18 项单元通过；TypeScript 与 Vite 构建成功 | 编译与组件/状态逻辑；不等于真实浏览器布局验收 |
+| H2 实际 HTTP/重启 | 63 项；95 次请求 | 单独进程、真实会话/CSRF、业务链、真实下载、重启保留与撤回后失效 |
+| MySQL 实际 HTTP/重启 | 74 项；95 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
+| 前端类型/构建/单元 | 27 项单元通过；TypeScript 与 Vite 构建成功 | 编译与组件/状态逻辑；不等于真实浏览器布局验收 |
 | 前端 DOM + 真实 HTTP | 9 条链通过 | 无服务端响应 mock；jsdom 驱动真实后端；不验证浏览器布局/原生下载 |
 | Chromium 浏览器 | 本地被环境阻止；精确提交由 GitHub Actions 运行 | 本地 AF_UNIX 创建受限，不记成通过；远端 Playwright失败会阻断CI |
 
@@ -74,8 +74,8 @@ python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.4.0-S
 
 ## 当前包与源码
 
-- JAR SHA-256：`dbb9489227249420ae0587c9cb78a0898fae19072d2ed651266932bd67a1cf86`。
-- 源码文件数：234；SHA-256 摘要：`06efca99b6d984ab0a9e8023bb6c34856b9ab980ae5f7439f0a3948f8bd99cc7`。
+- JAR SHA-256：`2679fef7cd70e54ec1482cef732133c8c38a9e4c437b8340e1e667ac0160a6b1`。
+- 源码文件数：236；SHA-256 摘要：`66b8ff797d675d278e97de6d1f7645268262f384a779cc9d6746a3acd23c1d64`。
 - 只有本记录与机器报告自身从源码摘要排除，避免循环hash；迁移、代码、契约、页面、锁文件、文档及CI均包含。
 - 发布提交的远端结果在 [GitHub Actions](https://github.com/hxjyaohaohaode/java-xuexi/actions)核对，不能把本地环境结果当成Java17/Ubuntu/Chromium结果。
 

@@ -80,11 +80,6 @@ jobs:
         run: mvn -B -ntp -f backend/pom.xml verify
       - name: Verify HTTP linkage and restart persistence on H2 files
         run: python scripts/smoke_runtime.py --profile h2
-      - name: Install Chromium for the real browser integration
-        working-directory: frontend
-        run: npx playwright install --with-deps chromium
-      - name: Verify the real browser against the packaged application
-        run: python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.4.0-SNAPSHOT.jar
       - name: Ensure an independent MySQL client is available
         run: |
           if ! command -v mysql >/dev/null 2>&1; then
@@ -113,6 +108,11 @@ jobs:
         run: python scripts/verify_transaction_isolation.py
       - name: Verify editorial transactions against real MySQL
         run: python scripts/verify_content_mysql.py
+      - name: Install Chromium for the real browser integration
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Verify the real browser against the packaged application
+        run: python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.4.0-SNAPSHOT.jar
       - name: Upload sanitized runtime and isolation reports only
         if: always()
         uses: actions/upload-artifact@v4

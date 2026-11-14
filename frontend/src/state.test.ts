@@ -59,6 +59,24 @@ describe('workspace state invariants', () => {
       reconcileDraft({ baseRevision: 1, content: c, dirty: false }, { revision: 2, content: c }),
     ).toEqual({ draft: { baseRevision: 2, content: c, dirty: false }, conflict: false });
   });
+  it.each([false, true])(
+    'ignores a late older revision without rollback or false conflict (dirty=%s)',
+    (dirty) => {
+      const content: ArtifactContent = {
+        kind: 'DOCUMENT',
+        schemaVersion: '1.0',
+        title: 'just saved, possibly edited again',
+        blocks: [],
+      };
+      const draft = { baseRevision: 3, content, dirty };
+      const result = reconcileDraft(draft, {
+        revision: 2,
+        content: { ...content, title: 'late pre-save read' },
+      });
+      expect(result.draft).toBe(draft);
+      expect(result.conflict).toBe(false);
+    },
+  );
   it('does not submit while composing Chinese or inserting a newline', () => {
     expect(
       submitOnEnter({ key: 'Enter', shiftKey: false, nativeEvent: { isComposing: true } }),

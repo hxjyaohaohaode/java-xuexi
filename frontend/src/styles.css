@@ -113,7 +113,7 @@ button.primary:hover,
 .button.primary:hover {
   filter: brightness(0.94);
 }
-input:not([type='checkbox']):not([type='range']),
+input:not([type='checkbox']):not([type='radio']):not([type='range']),
 select,
 textarea {
   width: 100%;
@@ -129,10 +129,13 @@ textarea {
   resize: vertical;
   min-height: 94px;
 }
-input[type='checkbox'] {
+input[type='checkbox'],
+input[type='radio'] {
   accent-color: var(--accent);
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
   flex: none;
 }
 input[type='range'] {
@@ -1138,6 +1141,7 @@ details[open] > summary {
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  min-height: 44px;
   padding: 17px 16px;
   border: 1px solid var(--line);
   border-radius: 9px;

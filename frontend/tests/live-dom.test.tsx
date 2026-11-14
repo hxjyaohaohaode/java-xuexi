@@ -256,11 +256,29 @@ it('connects the rendered workspace learning, notebook, artifact, tutor and inva
       }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('link', { name: '偏好与能力' }));
-    await user.selectOptions(await screen.findByLabelText('主题'), 'light');
-    await user.click(screen.getByLabelText('减少界面动效'));
-    await user.click(screen.getByRole('button', { name: '保存显示偏好' }));
-    await screen.findByText('服务端已保存显示偏好。', {}, { timeout: 25000 });
-    expect(document.documentElement.dataset.theme).toBe('light');
+    const initial = await fetch('/api/v1/me/preferences');
+    expect(initial.status).toBe(200);
+    let revision = (await initial.json()).revision;
+    const theme = await screen.findByLabelText('主题');
+    const reducedMotion = screen.getByLabelText('减少界面动效') as HTMLInputElement;
+    for (const desired of [
+      { theme: 'dark', reducedMotion: true },
+      { theme: 'light', reducedMotion: false },
+    ]) {
+      await user.selectOptions(theme, desired.theme);
+      if (reducedMotion.checked !== desired.reducedMotion) await user.click(reducedMotion);
+      await user.click(screen.getByRole('button', { name: '保存显示偏好' }));
+      await screen.findByText('服务端已保存显示偏好。', {}, { timeout: 25000 });
+      expect(theme).toHaveValue(desired.theme);
+      expect(reducedMotion.checked).toBe(desired.reducedMotion);
+      expect(document.documentElement.dataset.theme).toBe(desired.theme);
+      expect(document.documentElement.dataset.reducedMotion).toBe(String(desired.reducedMotion));
+      const response = await fetch('/api/v1/me/preferences');
+      expect(response.status).toBe(200);
+      const saved = await response.json();
+      expect(saved).toMatchObject({ ...desired, revision: revision + 1 });
+      revision = saved.revision;
+    }
   });
   await step('second workspace isolates persisted attempts and source drafts', async () => {
     await user.click(screen.getByRole('button', { name: '新建工作空间' }));

@@ -22,7 +22,7 @@ import { Auth } from './pages/Auth';
 import { Learning } from './pages/Learning';
 import { Practice } from './pages/Practice';
 import { ProgressPage } from './pages/Progress';
-import { applyPreference, MemoryPage, SettingsPage } from './pages/Personal';
+import { applyPreference, MemoryPage, setPreferenceOwner, SettingsPage } from './pages/Personal';
 import { Studio } from './pages/Studio';
 import { Tutor } from './pages/Tutor';
 import { Lab } from './pages/Lab';
@@ -59,12 +59,14 @@ export default function App() {
       .then((s) => {
         if (generation !== sessionGeneration.current) return;
         api.scope = s.userId;
+        setPreferenceOwner(s.userId);
         setSession(s);
       })
       .catch((e) => {
         if (generation !== sessionGeneration.current) return;
         if (e.status === 401) {
           api.clearPrivateState();
+          setPreferenceOwner(null);
           setSession(null);
         } else setBootError(e);
       });
@@ -74,11 +76,13 @@ export default function App() {
     api.onUnauthenticated = () => {
       sessionGeneration.current += 1;
       api.clearPrivateState();
+      setPreferenceOwner(null);
       setSession(null);
     };
     return () => {
       sessionGeneration.current += 1;
       api.onUnauthenticated = null;
+      setPreferenceOwner(null);
     };
   }, []);
   if (bootError)
@@ -99,6 +103,7 @@ export default function App() {
         onSession={(s) => {
           sessionGeneration.current += 1;
           api.scope = s.userId;
+          setPreferenceOwner(s.userId);
           setSession(s);
         }}
       />
@@ -110,6 +115,7 @@ export default function App() {
       onLogout={() => {
         sessionGeneration.current += 1;
         api.clearPrivateState();
+        setPreferenceOwner(null);
         setSession(null);
       }}
     />
@@ -123,8 +129,8 @@ function SignedIn({ session, onLogout }: { session: Session; onLogout: () => voi
     capabilities.data?.enabled.includes('USER_PREFERENCES') ? '/me/preferences' : null,
   );
   useEffect(() => {
-    if (preference.data) applyPreference(preference.data);
-  }, [preference.data]);
+    if (preference.data) applyPreference(preference.data, session.userId);
+  }, [preference.data, session.userId]);
   const [selected, setSelected] = useState(() =>
     readSaved<string>(`tf.workspace.${session.userId}`, ''),
   );

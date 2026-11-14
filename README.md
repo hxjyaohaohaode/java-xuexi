@@ -1,5 +1,7 @@
 # 泛型工坊 TypeForge · 联动学习工作台
 
+[![当前 main 验证](https://github.com/hxjyaohaohaode/java-xuexi/actions/workflows/baseline.yml/badge.svg?branch=main)](https://github.com/hxjyaohaohaode/java-xuexi/actions/workflows/baseline.yml)
+
 围绕 **Java 泛型与类型安全**，把知识、实验、练习、学习证据、导师、作品和复练放在同一个有版本、有来源的学习工作空间里。
 
 **当前版本 v0.4 已有真实 React 页面和持久 Java 后端。** 你可以注册自己的账户、创建固定课程版本的工作空间、阅读与检索、做题、进行有限类型实验、把真实错题变成可复练的交互源稿、保存文档和幻灯片、导出真实文件，并修改目标或撤回记忆。导师提供明确标识的证据整理模式；配置服务器模型后可以调用实际 HTTP 模型。内容工作台 API 提供来源登记、手工采集、草稿版本、独立编辑审核、发布及历史版本激活。

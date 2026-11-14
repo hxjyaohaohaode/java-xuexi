@@ -103,7 +103,7 @@ def main():
                        'python':subprocess.check_output(['python','--version'],text=True).strip(),
                        'localMysqlMode':'official isolated server; not Docker'},
         'sourceSnapshot':current,
-        'java':{'command':'mvn -B -ntp -f backend/pom.xml clean verify; package refreshed after frontend-only session-fence fix','result':'PASS',**totals,'jarSha256':jar_hash,'suites':suites},
+        'java':{'command':'mvn -B -ntp -f backend/pom.xml clean verify; package refreshed after verified frontend-only fixes','result':'PASS',**totals,'jarSha256':jar_hash,'suites':suites},
         'frontend':frontend,'contractsAndArchitecture':static,'mysqlSchema':mysql,'mysqlIsolation':isolation,'mysqlEditorial':editorial,
         'httpAndRestart':{profile:{k:v for k,v in value.items() if k in {'result','profile','engine','startedAt','finishedAt','jarSha256','scope','checks','unexpectedLogErrors'}}
                           | {'httpRequests':len(value['http']),'shutdown':'graceful process termination and restart against the same database'} for profile,value in smokes.items()},
