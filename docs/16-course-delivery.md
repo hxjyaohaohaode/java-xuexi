@@ -2,7 +2,7 @@
 
 本章依据用户提供的《Java课程大作业要求.docx》逐项整理。用户明确教师已认可两人组，因此两名成员共同覆盖数据知识、全栈和智能体三个职责域，不虚构第三名成员。主题始终为Java泛型与类型安全；自由创作、Agent编排和多模态产物必须帮助理解、实践和验证该主题。
 
-[40项课程验收矩阵](../evidence/course-acceptance-matrix.csv)将原文要求、评分项、模块、责任人、设计证据和需要实际执行的检查连接起来。矩阵中的`final_acceptance`指最终课程验收，不是本轮架构代码的测试状态。未完成的网页、模型接入、媒体生成和正式答辩不能因架构测试通过而被自动标成已验收。
+[40项课程验收矩阵](../evidence/course-acceptance-matrix.csv)将原文要求、评分项、模块、责任人、设计证据和需要实际执行的检查连接起来。矩阵中的`final_acceptance`指最终课程验收，不是本轮架构代码的测试状态。已有学习网页与可配置模型适配器不等于完整产品或真实供应商教学效果已验收；媒体、沙箱、自主编排与正式答辩也不能因架构测试通过而自动标成已完成。
 
 ## 1. 评分与证据
 
@@ -28,7 +28,7 @@ CSV中的`category_points`是所属评分项总分，会在该评分项的多个
 | 01 需求分析 | 背景、目标、用户场景、功能/非功能、模块、特色 | [整体框架](00-blueprint.md)、[模块](02-modules.md) | 对照最终实现修订；未实现范围与原因写清 |
 | 02 数据集与知识库 | 原始资料及来源、清洗后文件、字段/规模说明、知识库文件/结构/存储与构建、检索测试 | [知识设计](05-knowledge.md)、`knowledge/` | 原始材料、知识卡、索引三层不同；文件存在、统计可重跑、来源可追溯 |
 | 03 系统设计 | 架构、模块、前后端交互、业务流程、核心模块说明 | [架构](01-architecture.md)、[API](04-api.md)、[工作空间状态](15-frontend-state-network.md) | 图、契约、代码、实际部署一致；必须包含异常与恢复路径 |
-| 04 数据库 | 总体设计、ER、每字段类型/主外键/说明、表关系、SQL、主要测试数据 | [数据库目录](../database/README.md)、[字段字典](../database/data-dictionary.md)、[Agent字段字典](../database/agent-data-dictionary.md) | 真实MySQL业务读写和事务测试；文件数据库/H2测试不自动证明MySQL部署 |
+| 04 数据库 | 总体设计、ER、每字段类型/主外键/说明、表关系、SQL、主要测试数据 | [数据库目录](../database/README.md)、[唯一累积字段字典](../database/data-dictionary.md) | 真实MySQL业务读写和事务测试；文件数据库/H2测试不自动证明MySQL部署 |
 | 05 完整源码 | 前端、后端、Agent、知识库构建/检索、SQL、依赖、运行说明 | [仓库说明](../README.md)、`backend/`、`frontend/`、`agent/` | 干净环境重建并完成主要流程；不以源码目录存在代替功能实现 |
 | 06 智能体设计与测试 | 角色、系统/任务提示词、模型调用、RAG集成、工作流、问答案例、效果和失败分析 | [智能体](06-agent.md)、[集群](10-agent-cluster.md)、[作品](11-learning-artifacts.md) | 记录实际模型/检索/编译结果；计划JSON或离线内核不是在线专家集群的质量证明 |
 | 07 研发过程 | 选题、分工、讨论、数据/数据库/开发/集成、调试与问题修复 | [两人计划](09-team-plan.md)、`evidence/` | 对准实际提交和日志；保留有意义的失败，不能补造个人历史 |
@@ -63,7 +63,7 @@ AI协作生成的架构/代码如实记入AI上下文。学生接手后的审阅
 
 [GenericEdgeCasesTest](../backend/src/test/java/io/typeforge/GenericEdgeCasesTest.java)为20个固定编译夹具标注conceptCode、规范段落、release、成功/失败和warning预期，另有4项运行/反射检查。与原有测试分开，避免把新增案例误计为旧基线成果。
 
-本轮先以完整JDK 21.0.13.0.2编译测试类（`--release 17 -Xlint:all -Werror`），临时runner真实调用全部24项断言，24项通过；编译夹具19项使用`--release 17`，1项使用`--release 15`验证历史差异。最终Maven/JUnit的整仓结果以本轮总验收报告为准。初次使用环境自带裁剪运行时缺少ct.sym、无法支持release17，因此换用完整JDK；未通过修改目标release掩盖环境问题。
+这些固定语义测试已纳入当前 Maven/JUnit；新增 `FiniteTypeEvaluatorTest` 对实际有限类型规则逐例调用 javac 进行结果对照。执行使用完整 JDK，目标仍为 Java 17；历史行为差异案例明确使用对应 release。具体测试数量、JDK、运行命令和实际结果统一由[当前验收记录](../evidence/runtime-review.md)记录，避免继续引用早期临时 runner 的旧通过数。
 
 | 容易误讲的点 | 新增验证与教学边界 | 一手依据 |
 |---|---|---|

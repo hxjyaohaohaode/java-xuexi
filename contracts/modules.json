@@ -18,7 +18,7 @@
     "package": "lab",
     "name": "类型关系实验室",
     "owner": "B",
-    "status": "planned"
+    "status": "partial"
   },
   {
     "id": "M04",
@@ -46,7 +46,7 @@
     "package": "ingestion",
     "name": "数据集与知识加工",
     "owner": "A",
-    "status": "planned"
+    "status": "partial"
   },
   {
     "id": "M08",
@@ -60,14 +60,14 @@
     "package": "tutor",
     "name": "教学专家与证据核验",
     "owner": "A",
-    "status": "planned"
+    "status": "partial"
   },
   {
     "id": "M10",
     "package": "publishing",
     "name": "内容审核与发布",
     "owner": "A",
-    "status": "planned"
+    "status": "partial"
   },
   {
     "id": "M11",

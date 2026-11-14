@@ -1,130 +1,86 @@
-# v0.3 持久化学习运行时验收
+# v0.4 当前运行验收记录
 
-日期：2026-11-13。基线提交：`e13e01bb004d1d6ee9423dc9004f25237e744421`。本记录描述本轮实际执行的本地检查；对应源码与 GitHub Actions 结果以本文件所在提交为准。机器可读的逐项结果、测试案例名和文件指纹见 [runtime-check-results.json](runtime-check-results.json)。
+这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-14T04:24:09.780601+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
 
-**结论：本轮已实现运行时的本地门禁通过；完整课程产品尚未完成。** 当前有 72 个契约操作，其中 41 个具有真实 Spring 路由实现、31 个仍规划中；126 个 Schema；16 个模块中 10 个为部分实现、6 个为规划中；56 张业务表，不含 Flyway 元数据表。`businessReady=false`，模型、前端、编译沙箱和媒体导出不可用时仍明确返回或展示能力缺口。
+## 实际结果
 
-## 1 实际通过的验证
-
-| 验证层 | 实际结果 | 可以证明的范围 |
+| 门禁 | 已观察的结果 | 证明边界 |
 |---|---|---|
-| Maven `verify` | **168 项，失败 0、错误 0、跳过 0** | 固定 Java 语义、计划与持久运行时、事务/权限/版本/事件及所列集成案例；成功打包 Spring Boot jar |
-| Python 契约与架构门禁 | **516 项通过** | 72 路由设计与 41 实际路由、Schema 正反例、Java 包依赖无环、SQL 字典、追踪关系、前端状态协议和 209 条参考台账等静态一致性 |
-| 真实 MySQL 迁移与约束 | **80 项通过，MySQL 8.4.13，56 张表** | V001/V002/V003、草稿种子、原生 JSON、复合外键、唯一性、CHECK、预算和运行时新增约束 |
-| 真实 MySQL 事务隔离回归 | **2 项通过** | 实际 JDBC 连接的隔离级别；先普通读、后获取用户行锁的事务在锁后看见最新提交 |
-| 打包服务 + H2 文件库 | **48 项通过** | 真实 HTTP 学习链、停止进程、同库重启及逐项持久状态对比 |
-| 打包服务 + 真实 MySQL | **59 项通过** | 同一 HTTP/重启场景，并由独立 MySQL 客户端检查真实业务行 |
+| Java/Maven | 275 项，失败/错误/跳过均为 0 | 固定语言语义、SQL/HTTP、任务、导师协议夹具、内容发布与来源/导出回归 |
+| 契约与架构 | 584 项通过；84 个 implemented / 8 个 planned 操作 | 真实路由、schema、模块依赖、索引和文档对应；数量不是产品完成率 |
+| MySQL 8.4 | 119 项；69 张业务表；六条迁移 | 真实 MySQL 建表、复合外键、唯一性、CHECK、JSON与新增队列/审核/导出约束 |
+| MySQL 隔离 | 2 项 | 实际 READ COMMITTED、锁后可见已提交写入，并有 REPEATABLE READ 对照 |
+| MySQL 内容服务 | 14 项 | 实际 JDBC 引擎证明；人工录入、审核hash、发布/激活及并发服务在真实 MySQL 上复跑 |
+| H2 实际 HTTP/重启 | 63 项；93 次请求 | 单独进程、真实会话/CSRF、业务链、真实下载、重启保留与撤回后失效 |
+| MySQL 实际 HTTP/重启 | 74 项；96 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
+| 前端类型/构建/单元 | 18 项单元通过；TypeScript 与 Vite 构建成功 | 编译与组件/状态逻辑；不等于真实浏览器布局验收 |
+| 前端 DOM + 真实 HTTP | 9 条链通过 | 无服务端响应 mock；jsdom 驱动真实后端；不验证浏览器布局/原生下载 |
+| Chromium 浏览器 | 本地被环境阻止；精确提交由 GitHub Actions 运行 | 本地 AF_UNIX 创建受限，不记成通过；远端 Playwright失败会阻断CI |
 
-不同层的检查粒度不同，不把这些数字相加包装为同一种测试覆盖率。静态门禁通过不代表规划中的操作已实现，建表成功也不单独代表业务正确。
+Java 各测试类的实际汇总：
 
-### Java 测试组成
-
-| 测试类 | 实际案例数 | 失败 / 错误 / 跳过 |
+| 测试类 | 测试数 | 失败 / 错误 / 跳过 |
 |---|---:|---|
 | `AgentPlanTest` | 25 | 0 / 0 / 0 |
 | `DurableAgentRuntimeTest` | 26 | 0 / 0 / 0 |
 | `EvidenceWorkflowRecoveryTest` | 2 | 0 / 0 / 0 |
+| `FiniteTypeEvaluatorTest` | 42 | 0 / 0 / 0 |
 | `FrameworkHttpTest` | 3 | 0 / 0 / 0 |
 | `FullLearningLoopIntegrationTest` | 9 | 0 / 0 / 0 |
 | `GenericEdgeCasesTest` | 24 | 0 / 0 / 0 |
 | `GenericSemanticsTest` | 34 | 0 / 0 / 0 |
+| `InteractiveLearningTest` | 14 | 0 / 0 / 0 |
 | `KnowledgeRuntimeTest` | 11 | 0 / 0 / 0 |
 | `LocalLearningToolsTest` | 8 | 0 / 0 / 0 |
 | `RootArchitectureInvariantsTest` | 24 | 0 / 0 / 0 |
 | `TransactionIsolationTest` | 2 | 0 / 0 / 0 |
+| `TutorHttpBoundaryTest` | 3 | 0 / 0 / 0 |
+| `TutorHttpProviderTest` | 17 | 0 / 0 / 0 |
+| `TutorRuntimeTest` | 16 | 0 / 0 / 0 |
+| `WorkspaceArtifactReferenceTest` | 1 | 0 / 0 / 0 |
+| `ContentWorkbenchIntegrationTest` | 14 | 0 / 0 / 0 |
 
-泛型语义测试使用仓库中的可信固定夹具。新增边界案例涉及 Java 17 的参数化 `instanceof`、通配符捕获、PECS、静态类型参数、递归/交叉边界、擦除、数组运行时检查、泛型异常和堆污染等。它们不是在线执行学生源码的沙箱，也不是对整个 Java 规范的穷尽证明。
+## 本轮已覆盖的关键联动
 
-## 2 真实 HTTP 与重启场景
+真实作答经 outbox 和幂等 receipt 进入独立题目家族证据与复习；错题块调用同一判分服务。阅读/预测/作品生成只记活动，不给虚假的掌握分。
 
-两次烟测使用同一个打包产物，各自创建独立合成学习者。未使用预置可登录账户，没有创建真实学生成绩或人类审核记录。
+导师会话绑定本人空间和固定课程；请求固定上下文、租约、epoch 与额度。MODEL协议使用本地真实 HTTP 服务夹具测试响应、超时、异常与引用，EVIDENCE_ONLY真实检索。夹具不是付费供应商教学质量证明。取消、账号禁用、归档、deadline、自然过期、来源撤回及未知计量均有独立边界。
 
-1. 验证未登录读取及缺少 CSRF 的写入被拒绝；注册只授予 LEARNER，登录轮换会话与 CSRF。
-2. 读取显式启用的演示发布、16 个概念和版本化知识，确认公开题目 DTO 不泄漏答案；演示共 16 张卡、12 道客观题。
-3. 创建工作空间、目标和 USER_STATED 记忆；相同幂等键/正文返回同一资源，不同正文返回冲突。
-4. 服务端判错一次真实选择提交，等待 outbox 产生独立学习证据和待复练项；重复作答不增加独立样本。
-5. 从本人真实提交生成 DRAFT 错题源稿，检查具体作答、知识出处、不可变版本和内容哈希。
-6. 搜索单独的 PECS 术语，确认命中真实发布来源；固定本地证据工作流执行两个实际工具、保存输出引用，模型 token 与费用保持真实的零。
-7. 未配置的自然语言 STEER、用户代码执行明确拒绝；另一已登录用户访问该空间、提交、作品与运行均失败。
-8. 等待工作空间投影追上顺序事件，检查无死信、事件与运行历史游标连续。
-9. 正常停止服务进程，再连接同一数据库启动。旧会话不可复用，重新登录后，作答、作品 DSL/血缘、运行结果、事件、学习投影、复练项和记忆与重启前相同。
-10. MySQL 模式另用独立客户端在重启前后核对 HTTP 创建的用户、工作空间、提交、作品和运行的 UUID 行；检查日志无意外服务/定时任务错误，jar 未在验证中变化。
+回答转文档保存完整来源；作品保存、上下文读取、错题动作、导出与下载复核有界祖先图、实际内容hash和叶子来源。自然到期不依赖提前产生撤回事件。导出固定 renderer 与源 revision，真实字节与终态同事务；HTML/SVG转义、非法XML字符、失效来源和越权均不会变成可用下载。
 
-这是实际网络 HTTP 和独立服务进程的验证，不是 MockMvc 冒充部署。重启采用正常进程终止，不声称已完成掉电、磁盘损坏、数据库主从切换或付费供应商外部作业的崩溃恢复演练。
+人工来源录入、独立作者/审核人、完整审核hash、发布manifest、历史激活CAS在真实应用服务中完成。演示内容的REVIEWED标记不被当作正式审核；被损坏的答案结构受控拒绝。
 
-## 3 关键不变量与实际修复
-
-| 不变量 | 实现或回归覆盖 |
-|---|---|
-| 权限与引用来自服务端 | 本人/同工作空间/固定发布校验；嵌入私人引用不能绕过输入清单；来源必须满足真实 revision/hash |
-| 命令不会因重试重复生效 | 用户/操作/幂等键绑定规范化请求 hash；同键不同请求冲突；判分、记录和事件在同一事务 |
-| 业务事实与投影可恢复 | 业务与 outbox 同事务，消费效果与 receipt 同事务；失败回滚，有限重试；同毫秒事件仍按实际流头投递 |
-| 锁后读取最新事实 | 明确 READ_COMMITTED 配合用户/工作空间行锁，避免 MySQL 默认 RR 的旧读视图使并发准入重复使用同一剩余额度 |
-| 旧运行不能覆盖新状态 | lease、epoch、planRevision 与执行身份共同准入；暂停/取消/失效/重规划后旧结果拒绝；人工保存清除旧作品写租约 |
-| 消耗有界且可核对 | 金额与 token 事务预留、守恒和幂等结算；结果未知不自动盲重试收费；当前两个本地工具不虚构模型使用量 |
-| 学习证据不被活动量污染 | 客观判分固定题版；同题家族首次独立作答去重；跨空间乱序按权威作答时间处理；无足够独立样本不输出精确掌握概率 |
-| 学生可以撤回记忆 | 撤回清空正文并使衍生作品失效；作品依赖在保存准入时保持可处理的有界闭包；覆盖直接/间接扇出边界 |
-| 版本依赖可解释 | 拒绝间接循环、未解析私人引用、伪来源 hash 和快照间接绕过；已过期的依据不能悄悄升级成新证据 |
-| 失效任务能够收敛 | 无效上下文使任务进入 WAITING_USER、提升 epoch 并让出队列；真实数据库故障不被误当用户输入问题 |
-| 跨层契约一致 | 真实路由、输入/输出 Schema、DTO、字段字典、能力矩阵、前端游标与追踪表共同校验 |
-
-本轮真实 HTTP 初次执行还发现了中英混排检索缺陷：原先把“PECS是……”合为词项，单独搜索 PECS 无命中。已修正脚本边界分词、将索引标识更新为 `bm25-script-boundaries-v2`，并补入 PECS、Number、List、SafeVarargs 的独立检索及大小写回归后重跑验证。
-
-最终独立审查发现的撤回扇出边界也纳入修复：不能允许持续保存依赖，直到某一天才因失效上限而拒绝用户撤回。修复在保存阶段约束受影响闭包，并保留超限失败时原有作品/版本和用户草稿的可恢复性；详见相关实现与回归案例。
-
-对绕过服务准入、人工导入的旧直接索引或已越界数据，返回明确的 `LINEAGE_REBUILD_REQUIRED` 并回滚，要求维护修复；不声称已完成部分撤回。正常 API 保存的有界图由新的传递索引与准入规则保证可处理。
-
-上述审查还识别出 MySQL 默认 RR 下的旧快照风险：普通归属读取早于行锁时，获锁并不自动刷新后续普通读的快照。因此业务事务显式使用 READ_COMMITTED，并保留原有行锁；另在真实 MySQL 上通过两个独立事务与同步屏障验证这一语义，没有用 H2 的默认隔离结果替代。
-
-256 个有效依赖的回归产生大量真实事件后，还暴露了 outbox 逐候选重复查询前驱的慢路径。独立 SQL 测量和线程栈将问题定位到投递器；改为分组取得每个空间最早的未投递事件，再筛选重试条件，保留事务内顺序复核。测试仍实际消费至少 770 条事件并核对投影追上，不能靠删除测试积压宣称性能问题已修复；这也不等于生产负载基准。
-
-## 4 环境与复现
-
-本地实际环境为 Linux、Python 3.12.14、Maven 3.9.9、完整 JDK 21.0.13.0.2；项目编译目标仍为 `--release 17`，启用 `-Xlint:all -Werror`。环境原有裁剪运行时缺少 `ct.sym`，因此改用完整 JDK，没有降低语言目标。JDK 17 运行的独立证据由 GitHub Actions 对本提交给出，不用本地 Java 21 结果冒充 Java 17 运行结果。
-
-Spring Boot 为 3.5.16；文件数据库为 H2 2.3.232；本地真实数据库为隔离启动的官方 MySQL 8.4.13。未以 H2 MySQL 兼容模式替代真实 MySQL。MySQL 的迁移/约束测试与应用烟测使用不同专用库，不改用户现有数据库。
-
-普通开发环境从仓库根目录执行：
+## 可重跑命令
 
 ```sh
 python -m pip install -r requirements-dev.txt
+python scripts/sync_contract_index.py --check
 python scripts/verify.py
-mvn -B -ntp -f backend/pom.xml verify
-python scripts/smoke_runtime.py --profile h2
+npm ci --prefix frontend
+npm run check --prefix frontend
+npm run build --prefix frontend
+mvn -B -ntp -f backend/pom.xml clean verify
 python scripts/verify_mysql.py
+python scripts/smoke_runtime.py --profile h2
+# 已准备专用 MYSQL_TEST_CONNECTION 后：
+python scripts/smoke_runtime.py --profile mysql
+python scripts/verify_transaction_isolation.py
+python scripts/verify_content_mysql.py
+# Chromium 需按 frontend/README.md 安装：
+python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.4.0-SNAPSHOT.jar
 ```
 
-最后一条默认启动隔离 Docker MySQL；本地验收由于执行环境无 Docker，使用脚本支持的显式隔离连接模式与任务私有 MySQL 服务。外部模式会多记录专用 schema 的显式重置检查，因此 CI 全新 Docker 库的检查数量可能少一项，业务约束检查相同。
+上述为常规开发命令。生成此报告还需把静态输出存到 `.work/verification.json`、Vitest JSON报告存到 `frontend/test-results/unit-report.json`，并用 `browser_runtime.py --driver dom` 对最终同一 JAR 跑真实HTTP DOM测试。隔离测试会单独产生MySQL报告；最终整套 Maven生成完整Surefire汇总。所有报告必须来自当前构建，不用历史成功结果补齐。
 
-MySQL HTTP 烟测使用 `python scripts/smoke_runtime.py --profile mysql`，要求显式的 `MYSQL_TEST_CONNECTION` 指向回环测试服务器及保留名称的应用库。CI 的 [prepare_ci_mysql.py](../scripts/prepare_ci_mysql.py) 负责仅在一次性 runner service 中检查环境并建立随机、限定 schema 的账户；不要用普通业务数据库替代。
+## 当前包与源码
 
-同一显式隔离连接下执行 `python scripts/verify_transaction_isolation.py`，单独重跑两项事务隔离回归。报告要求真实 MySQL 引擎、实际会话 READ-COMMITTED、锁后新读，以及显式 REPEATABLE READ 负对照确实读到旧值；H2 或旧的 Surefire XML 不能通过此门禁。这两次执行单列，不重复加入 Maven 唯一用例数。
+- JAR SHA-256：`dbb9489227249420ae0587c9cb78a0898fae19072d2ed651266932bd67a1cf86`。
+- 源码文件数：234；SHA-256 摘要：`06efca99b6d984ab0a9e8023bb6c34856b9ab980ae5f7439f0a3948f8bd99cc7`。
+- 只有本记录与机器报告自身从源码摘要排除，避免循环hash；迁移、代码、契约、页面、锁文件、文档及CI均包含。
+- 发布提交的远端结果在 [GitHub Actions](https://github.com/hxjyaohaohaode/java-xuexi/actions)核对，不能把本地环境结果当成Java17/Ubuntu/Chromium结果。
 
-[工作流](../.github/workflows/baseline.yml) 在 Ubuntu 24.04/Temurin 17 上重新构建、执行 H2 HTTP/重启验证，并在 MySQL 8.4.13 service 上执行同一业务验证。只上传指定的脱敏 JSON 报告，不上传连接凭据或应用日志目录。本地验收文件不提前宣称远程 Actions 成功；远程结论以同一 commit 的实际 run 为准。
+## 仍未完成和未验证
 
-## 5 版本与证据指纹
+真实供应商模型的教学效果、费用账单、完整多专家规划、用户代码沙箱、完整多媒体与二进制导出、全课程人工审核、生产负载与备份恢复、正式答辩和个人贡献均不在本轮PASS范围内。逐模块剩余事项及代码入口见 [接手指南](../docs/02-modules.md)。最终40项课程验收保持独立，不因自动测试通过而自动升级。
 
-本轮未改写 V001/V002 历史迁移；运行时增量位于 V003。SHA-256：
-
-| 文件或产物 | SHA-256 |
-|---|---|
-| `V001__baseline.sql` | `e1a1cbb328f092f3b7788cfd57d846d526e0cd8a3de3fefde42cf11879b47896` |
-| `V002__agent_workspace.sql` | `1c13efbb02105da2daa8b38898fba87185bb5751c2992fe00c7c501b13abe730` |
-| `V003__runtime_integrity.sql` | `7270c47cb6d93910ce6d9e6da390fc9608454493296272676e7248bd9ef426fa` |
-| 本地已测试 jar | `3cc2e6b2efe401c13bd2847a7ad37d879830da89068ea7f6924e7c302ce3ea3b` |
-| 156 个交付源文件快照 | `2304ef8f3c99298cd3fd9f7ef0b44fd3950edb9d6e1c6f8a658823a2c0b92ed8` |
-
-快照算法和逐文件 hash 存于 JSON 报告；为避免自引用，排除本报告及其 JSON 两个输出。该快照不是 Git commit ID。测试原始输出位于本地 `.work` 与 Maven `target/surefire-reports`，不把可含环境路径或凭据文件的临时目录纳入 Git。CI 后续原始检查证据由 Actions 管理。
-
-## 6 尚未验收的产品能力与成本边界
-
-- 浏览器前端、209 项交互的实际运行、可访问性、性能和 SSE 均未实测；状态协议与取舍台账已经细化。
-- 两个真实本地只读工具已经接入；14 个专家角色仍是设计。没有调用教学 LLM、自主模型规划、收费供应商或完成多 Agent 对照评测。
-- 8 类作品源结构支持受约束存储；不等于已产出 DOCX/PPTX/PDF、图片、音视频文件或可运行的交互播放器。
-- 演示内容是明确标记的原创 fixture，未伪造正式双人审核。完整题库、真实原始资料加工、发布撤回管线及大规模检索质量还需后续开发。
-- 当前代码题执行返回能力不可用；固定编译测试不能证明任意学生代码的安全隔离。
-- 同一用户的跨空间短写事务按统一锁顺序串行，换取归属、family 去重和事务一致性；未进行生产负载、延迟 SLO、备份恢复或长期存储治理验收。
-- 正常重启已验证；不宣称覆盖所有多进程竞争、硬杀恢复和外部系统不确定结果。外部副作用仍需各真实供应商幂等/查询契约与验收。
-- [课程 40 项最终验收矩阵](course-acceptance-matrix.csv) 保留实际未验收状态。教师评分、两位成员个人贡献与答辩理解不能由这些测试数字替代。
-
-后续开发应沿已贯通的数据链补齐前端、模型导师、编译 worker 与作品渲染，每接入一项能力同时更新真实适配器、权限/版本检查、契约、能力矩阵和运行证据。
+旧基线报告和重复字段字典已清理；历史保留在Git。V001–V006为合法升级链，由 `database/migrations.lock.json`锁定，不能为清理旧版本而删除。

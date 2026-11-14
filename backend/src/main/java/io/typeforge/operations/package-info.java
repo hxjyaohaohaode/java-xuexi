@@ -1,2 +1,2 @@
-/** M12 运行与安全。业务实现待开发；边界见 docs/02-modules.md。 */
+/** M12 会话安全、能力发现、持久配置、事件派发和迁移；生产运维专项验收另行记录。 */
 package io.typeforge.operations;

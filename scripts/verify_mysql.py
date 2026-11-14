@@ -113,7 +113,7 @@ def verify(harness):
         sql(ddl,label=migration.name+" applies on MySQL "+harness.version)
     sql((ROOT/'database/seed-demo.sql').read_text(encoding='utf-8'),label='draft seeds import')
     count=sql("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE();",label='table count query')
-    assert int(count)==table_total==56,count
+    assert int(count)==table_total and table_total>=56,count
     assert sql('SELECT COUNT(*) FROM concept;',label='concept count')=='16'
     assert sql('SELECT COUNT(*) FROM knowledge_chunk;',label='knowledge seed count')=='16'
     assert sql('SELECT COUNT(*) FROM active_release;',label='no falsely active release')=='0'
@@ -198,13 +198,61 @@ def verify(harness):
     sql(f"INSERT INTO local_evidence_workflow(run_id,query_text,adapter_version) VALUES ('{uuid.uuid4()}','PECS','local-search-v1');",False,'local evidence workflow cannot bind nonexistent run')
     sql(f"UPDATE outbox_event SET next_attempt_at=UTC_TIMESTAMP(3)+INTERVAL 1 SECOND,last_error_code='SAFE_TEST_CODE' WHERE id='{event}';",label='bounded outbox retry metadata persists')
 
+    # v0.4 assertions use actual MySQL constraints, independently of the HTTP/service tests.
+    sql(f"INSERT INTO workspace_conversation VALUES ('{conv}','{w1}');",label='tutor conversation has one persisted workspace')
+    sql(f"INSERT INTO workspace_conversation VALUES ('{conv}','{w2}');",False,'conversation cannot bind a second workspace')
+    sql(f"INSERT INTO tutor_daily_budget(user_id,budget_date,reserved_tokens) VALUES ('{author}',UTC_DATE(),-1);",False,'tutor quota rejects negative reservations')
+    sql(f"INSERT INTO tutor_daily_budget(user_id,budget_date) VALUES ('{author}',UTC_DATE());",label='tutor daily quota fixture')
+    def tutor_runtime(snapshot):
+        return f"INSERT INTO tutor_request_runtime(request_id,workspace_id,snapshot_id,mode,deadline_at,input_hash,context_hash,evidence_refs,billing_state,budget_date) VALUES ('{request}','{w1}','{snapshot}','EVIDENCE_ONLY',UTC_TIMESTAMP(3)+INTERVAL 1 MINUTE,REPEAT('e',64),REPEAT('a',64),JSON_ARRAY(),'NONE',UTC_DATE());"
+    sql(tutor_runtime(c2),False,'tutor runtime snapshot cannot cross workspace')
+    sql(tutor_runtime(c1),label='tutor runtime pins an actual same-workspace snapshot')
+    for column,value,label in [('mode',"'FAKE_MODEL'",'unknown tutor mode rejected'),('request_epoch','0','zero tutor epoch rejected'),('attempt_count','4','tutor retry bound enforced'),('reserved_tokens','-1','negative request reservation rejected'),('used_tokens','-1','negative provider usage rejected'),('billing_state',"'FREE'",'unknown tutor billing state rejected')]:
+        sql(f"UPDATE tutor_request_runtime SET {column}={value} WHERE request_id='{request}';",False,label)
+    sql(f"INSERT INTO tutor_artifact_link(artifact_id,artifact_revision,request_id,snapshot_id,response_hash) VALUES ('{a1}',2,'{request}','{c1}',REPEAT('f',64));",False,'tutor document link requires an existing artifact revision')
+    sql(f"INSERT INTO tutor_artifact_link(artifact_id,artifact_revision,request_id,snapshot_id,response_hash) VALUES ('{a1}',1,'{request}','{c1}',REPEAT('f',64));",label='tutor response provenance persists against fixed revision')
+
+    source_a,source_b,ingestion=[uid(x) for x in ['manual-source-a','manual-source-b','manual-ingestion']]
+    for source in (source_a,source_b):
+        sql(f"INSERT INTO knowledge_source(id,title,url,edition,usage_note) VALUES ('{source}','fixture','https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html','17','isolated constraint fixture');",label='manual source fixture '+source[-4:])
+    def ingestion_sql(identity):
+        return f"INSERT INTO content_ingestion(id,source_id,author_id,original_markdown,cleaned_markdown,original_hash,cleaned_hash,processor_version,processing_note) VALUES ('{identity}','{source_a}','{author}','raw','clean',REPEAT('1',64),REPEAT('2',64),'fixture','test-owned capture');"
+    sql(ingestion_sql(ingestion),label='manual capture retains original and cleaned evidence')
+    sql(ingestion_sql(uid('duplicate-ingestion')),False,'same source original and cleaned hashes cannot be duplicated')
+    chunk=uid('chunk-G01')
+    sql(f"INSERT INTO chunk_source VALUES ('{chunk}',1,'{source_b}','fixture');",label='independent knowledge-source binding fixture')
+    sql(f"INSERT INTO chunk_ingestion VALUES ('{chunk}',1,'{source_b}','{ingestion}');",False,'chunk cannot claim capture from a different registered source')
+    sql(f"INSERT INTO exercise_knowledge VALUES ('{exercise}',1,'{chunk}',2);",False,'exercise evidence must pin an existing knowledge revision')
+    sql(f"INSERT INTO exercise_knowledge VALUES ('{exercise}',1,'{chunk}',1);",label='exercise evidence fixes knowledge revision')
+    reviewer,review=[uid(x) for x in ['test-independent-reviewer','test-independent-review']]
+    sql(f"INSERT INTO app_user(id,username,password_hash,roles) VALUES ('{reviewer}','constraint-reviewer','NO_LOGIN_FIXTURE',JSON_ARRAY('EDITOR'));",label='independent reviewer constraint fixture with no usable credential')
+    def review_sql(identity):
+        return f"INSERT INTO content_review(id,target_kind,target_id,target_revision,author_id,reviewer_id,decision,note) VALUES ('{identity}','CHUNK','{chunk}',1,'{author}','{reviewer}','APPROVED','isolated SQL fixture only');"
+    sql(review_sql(review),label='independent immutable review fixture')
+    sql(review_sql(uid('duplicate-review')),False,'same target revision cannot receive a second review decision')
+    sql(f"INSERT INTO content_review_evidence VALUES ('{uid('missing-review')}',REPEAT('3',64),'fixture',JSON_ARRAY('EDITOR'));",False,'review evidence cannot exist without its decision')
+    sql(f"INSERT INTO release_manifest VALUES ('{uid('missing-release')}',JSON_OBJECT(),'fixture');",False,'release manifest requires an existing course release')
+
+    lab,export=[uid(x) for x in ['interactive-lab','static-export']]
+    sql(f"INSERT INTO lab_session(id,user_id,release_id,lab_type,input,rules_version) VALUES ('{lab}','{author}','{rel}','ASSIGNMENT',JSON_OBJECT(),'fixture'); INSERT INTO workspace_lab VALUES ('{w1}','{lab}');",label='finite lab has persisted workspace ownership')
+    sql(f"INSERT INTO workspace_lab VALUES ('{w2}','{lab}');",False,'lab cannot bind a second workspace')
+    sql(f"INSERT INTO notebook_action_receipt(id,artifact_id,artifact_revision,block_key,action_key,result_json) VALUES ('{uid('invalid-action')}','{a1}',1,'block','executeScript',JSON_OBJECT());",False,'notebook receipt rejects unregistered actions')
+    sql(f"INSERT INTO notebook_action_receipt(id,artifact_id,artifact_revision,block_key,action_key,result_json) VALUES ('{uid('old-action')}','{a1}',2,'block','predict',JSON_OBJECT());",False,'notebook receipt requires actual immutable revision')
+    sql(f"INSERT INTO export_job(id,artifact_id,artifact_revision,format_key,renderer_version,input_hash,execution_key,status) VALUES ('{export}','{a1}',1,'HTML','fixture',REPEAT('4',64),'static-export-fixture','SUCCEEDED');",label='fixed-version static export fixture')
+    def export_sql(mime,size):
+        return f"INSERT INTO artifact_export_content VALUES ('{export}','{mime}','fixture.html','text',REPEAT('5',64),{size});"
+    sql(export_sql('application/javascript',4),False,'static export MIME allowlist rejects executable script')
+    sql(export_sql('text/html',0),False,'static export byte count cannot be empty')
+    sql(export_sql('text/html',1048577),False,'static export byte count enforces renderer budget')
+    sql(export_sql('text/html',4),label='static export content links to its actual job')
+
     assert sql(f"SELECT JSON_TYPE(answer) FROM exercise_attempt WHERE id='{attempt}';",label="native JSON answer remains structured object")=="OBJECT"
     sql(f"UPDATE exercise_attempt SET answer='{{invalid' WHERE id='{attempt}';",False,"native JSON column rejects malformed documents",("ERROR 3140",))
     assert all(hashlib.sha256((ROOT/'database'/name).read_bytes()).hexdigest()==digest for name,digest in schema_hashes.items()),'SQL changed during verification'
     return {"result":"PASS","engine":"MySQL "+harness.version,"mode":harness.mode,"tables":table_total,
             "checks":harness.results,"schemaSha256":schema_hashes,
             "seedSha256":hashlib.sha256((ROOT/'database/seed-demo.sql').read_bytes()).hexdigest(),
-            "scope":"V001/V002/V003 migrations and schema integrity on real MySQL; application HTTP and transaction smoke tests run separately"}
+            "scope":"All current forward migrations and schema integrity on real MySQL; application HTTP and transaction smoke tests run separately"}
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter)

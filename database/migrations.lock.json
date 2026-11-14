@@ -1,0 +1,8 @@
+{
+  "V001__baseline.sql": "e1a1cbb328f092f3b7788cfd57d846d526e0cd8a3de3fefde42cf11879b47896",
+  "V002__agent_workspace.sql": "1c13efbb02105da2daa8b38898fba87185bb5751c2992fe00c7c501b13abe730",
+  "V003__runtime_integrity.sql": "7270c47cb6d93910ce6d9e6da390fc9608454493296272676e7248bd9ef426fa",
+  "V004__tutor_runtime.sql": "aa92680b4026632f4f3628e0599b79e6ff786b66d6fe496c235cea7fae2d51a9",
+  "V005__content_workbench.sql": "5e9e23346b616a924c4b91d648c375e481eb1783d8d2a94310cea00e7fdd758d",
+  "V006__interactive_learning.sql": "c22d18f54238f15c2ab32d70110db7a283a51a021e6fa760a3815046e83cab5b"
+}

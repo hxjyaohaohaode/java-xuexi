@@ -9,7 +9,7 @@
     "partial": "部分基础协议/源版本已实现；必要的资产或执行适配器尚缺，不能当完整成品能力。"
   },
   "availabilityRule": "实际可调用 = status为implemented 且 enabled 且 adapterReady 且配置有效 且当前请求通过权限/范围/预算/版本/租约校验。任何静态字段不得替代运行时鉴权。",
-  "verificationBoundary": "本轮只有两个确定性只读工具接入固定EvidenceWorkflow并验证；通用工具分派、LLM角色、媒体provider不可用。业务HTTP不自动授权Agent调用。最终运行证据见evidence/runtime-review.md。",
+  "verificationBoundary": "两个确定性只读工具接入固定EvidenceWorkflow。另有真实持久导师HTTP适配和文本导出业务服务，但尚未接入通用Agent工具dispatcher；本地协议测试不代表真实外部模型质量。",
   "publicReference": {
     "schemaId": "ContextRef",
     "fields": [
@@ -595,20 +595,29 @@
       "exportFormats": [
         "DOCX",
         "PDF",
-        "MARKDOWN"
+        "MARKDOWN",
+        "HTML"
       ],
-      "exportStatus": "planned",
-      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+      "exportStatus": "partial",
+      "sourceLimitations": "Manual immutable DRAFT source with validated references. Persistent inert text export queue and authenticated download available; no claim of binary office/media generation.",
+      "implementedExportFormats": [
+        "MARKDOWN",
+        "HTML"
+      ]
     },
     {
       "kind": "SLIDES",
       "sourceStatus": "implemented",
       "sourceSchemaId": "SlideDsl",
       "exportFormats": [
-        "PPTX"
+        "PPTX",
+        "HTML"
       ],
-      "exportStatus": "planned",
-      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+      "exportStatus": "partial",
+      "sourceLimitations": "Manual immutable DRAFT source with validated references. Persistent inert text export queue and authenticated download available; no claim of binary office/media generation.",
+      "implementedExportFormats": [
+        "HTML"
+      ]
     },
     {
       "kind": "DIAGRAM",
@@ -618,8 +627,11 @@
         "SVG",
         "PNG"
       ],
-      "exportStatus": "planned",
-      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+      "exportStatus": "partial",
+      "sourceLimitations": "Manual immutable DRAFT source with validated references. Persistent inert text export queue and authenticated download available; no claim of binary office/media generation.",
+      "implementedExportFormats": [
+        "SVG"
+      ]
     },
     {
       "kind": "IMAGE",
@@ -629,7 +641,8 @@
         "PNG"
       ],
       "exportStatus": "planned",
-      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+      "sourceLimitations": "Manual immutable DRAFT source with validated references. Asset and media provider admission remains unavailable.",
+      "implementedExportFormats": []
     },
     {
       "kind": "AUDIO",
@@ -640,7 +653,8 @@
         "WAV"
       ],
       "exportStatus": "planned",
-      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+      "sourceLimitations": "Manual immutable DRAFT source with validated references. Asset and media provider admission remains unavailable.",
+      "implementedExportFormats": []
     },
     {
       "kind": "VIDEO",
@@ -651,7 +665,8 @@
         "WEBM"
       ],
       "exportStatus": "planned",
-      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+      "sourceLimitations": "Manual immutable DRAFT source with validated references. Asset and media provider admission remains unavailable.",
+      "implementedExportFormats": []
     },
     {
       "kind": "INTERACTION",
@@ -660,8 +675,11 @@
       "exportFormats": [
         "HTML"
       ],
-      "exportStatus": "planned",
-      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+      "exportStatus": "partial",
+      "sourceLimitations": "Manual immutable DRAFT source with validated references. Persistent inert text export queue and authenticated download available; no claim of binary office/media generation. predict/openEvidence/submitAnswer are dispatched online; downloaded HTML is static reading, not offline grading.",
+      "implementedExportFormats": [
+        "HTML"
+      ]
     },
     {
       "kind": "NOTEBOOK",
@@ -670,8 +688,11 @@
       "exportFormats": [
         "HTML"
       ],
-      "exportStatus": "planned",
-      "sourceLimitations": "Manual source DSL and immutable DRAFT versions only; asset-dependent content is refused without an asset adapter. No generation, preview or binary export is claimed."
+      "exportStatus": "partial",
+      "sourceLimitations": "Manual immutable DRAFT source with validated references. Persistent inert text export queue and authenticated download available; no claim of binary office/media generation. predict/openEvidence/submitAnswer are dispatched online; downloaded HTML is static reading, not offline grading.",
+      "implementedExportFormats": [
+        "HTML"
+      ]
     }
   ],
   "researchDecisions": "docs/14-research-decisions.md",
@@ -686,5 +707,15 @@
     "modelCalls": false,
     "generalToolDispatcher": false,
     "output": "Authorized snapshot and reviewed knowledge references; no generated natural-language answer"
+  },
+  "tutorWorkflow": {
+    "requestOperationId": "createTutorRequest",
+    "documentOperationId": "createTutorDocument",
+    "modes": {
+      "EVIDENCE_ONLY": "Deterministic retrieved excerpts; no model call",
+      "MODEL": "Configured server HTTP provider only; not an autonomous expert cluster"
+    },
+    "generalToolDispatcher": false,
+    "externalModelQualityVerified": false
   }
 }

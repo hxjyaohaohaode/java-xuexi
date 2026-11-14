@@ -1,6 +1,6 @@
 # 架构、交互与一致性
 
-本章保留完整目标架构；涉及前端、LLM、编译 worker、媒体与正式发布的图和时序属于后续设计。v0.3 已落地的 SQL/HTTP、工作空间、学习证据、版本源稿、事件与持久任务控制见 [后端说明](../backend/README.md)，状态以 [模块契约](../contracts/modules.json) 为准，验证见 [本轮记录](../evidence/runtime-review.md)。
+本章连接当前运行机制和完整目标。v0.4 已落地真实学习前端、SQL/HTTP、导师队列、静态导出及双人内容审核发布；自主模型规划、隔离编译 worker、媒体生成等图中扩展仍属后续设计。准确范围见 [模块接手指南](02-modules.md)、[后端说明](../backend/README.md)与[本轮记录](../evidence/runtime-review.md)。
 
 ## 1. 技术基线与决策
 
@@ -9,10 +9,10 @@
 | 语言 | Java 17，`--release 17` | 统一教学和服务基线；不启用 preview；泛型案例用实际 javac 核对 |
 | 服务 | Spring Boot 3.5.16、Maven 3.9.x | 固定补丁版本并构建验证；Java 17 在官方兼容范围内 |
 | 持久化 | Spring JDBC + Flyway；MySQL 8.4 目标，H2 本地默认 | 已采用显式 SQL 与短事务；H2 与 MySQL 分别配置迁移，二者验证结果分开记录 |
-| 前端 | React、TypeScript、Vite、按需 Tailwind | 与参考 TSX 变体一致；实施时锁版本与 peer dependencies，当前不安装页面依赖 |
+| 前端 | React、TypeScript、Vite、原生 CSS | 已实现学习工作台并锁定 package-lock；参考交互逐项映射，研究台账不等于全部演示已运行 |
 | 检索 | 发布/概念过滤 + 本地词项 BM25 | 当前中文二元词、英文标识符分词，直接读取已发布 SQL 卡片；词典、持久索引和向量增强仍待实施 |
-| 模型 | Java HTTP 客户端 + `TutorGateway` | 不绑定特定厂商；结构化输出由服务端验证；未提供密钥时显式不可用 |
-| 作业 | 数据库任务表 + 受控适配器 | 已有持久 DAG/租约/epoch/预算控制；本地证据工作流可用，外部模型、编译及媒体 worker 尚未接入 |
+| 模型 | `TutorAnswerProvider` + Java HTTP 客户端 | 非流式 Chat Completions 协议；结构、引用与计量校验；缺配置时 MODEL 不可用 |
+| 作业 | 数据库任务表 + 受控适配器 | 固定证据 DAG、导师队列与静态导出已接通；三者分别控制租约/终态，编译及媒体 worker 尚未接入 |
 | 通信 | REST；长任务轮询；Agent 后续可选 SSE | 首版先实现可恢复轮询，再添加流式显示；中途断开不等于成功 |
 
 Spring Boot 兼容性依据：[官方系统要求](https://docs.spring.io/spring-boot/3.5/system-requirements.html)。版本更新先做依赖漏洞检查与回归，不能盲追最新。
@@ -38,7 +38,7 @@ flowchart TB
   APP --> OBS[审计 / 指标 / traceId]
 ```
 
-目标分层要求领域规则不依赖 Controller、HTTP 或供应商 SDK，Controller 只调用应用服务。v0.3 采用显式 JDBC 应用服务落实事务与归属，尚未把所有 SQL 拆成独立 repository adapter；后续按业务稳定程度拆分，不能把目录形式当作已完成解耦。共享模块只放通用 ID、分页、错误、JSON/Schema 与版本边界，不承接全部业务逻辑。
+目标分层要求领域规则不依赖 Controller、HTTP 或供应商 SDK，Controller 只调用应用服务。v0.4 采用显式 JDBC 应用服务落实事务与归属，尚未把所有 SQL 拆成独立 repository adapter；后续按业务稳定程度拆分，不能把目录形式当作已完成解耦。共享模块只放通用 ID、分页、错误、JSON/Schema 与版本边界，不承接全部业务逻辑。
 
 API JVM 永不直接运行用户代码，编译也属于不可信任务。现有测试只编译仓库内人工审阅的固定案例，不能拿它充当线上沙箱。
 
@@ -145,7 +145,7 @@ flowchart TB
   RT --> DB[(MySQL 运行事实 / 消息 / outbox)]
 ```
 
-API与控制面使用Java；模型/媒体供应商、文档解析和渲染通过受限适配器连接。前面的课程闭环是这一主架构中的教学子链。`TutorGateway`不是总协调器；总协调器通过注册表调度14类专家与16项能力。跨模块传递资源引用和小型结构化事实，不传任意shell，不把多媒体二进制放入专家群消息。
+API与控制面使用Java；模型/媒体供应商、文档解析和渲染通过受限适配器连接。前面的课程闭环是这一主架构中的教学子链。`TutorAnswerProvider`是当前导师回答适配端口；未来总协调器通过注册表调度14类专家与16项能力，不能将这些规划角色视为已接通。跨模块传递资源引用和小型结构化事实，不传任意shell，不把多媒体二进制放入专家群消息。
 
 | 数据连接 | 传输内容 | 关键校验/失败恢复 |
 |---|---|---|

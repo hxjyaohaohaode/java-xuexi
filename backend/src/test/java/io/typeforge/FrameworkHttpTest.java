@@ -19,7 +19,7 @@ class FrameworkHttpTest {
     }
     @Test void healthActuallyQueriesDatabaseWithoutClaimingProviderReadiness() throws Exception {
         mvc.perform(get("/api/v1/health")).andExpect(status().isOk())
-            .andExpect(jsonPath("$.scope").value("process-and-database; model/compiler/media not configured"));
+            .andExpect(jsonPath("$.scope").value("process-and-database; external adapters are reported separately by capabilities"));
     }
     @Test void noBusinessOrAdminRouteIsAccidentallyPublic() throws Exception {
         mvc.perform(get("/api/v1/attempts/example")).andExpect(status().isUnauthorized());

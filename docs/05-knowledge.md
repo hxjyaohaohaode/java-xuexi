@@ -1,10 +1,14 @@
-# 知识体系、正确性与资料加工
+# 知识体系、人工资料加工与正式发布
+
+本章对应 v0.4 的真实内容工作台。M07 登记来源和人工采集收据；M10 追加知识/题目版本、执行独立编辑审核、构建并发布课程。流水线可运行，但最终课程数量、逐项语义验证和真实学生的人工审阅仍需两位作者持续完成。
 
 ## 1. 来源优先级
 
 以 [JLS 17 类型章节](https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html)、[JLS 17 类与泛型方法](https://docs.oracle.com/javase/specs/jls/se17/html/jls-8.html)、[javac 17 文档](https://docs.oracle.com/en/java/javase/17/docs/specs/man/javac.html) 为规则依据，以 Oracle 教程帮助教学表达。教程标注为 JDK 8，教学行为另用本项目 JDK 17 实测，不把教程当作“最新 Java”说明。后续博客只能作辅助来源，冲突回到规范和可复现代码。
 
-`knowledge/sources.json` 是原始来源索引，**不是原始全文数据集**；当前未下载或发布整套教材/官方文档。`knowledge/concepts.json` 是原创概念种子，`knowledge/runtime-lessons.json` 另含 16 张原创知识卡、12 道客观题与补充规范来源。`demo` Profile 把这些内容写入实际发布成员表，`LocalKnowledgeSearch` 执行真实词项 BM25；原始全文数据集、完整清洗管线与正式双人审核仍未完成。扩充时分别保存 raw（许可允许范围内）、cleaned、cards、indexes，不能用来源网址列表冒充全文采集。
+`knowledge/sources.json` 是原始来源索引，**不是原始全文数据集**；当前未下载或发布整套教材/官方文档。`knowledge/concepts.json` 是原创概念种子，`knowledge/runtime-lessons.json` 含 16 张原创知识卡、12 道客观题与补充规范来源。显式 `demo` Profile 把这些内容写入实际发布成员表，供本地学习、检索和判分开发使用；它没有真实用户的独立审核记录。
+
+正式内容可以从当前工作台录入：先登记来源，再提交实际原稿、人工清洗稿和处理说明，随后建立知识/题目版本并由另一位已授权编辑审核。服务器对实际提交内容计算哈希，保存不可换绑的采集收据，发布后由 `LocalKnowledgeSearch` 从该 release 的真实 SQL 语料执行 BM25。**已实现人工录入与清洗登记，没有自动网页抓取、PDF 解析、自动语义清洗或向量建库。** 登记 URL 不发出外部请求；手工原稿的哈希不证明服务器曾下载过整个来源页面。
 
 ## 2. 概念组织
 
@@ -34,22 +38,56 @@ G04 → G07 上界 → G08 多重边界。G02/G06 → G14 擦除与桥接 → G1
 
 相关教学依据：[通配符使用准则](https://docs.oracle.com/javase/tutorial/java/generics/wildcardGuidelines.html)、[捕获与辅助方法](https://docs.oracle.com/javase/tutorial/java/generics/capture.html)、[桥接方法](https://docs.oracle.com/javase/tutorial/java/generics/bridgeMethods.html)、[泛型限制](https://docs.oracle.com/javase/tutorial/java/generics/restrictions.html)。例子均应自己编写；只引用必要的短文本并明确出处。
 
-## 4. 知识卡字段
+## 4. 实际内容契约与加工凭据
 
-`id/conceptId/revision/title/claim/conditions/explanation/positiveExampleId/negativeExampleId/misconceptionTags/sourceRefs/javaRelease/reviewStatus/author/reviewer/contentHash`。来源包含 URL、章节、版本、访问日期、许可/使用方式、原始文件哈希（如实际保存）。未采集的哈希保持 null，不能用网址哈希冒充文件哈希。
+完整字段以 [OpenAPI](../contracts/openapi.json) 和[数据字典](../database/data-dictionary.md)为准。当前知识正文采用 Markdown，尚未把所有教学栏目拆为独立字段；以下区分真实数据结构与写作要求。
 
-知识库是经过精炼和组织的卡片及关系；数据集是加工前后材料；索引是卡片的可检索表示。三者有明确映射和可重建的流水线。
+| 对象 | 当前保存内容 | 约束与用途 |
+|---|---|---|
+| 来源 | `title / url / edition / usageNote` | HTTPS 元数据登记，拒绝含账号口令的 URL；需要变更时新建来源记录 |
+| 采集收据 | `originalMarkdown / cleanedMarkdown / processingNote`、两份实际内容哈希、录入者与时间 | 原稿最多 32,000 字符、清洗稿最多 16,000 字符；换行规范化但保留代码缩进；同来源和两份哈希完全相同则去重 |
+| 概念 | 稳定 UUID、唯一 code、title、前置概念列表 | 概念图供课程构建冻结；发布时验证完整前置闭包 |
+| 知识版本 | `id / revision / baseRevision / conceptId / title / body / sources` | 每个来源项绑定 `sourceId / section / ingestionId`；不能拿另一来源的采集收据替代 |
+| 题目版本 | `id / revision / baseRevision / familyId / kind / difficulty / prompt / conceptIds / answerSpec / knowledgeRefs` | 当前 `SINGLE / MULTIPLE`；题目家族不随修改重置；知识精确引用 id+revision |
+| 审核决定 | `targetKind / targetId / targetRevision / expectedContentHash / decision / note` | 服务端填写作者、真实会话审核人、角色证据与时间；不能由请求指定审核身份 |
+| 发布清单 | 概念图快照、精确知识/题目版本、review hash、审核记录引用、检查器与检索版本 | 清单确定性哈希；不包含公开可读的标准答案明文 |
+
+知识的 `contentHash` 保护实际正文；编辑界面的 `reviewHash` 还绑定标题、作者、来源/章节/收据，或题目完整私有答案、概念权重及支持知识。审核时必须提交当前 `reviewHash`，不能把只覆盖正文的 hash 当成完整审核身份。未实际采集的来源 hash 保持空，不能用网址哈希冒充原文哈希。
+
+每张正式知识卡的正文仍应写明：规则主张、成立条件、Java 17 适用范围、解释、原创正例、原创反例、易错点、来源章节与验证方式。`positiveExampleId / negativeExampleId / misconceptionTags` 等未来结构化字段和逐卡编译证据关联还需要扩展；当前不声称这些字段或自动校验已经存在。
+
+知识库是组织后的卡片及关系；资料集是原稿与清洗稿；索引是固定 release 的可检索表示。三者通过收据、版本和发布成员建立联系，不能以 URL 列表或一条 `READY` 标签代替实际内容。
 
 ## 5. 题目与内容覆盖
 
-最终目标 120 题：基础概念/语法 24、读写与赋值 28、编译诊断 24、签名补全 20、安全重构 16、综合设计 8。同一题的换变量名不算独立题。每个概念至少有 1 正例、1 反例、1 练习；PECS、捕获、擦除和 raw 风险要有跨概念综合题。
+最终目标仍为 **64 张知识卡、48 个示例和 120 题**，不是 v0.4 已完成数量。题目目标分布：基础概念/语法 24、读写与赋值 28、编译诊断 24、签名补全 20、安全重构 16、综合设计 8。同一题换变量名不算独立题。每个概念至少有 1 正例、1 反例、1 练习；PECS、捕获、擦除和 raw 风险要有跨概念综合题。
 
-每题记录题型、concept 权重、家族 ID、前置、难度、版本、标准解释、隐藏测试、预期编译状态、warnings 策略、来源依据和 reviewer。通过 `questionFamily` 防止同题重复抬高掌握度。
+当前编辑器和判分器支持单选/多选：2–8 个可见选项，标准选项、解释与误区标签只存服务端；最多 16 个概念，权重精确分配且合计 1。每题必须引用可解释其概念的知识版本，审核题目前这些知识必须已独立批准。公开课程 DTO 只选取题干和可见选项，不返回答案、私有解释或审核身份；判分后按本人结果展示反馈。
 
-## 6. 发布质量门禁
+题目家族用于独立样本去重，避免同题反复作答刷高掌握度。编译题、签名补全、安全重构、隐藏测试、预期 warnings 与任意用户源码执行仍需要后续判分/沙箱能力；不能仅新增题型名称或 JSON 字段就视为实现。
 
-引用有效 → 概念图无环 → 条件表述完整 → 示例在指定 JDK 上验证 → 正反向判分测试 → 两人交叉核查 → 索引覆盖测试 → 发布快照。模型输出不是审核结论。编译器与讲解冲突时停止发布并定位版本、语法上下文和运行模式。
+## 6. 已实现的独立审核与发布事务
 
-`GenericSemanticsTest` 与 `GenericEdgeCasesTest` 验证仓库内固定案例及版本差异，不能替代未来所有教材和题库的逐项校验；`KnowledgeRuntimeTest` 则检验真实 SQL 发布读取、检索、来源哈希和答案边界。具体运行结果以 [v0.3 验收记录](../evidence/runtime-review.md) 为准，不以测试类存在推定通过。
+| 步骤 | 实际行为 | 失败后处理 |
+|---|---|---|
+| 创建草稿 | `revision = baseRevision + 1`，追加正文或题目内容 | 版本冲突保留本地稿，重新读取再合并 |
+| 审核知识 | 当前 EDITOR/ADMIN 且不是作者；核对来源收据与完整 review hash | 自审拒绝；预览后内容变化拒绝 |
+| 审核题目 | 除身份/hash 外，支持知识必须已有独立批准 | 标准答案或知识版本变化要新稿和新审核 |
+| 给出决定 | `APPROVED` 把草稿转 `REVIEWED`；`REJECTED` 转 `RETIRED` | 每个目标版本只有一次终态决定；拒绝后修改须新 revision |
+| 构建 release | 固定概念图，验证无环/前置知识覆盖、所有精确成员已批准、题目知识在本发布、权重合计 1 | 不生成半成品清单；demo 状态标签不满足审核证据 |
+| 发布 | 复验审核/来源/答案/清单，验证 SQL 检索语料记录，再 CAS 活动课程指针 | 事务整体回滚；并发发布只有匹配指针版本的一方成功 |
+| 历史激活 | 仅激活已发布的正式 release，再做同一完整性检查 | 不改原发布时间、原成员、旧 workspace 的 release |
 
-当前演示课程明示 `origin=demo-authored-code-reviewed`、`formalHumanReview=false`，不生成 `content_review`。演示初始化为开发提供可运行内容，不能代替本节正式门禁，也不能代替最终 64 卡、48 示例和完整题库。公开题目 DTO 不输出标准答案；答案与解析保留在服务端，判分后的本人反馈按业务规则展示。
+当前“双人审核”指**一位作者与另一位授权编辑**。两人可交换作者/审核者角色，但同一修订不能自审；系统记录的是真实登录账户操作，不保证两账号背后一定是两位不同自然人。注册只获 LEARNER，编辑角色由明确的运维配置提升已存在 ACTIVE 账号；旧会话每次访问仍复查数据库角色。配置步骤见[后端运行说明](../backend/README.md)。
+
+发布构建一次接受 1–1,000 个知识引用、1–1,000 个题目引用和最多 100 个概念闭包，不能把小范围正式发布误称为完整课程验收。发布清单的 `indexVersion` 对应当前词项 BM25；SQL corpus 的 `READY` 意味着已核对该清单与可读取成员，不意味经过向量构建、自动教学评测或第三方检索效果认证。
+
+正式发布必须另由作者与审核者落实教学质量：条件表述完整、JDK 17 正反例和 warnings 正确、解释与判分一致。系统当前自动保证版本、身份、完整性和引用关系，**不会在每次发布时自动编译任意卡片示例，也不会替代人工判断教学结论**。模型输出不是审核结论；编译器与讲解冲突时应停止发布并定位版本、语法上下文及运行模式。
+
+## 7. 验证与当前剩余范围
+
+`GenericSemanticsTest`、`GenericEdgeCasesTest` 验证仓库固定案例和版本差异；有限类型实验另有与实际 javac 的固定样例对照，范围之外返回不支持。它们不等于所有用户输入和未来教材都通过语言语义验收。`KnowledgeRuntimeTest` 检验真实发布读取、检索、来源哈希及答案边界。
+
+[ContentWorkbenchIntegrationTest](../backend/src/test/java/io/typeforge/publishing/ContentWorkbenchIntegrationTest.java) 的 14 项用例覆盖真实登录与权限、人工收据去重/换绑、自审拒绝、审核 hash、非法私有答案、demo 不可冒充人审、前置覆盖、并发 CAS、完整性失败回滚、历史激活和旧课程不被覆盖。默认全套使用隔离 H2；显式 MySQL 门禁在专用数据库重跑同一组事务，核验实际 JDBC 引擎并恢复原活动指针。具体引擎、次数和结果统一见[本轮验收记录](../evidence/runtime-review.md)，不以测试类存在推定通过。
+
+演示课程明示 `origin=demo-authored-code-reviewed`、`formalHumanReview=false`，不生成 `content_review`。正式工作台虽已可用，仓库并没有因此凭空新增两位学生的真人审核、完整 120 题或最终课程质量证据。当前也未实现自动采集、文件/PDF 导入、模型清洗、语义近重复识别、批量审核、正文差异视图和全量教材自动验证；接下来的开发应沿真实收据和版本链扩展这些能力。

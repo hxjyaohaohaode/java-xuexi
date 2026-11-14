@@ -24,8 +24,10 @@ public class ScaffoldSecurity {
         return http.csrf(config->config.csrfTokenRepository(csrf))
             .authorizeHttpRequests(auth->auth
                 .requestMatchers(HttpMethod.GET,"/api/v1/health","/api/v1/framework","/api/v1/auth/csrf").permitAll()
+                .requestMatchers(HttpMethod.GET,"/","/index.html","/assets/**","/favicon.svg").permitAll()
                 .requestMatchers(HttpMethod.POST,"/api/v1/auth/register","/api/v1/auth/session").permitAll()
-                .requestMatchers("/api/v1/admin/**","/api/v1/internal/**").denyAll()
+                .requestMatchers("/api/v1/internal/**").denyAll()
+                .requestMatchers("/api/v1/admin/**").hasAnyRole("EDITOR","ADMIN")
                 .requestMatchers("/api/v1/**").authenticated()
                 .anyRequest().denyAll())
             .exceptionHandling(errors->errors
@@ -35,7 +37,8 @@ public class ScaffoldSecurity {
                 })
                 .accessDeniedHandler((request,response,exception)->{
                     response.setStatus(403);response.setContentType("application/problem+json");
-                    response.getWriter().write("{\"status\":403,\"code\":\"FORBIDDEN\",\"detail\":\"Request is not authorized or CSRF token is missing\"}");
+                    boolean invalidCsrf=exception instanceof org.springframework.security.web.csrf.CsrfException;
+                    response.getWriter().write(invalidCsrf?"{\"status\":403,\"code\":\"CSRF_INVALID\",\"detail\":\"Refresh the session CSRF token before retrying this command\"}":"{\"status\":403,\"code\":\"FORBIDDEN\",\"detail\":\"Request is not authorized\"}");
                 }))
             .build();
     }

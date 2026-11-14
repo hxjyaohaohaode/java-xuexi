@@ -1,76 +1,76 @@
-# 泛型工坊 TypeForge · Agent 学习工作空间
+# 泛型工坊 TypeForge · 联动学习工作台
 
-以 **Java 泛型与类型安全** 为课程主线，把知识阅读、客观练习、学习证据、工作空间上下文与可编辑作品连成一条可追溯的数据链。完整产品的目标是让专家集群辅助学生制作文档、PPT、图解、音视频与交互错题集；当前已实现的能力和后续目标分别说明。
+围绕 **Java 泛型与类型安全**，把知识、实验、练习、学习证据、导师、作品和复练放在同一个有版本、有来源的学习工作空间里。
 
-**当前交付为 v0.3 持久化学习运行时。** 后端已接入 Spring JDBC、Flyway 和事务，提供会话认证、已发布课程读取、本地 BM25 检索、客观选择题判分、工作空间与目标、顺序事件与 outbox 投影、上下文快照与记忆撤回、作品 DSL 版本、错题源稿及受控的本地证据工作流。任务运行时包含持久 DAG、租约、epoch、预算预留与结果准入。模块状态以 [模块清单](contracts/modules.json) 为准，逐操作状态以 [OpenAPI](contracts/openapi.json) 的 `x-status` 为准；具体操作数量和验证结果见 [v0.3 验收记录](evidence/runtime-review.md)。
+**当前版本 v0.4 已有真实 React 页面和持久 Java 后端。** 你可以注册自己的账户、创建固定课程版本的工作空间、阅读与检索、做题、进行有限类型实验、把真实错题变成可复练的交互源稿、保存文档和幻灯片、导出真实文件，并修改目标或撤回记忆。导师提供明确标识的证据整理模式；配置服务器模型后可以调用实际 HTTP 模型。内容工作台 API 提供来源登记、手工采集、草稿版本、独立编辑审核、发布及历史版本激活。
 
-**前端、LLM 规划与导师、用户代码编译沙箱、媒体生成、二进制导出、正式编辑审核发布仍不可用。** 当前本地证据工作流只执行确定性的知识检索与证据整理，不调用模型，不冒充专家自治或生成教学答案。`businessReady=false` 保留这一整体边界；运行时能力可在登录后查询 `/api/v1/capabilities`。
+本版交付不等于整个终局产品完成。**自主多专家规划、不可信 Java 编译沙箱、图像/音频/视频生产、PPTX/DOCX/PDF 二进制导出、正式模型质量评测仍待开发。** 这些能力没有假成功实现。`businessReady=false` 保留完整产品验收边界；已实现功能独立可用。
 
-## 阅读入口
+## 同学拉取后先看这里
 
-1. [整体框架与评分映射](docs/00-blueprint.md)：范围、模块、两人目标与证据要求。
-2. [架构深化决策](docs/13-architecture-upgrade.md)与[本轮研究决策](docs/14-research-decisions.md)：状态、数据、权限、运行时与外部项目借鉴。
-3. [动态专家集群](docs/10-agent-cluster.md)与[学习作品](docs/11-learning-artifacts.md)：完整目标、运行控制、生产与审核边界。
-4. [模块设计](docs/02-modules.md)、[架构数据流](docs/01-architecture.md)与[API 约定](docs/04-api.md)：当前实现和后续接口如何衔接。
-5. [前端规范](docs/07-frontend.md)与[跨模块状态协议](docs/15-frontend-state-network.md)：页面、状态、重放、草稿冲突与可访问性。当前没有正式前端；209 条参考台账不等于浏览器实测。
-6. [两人开发计划](docs/09-team-plan.md)、[课程交付验收](docs/16-course-delivery.md)与[验收矩阵](evidence/course-acceptance-matrix.csv)。
-7. [v0.3 验收记录](evidence/runtime-review.md)；[v0.2 基线检查](evidence/baseline-review.md)仅保留为历史证据。
-
-## 已实现的数据主链
-
-```mermaid
-flowchart TB
-  W[认证与固定课程版本的工作空间] --> K[知识卡与客观选择题]
-  K --> G[服务端判分与本人提交]
-  G --> E[顺序事件与事务 outbox]
-  E --> P[活动投影与独立学习证据]
-  P --> C[上下文快照与可撤回记忆]
-  C --> R[确定性的本地证据工作流]
-  G --> A[错题源稿与作品 DSL 版本]
-  C --> A
-  A --> E
-```
-
-读取活动、重复练习和作品保存不会被当作独立掌握。来自不同题目家族的首次客观作答才贡献独立样本；投影滞后有可见状态。作品输入固定资源 ID、revision 和 hash，撤回或修改可使依赖过期；旧 Agent 执行结果不能绕过版本与租约检查覆盖学生稿件。
-
-Java 泛型用于 `AgentTool<I,O>`、作品端口和类型安全教学案例。跨进程输入仍需 JSON Schema、权限、数据库事务与实际能力准入；编译通过不能替代这些校验。
-
-## 目录
-
-| 目录 | 当前内容 |
+| 你想知道什么 | 唯一阅读入口 |
 |---|---|
-| `backend/` | Spring Boot 服务、SQL 应用服务、持久运行时、HTTP 边界与测试 |
-| `contracts/` | OpenAPI、Schema、操作索引和模块状态；以当前文件为唯一状态依据 |
-| `database/` | V001–V003 前向迁移、课程/Agent/运行时逐字段字典、独立草稿种子 |
-| `agent/` | 专家与工具登记、策略、任务图样例和评测设计；登记不等于适配器已可用 |
-| `knowledge/` | 16 个概念与来源索引；`demo` Profile 的 16 张知识卡和 12 道客观题 |
-| `frontend/` | 设计 token、209 条参考取舍、源码研究状态和状态契约；无正式页面 |
-| `docs/` | 总体设计、模块与数据链、前端规范、研究、开发及课程交付要求 |
-| `scripts/` / `.github/workflows/` | 契约与架构资产校验、独立 MySQL 检查、Java CI |
-| `evidence/` | 分版本检查、需求追踪、实际协作记录、课程验收矩阵与限制 |
+| 每个模块做了什么、没做什么、下一步改哪里 | [模块接手指南](docs/02-modules.md) |
+| 哪些接口能调用、完整请求和响应是什么 | [当前 API 索引](contracts/README.md) · [OpenAPI](contracts/openapi.json) |
+| 如何启动、配置模型和编辑角色 | [后端运行说明](backend/README.md) · [前端运行说明](frontend/README.md) |
+| 数据表、字段、锁序、发布与撤回 | [当前字段字典](database/data-dictionary.md) · [数据一致性](docs/03-data.md) |
+| 什么实际验证过、还有哪些限制 | [本轮验收记录](evidence/runtime-review.md) |
+| 两人如何继续做及课程最终交付 | [团队计划](docs/09-team-plan.md) · [课程交付](docs/16-course-delivery.md) |
+| 为什么这样设计、参考了什么 | [总体架构](docs/01-architecture.md) · [研究依据](docs/14-research-decisions.md) |
 
-## 检查与启动
+`contracts/modules.json` 的 `partial` 表示已有实际子能力、完整模块还有剩余范围；`planned` 表示当前没有可调用的业务实现。逐操作 `x-status` 与 Spring 路由核验一致。运行 `/api/v1/capabilities` 进一步反映当前模型配置与打包时是否包含前端。课程验收矩阵是最终成绩材料的门禁，与代码测试是否通过是两个不同记录。
 
-使用正常安装的 **JDK 17 和 Maven 3.9.x**；无需仓库内下载的工具目录。Python 检查需要 Python 3.12 及 `requirements-dev.txt` 中的依赖。以下命令从仓库根目录运行：
+## 五条已经连接的数据链
+
+1. **内容到学习**：来源 → 手工原稿/清洗登记 → 知识与题目版本 → 作者之外的真实编辑审核 → 发布清单 → 知识阅读/BM25/客观判分。新发布不改旧工作空间的 release。
+2. **作答到复练**：服务端判分 → 顺序事件/outbox → 独立题目家族证据与复习 → 错题源稿 → 当前块版本动作 → 同一个判分服务。重复题目家族不会刷高独立掌握样本。
+3. **上下文到作品**：目标/记忆/本人作答 → 固定快照 → 证据导师或已配置模型 → 明确标识的导师回答 → 文档草稿 → 人工编辑 → 固定版本导出。
+4. **修改到失效**：目标编辑、记忆撤回、作品换版 → 传递血缘标记过期 → 旧上下文/迟到 Agent 写入被拒绝 → 旧导出停止下载 → 用户重建当前结果。
+5. **事件到页面**：持久游标轮询 → 有范围的查询刷新 → 进度/复习/运行/作品同步；切换空间取消旧请求，编辑草稿与服务端事实分开，冲突时保留用户输入。
+
+## 从干净环境启动
+
+需要 **JDK 17、Maven 3.9.x、Node.js 24、Python 3.12**。从仓库根目录运行：
 
 ```sh
+npm ci --prefix frontend
+npm run check --prefix frontend
+npm run build --prefix frontend
 python -m pip install -r requirements-dev.txt
+python scripts/sync_contract_index.py --check
 python scripts/verify.py
-mvn -f backend/pom.xml verify
+mvn -B -ntp -f backend/pom.xml clean verify
+java -jar backend/target/typeforge-backend-0.4.0-SNAPSHOT.jar --spring.profiles.active=demo
 ```
 
-启动带演示课程的本地服务：
+打开 **http://127.0.0.1:8080/**。前端使用同源 `/api` 和 hash 导航，构建产物随 JAR 打包；先构建前端再打包后端。开发时可单独运行 `npm run dev --prefix frontend`，其 API 代理指向本地后端。没有默认登录账户，请自己注册。
+
+默认使用持久 H2 文件，演示模式预置 16 张原创知识卡和 12 道客观题。演示作者不可登录，内容明确标记 `demo-authored-code-reviewed`，没有伪造人类审核、学习成绩或模型输出。标准 Profile 不自动预置课程；正式发布流程不能把 demo 的 REVIEWED 标签当成人工审核证据。
+
+模型、MySQL 和编辑账户配置见后端说明。未配置模型也能使用证据整理、阅读、练习、类型实验、错题复练、手工作品及受支持导出。
+
+## 当前文件导出范围
+
+| 源作品 | 可下载格式 | 边界 |
+|---|---|---|
+| 文档 | Markdown、HTML | 保留文字/代码/知识引用；不宣称 DOCX/PDF |
+| 幻灯片 | HTML | 文字与代码、固定布局、讲稿；不宣称 PPTX |
+| 关系图 | SVG | 受控静态绘图；用户给定关系不自动成为已验证事实 |
+| 错题集/交互作品 | 静态 HTML | 在线复练仍调用平台判分，离线文件不记录成绩 |
+
+导出有持久队列、取消、归属检查、UTF-8 字节哈希和实际附件下载。下载前重新检查源版本与依赖；不公开私人文件 URL，不执行源稿中的 HTML/JavaScript。图片素材、音频与视频暂未接入。
+
+## 修改后的检查与同步
 
 ```sh
-mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=demo
+python scripts/sync_contract_index.py
+python scripts/verify.py
+npm run check --prefix frontend
+npm run build --prefix frontend
+mvn -B -ntp -f backend/pom.xml clean verify
+python scripts/smoke_runtime.py --profile h2
 ```
 
-默认监听 `127.0.0.1:8080`，使用文件型 H2 和 Flyway。相对数据库路径按服务工作目录解析，可通过 `TYPEFORGE_DB_URL` 配置。无需模型密钥；没有 LLM、媒体或编译 worker 的假适配器。若不启用 `demo`，服务不会自动创建已发布课程，读取当前发布版本可能返回 `COURSE_NOT_CONFIGURED`。
+MySQL、浏览器、模型协议和重启检查的实际命令与环境见验收记录。测试脚本使用专用验证数据，不接入个人生产数据库。新增功能先更新真实实现和契约，再刷新索引、字典、消费者及验证；不要只修改能力标签。
 
-`demo` 只预置 **16 张原创知识卡和 12 道客观题**，使用禁用的系统作者及 `origin=demo-authored-code-reviewed`，没有预置可登录账户、学生成绩或人类审核记录。它不代表完整课程题库，也不替代正式双人审核发布流程。
-
-访问 `/api/v1/health` 可检查进程与数据库连通；`/api/v1/framework` 返回模块状态。进入业务 API 的顺序是：获取 `/api/v1/auth/csrf` 并保留会话 cookie → 携带返回的 CSRF header 注册自己的账户 → 登录 → 重新获取 CSRF token → 查询当前发布并创建工作空间。注册不会自动登录。所有写请求（包括注册、登录和退出）要求 CSRF；其他业务资源还要求会话和归属校验。
-
-MySQL Profile、环境变量、事务/测试范围见 [后端运行说明](backend/README.md)；迁移与字典见 [数据库说明](database/README.md)。有 Docker/MySQL 条件时可另执行 `python scripts/verify_mysql.py`；H2 测试不能替代真实 MySQL 验证，实际结果以本轮验收记录为准。
-
-两人组已由用户确认获得教师认可。课程评分为团队成果 95 分加个人贡献 5 分；内部目标与每人的真实实现、评审、答辩证据见课程交付文档。目标不构成分数保证；AI 协助内容须如实记录，不能冒充两位成员独立完成。
+已清理旧基线报告、过时研究副本和分版本字段字典，历史可从 Git 取回。**V001–V006 是升级链，必须保留**；删除或修改已应用的迁移会破坏同学现有数据库。AI 协助过程如实记录在 [ai-context.md](evidence/ai-context.md)，两位学生后续的审阅、修改和贡献另行记录。

@@ -36,6 +36,11 @@ public class WorkspaceController {
         schemas.validate("GoalInput",input);
         return workspaces.createGoal(owner(principal),id,input.path("text").asText(),List.of(json.read(input.path("acceptance").toString(),String[].class)),key);
     }
+    @GetMapping("/workspaces/{id}/goals") public List<WorkspaceService.Goal> goals(Principal principal,@PathVariable UUID id) {return workspaces.goals(owner(principal),id);}
+    @PatchMapping("/goals/{id}") public WorkspaceService.Goal updateGoal(Principal principal,@PathVariable UUID id,@RequestBody JsonNode input) {
+        schemas.validate("GoalUpdate",input);
+        return workspaces.updateGoal(owner(principal),id,input.path("expectedRevision").asInt(),input.path("text").asText(),List.of(json.read(input.path("acceptance").toString(),String[].class)),input.path("status").asText());
+    }
     @PostMapping("/workspaces/{id}/context") @ResponseStatus(HttpStatus.CREATED)
     public WorkspaceService.Context snapshot(Principal principal,@PathVariable UUID id) { return workspaces.createContext(owner(principal),id); }
     @PostMapping("/workspaces/{id}/events") @ResponseStatus(HttpStatus.CREATED)

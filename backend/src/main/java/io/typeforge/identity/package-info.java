@@ -1,2 +1,2 @@
-/** M01 身份、权限与偏好。业务实现待开发；边界见 docs/02-modules.md。 */
+/** M01 身份、实际角色、CSRF与带版本偏好；生产账号生命周期扩展见 docs/02-modules.md。 */
 package io.typeforge.identity;

@@ -72,7 +72,9 @@ public class ArtifactService implements ArtifactStudio<JsonNode> {
             }
             workspaces.validateReferences(owner,workspace,inputs);
             List<Reference> lineage=expandLineage(workspace,artifact,inputs);
-            for(int start=0;start<lineage.size();start+=64) workspaces.validateReferences(owner,workspace,lineage.subList(start,Math.min(start+64,lineage.size())));
+            // The workspace validator already checked each direct ARTIFACT's full closure.
+            // Materialize that admitted closure while holding the same workspace lock;
+            // do not recursively revalidate every ancestor as another independent root.
             validateEmbeddedReferences(owner,workspace,workspaces.requireOwned(owner,workspace).releaseId(),content,inputs);
             int next=baseRevision+1;
             if(next<=0) throw DomainException.conflict("Artifact revision exhausted");
@@ -173,7 +175,14 @@ public class ArtifactService implements ArtifactStudio<JsonNode> {
         get(owner,artifact);
         var rows=jdbc.query("SELECT * FROM artifact_revision WHERE artifact_id=? AND revision=?",(rs,n)->new Version(artifact,revision,rs.getString("schema_version"),json.tree(rs.getString("content_json")),rs.getString("content_hash"),List.of(json.read(rs.getString("input_refs"),Reference[].class)),rs.getString("review_status")),artifact.toString(),revision);
         if(rows.isEmpty()) throw DomainException.missing();
+        if(!json.hash(rows.get(0).content()).equals(rows.get(0).contentHash())) throw new DomainException("ARTIFACT_INTEGRITY_FAILURE",503,"Artifact content no longer matches its immutable hash");
         return rows.get(0);
+    }
+    /** Revalidate the complete admitted lineage, including passive expiry without a revoke event. */
+    public Version validateCurrentInputs(UUID owner,UUID artifactId,int revision) {
+        var artifact=get(owner,artifactId);var value=version(owner,artifactId,revision);
+        workspaces.validateReferences(owner,artifact.workspaceId(),List.of(new Reference("ARTIFACT",artifactId,revision,value.contentHash())));
+        return value;
     }
     @Override public Revision<JsonNode> loadOwn(UUID owner,UUID artifact,int revision) {
         Version result=version(owner,artifact,revision);

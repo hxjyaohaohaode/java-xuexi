@@ -1,7 +1,7 @@
 {
-  "schemaVersion": "1.0",
-  "purpose": "Frontend state coordination design; not an implemented browser client or replacement HTTP schema",
-  "frontendImplemented": false,
+  "schemaVersion": "1.1",
+  "purpose": "Implemented React workspace client state boundaries plus explicit remaining design requirements; HTTP schemas remain in contracts/openapi.json",
+  "frontendImplemented": true,
   "wireContract": "contracts/openapi.json",
   "scopeKey": [
     "authenticatedPrincipalScope",
@@ -116,10 +116,12 @@
       "payloadPolicy": "invalidation-and-refetch; RunEvent is not a complete entity snapshot",
       "onDuplicate": "ignore",
       "onGap": "resync-before-advancing-cursor",
-      "onExpiredCursor": "refetch-snapshot-then-reconnect"
+      "onExpiredCursor": "refetch-snapshot-then-reconnect",
+      "uiStatus": "Run status/steps are fetched by getAgentRun polling; listRunEvents transport remains available on backend but is not consumed by this UI",
+      "uiConsumesEventStream": false
     },
     "workspace": {
-      "status": "implemented-polling-contract; frontend-not-implemented",
+      "status": "implemented ordered polling with AbortController and workspace generation isolation",
       "checkpointField": "Workspace.eventSequence",
       "scope": "workspaceId",
       "payloadPolicy": "server-authoritative-facts-only",
@@ -127,7 +129,8 @@
       "sequenceField": "sequence",
       "cursorParameter": "after",
       "onDuplicate": "ignore",
-      "onGap": "resync-before-advancing-cursor"
+      "onGap": "resync-before-advancing-cursor",
+      "resume": "in-memory cursor for a mounted workspace; a remount replays from zero in bounded pages and deduplicates"
     },
     "globalSequenceComparisonAllowed": false,
     "sseImplemented": false
@@ -162,8 +165,8 @@
   "optimisticPolicies": [
     {
       "operation": "theme-and-panel-preference",
-      "preview": true,
-      "failure": "show-unsynced-or-restore-last-confirmed"
+      "preview": false,
+      "failure": "preserve unsaved preference input; apply only after server confirmation"
     },
     {
       "operation": "artifact-edit",
@@ -182,8 +185,8 @@
     },
     {
       "operation": "memory-revocation",
-      "preview": true,
-      "failure": "restore-item-and-explain-revocation-not-confirmed"
+      "preview": false,
+      "failure": "retain last confirmed active item until server accepts revocation"
     }
   ],
   "userPriority": {
@@ -193,16 +196,17 @@
     "conflictResolution": [
       "compare",
       "rebase-explicitly",
-      "save-copy",
       "discard-by-user-choice"
-    ]
+    ],
+    "saveCopyImplemented": false
   },
   "generatedUi": {
     "allowArbitraryJavascript": false,
     "allowModelSelectedImports": false,
     "allowUnknownDslVersion": false,
     "partialJsonMayMountInteractiveControls": false,
-    "actionsRequireServerAuthorization": true
+    "actionsRequireServerAuthorization": true,
+    "validationBoundary": "Server SchemaCatalog validates complete DSL; browser whitelists supported source kinds and renders fixed React text/controls; unknown kind/version gets unavailable state."
   },
   "accessibility": {
     "inputMethodCompositionMustBlockSubmit": true,
@@ -211,7 +215,9 @@
     "backgroundEventsMayStealFocus": false,
     "reducedMotionDisablesContinuousAnimation": true,
     "stateMustHaveTextNotOnlyColor": true,
-    "privateCacheClearedOnLogout": true
+    "privateCacheClearedOnLogout": true,
+    "staleSession401MayLogOutNewSession": false,
+    "staleCsrfMayReplaceNewSessionToken": false
   },
   "browserAcceptanceCases": [
     "duplicate-event-does-not-double-grade",
@@ -226,8 +232,40 @@
     "keyboard-touch-ime-and-reduced-motion-complete-the-same-learning-flow"
   ],
   "verification": {
-    "jsonSyntax": "validated-by-author",
-    "browser": "NOT_RUN",
-    "serviceIntegration": "requires-final-integration-report"
-  }
+    "typecheck": "PASS",
+    "unitTests": "PASS: actual counts and cases in frontend/test-results/unit-report.json",
+    "productionBuild": "PASS",
+    "browser": "LOCAL_ENVIRONMENT_BLOCKED: Chromium AF_UNIX socket permission; browser CI remains a required gate",
+    "report": "frontend/test-results/browser-report.json",
+    "finalIntegrationReport": "See repository README for the current final acceptance report",
+    "serviceIntegration": "PASS: real HTTP DOM, 9 linked flows; frontend/test-results/live-dom-report.json"
+  },
+  "implementationScope": {
+    "routing": "hash routes; same-origin session and CSRF",
+    "pages": [
+      "knowledge and reading",
+      "choice practice and feedback",
+      "progress and reviews",
+      "finite type lab",
+      "documents and slides",
+      "notebook actions",
+      "persistent tutor",
+      "durable evidence workflow",
+      "memories and goals",
+      "preferences and capabilities"
+    ],
+    "notImplemented": [
+      "editorial browser console",
+      "arbitrary compiler execution",
+      "image/audio/video generation",
+      "PPTX/DOCX/PDF generation",
+      "SSE",
+      "full-fidelity execution of all 209 external examples"
+    ],
+    "source": "frontend/src",
+    "build": "npm run build",
+    "unitVerification": "npm run check",
+    "browserVerification": "TYPEFORGE_BASE_URL=http://127.0.0.1:8080 npm run test:e2e"
+  },
+  "browserAcceptanceCasesStatus": "Target checklist; only cases in actual browser-report.json count as browser-verified"
 }

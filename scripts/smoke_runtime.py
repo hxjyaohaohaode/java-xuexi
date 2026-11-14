@@ -2,7 +2,7 @@
 """Exercise a packaged runtime over real HTTP, including a process restart.
 
 Build the jar separately, then run:
-  python scripts/smoke_runtime.py --jar backend/target/typeforge-backend-0.3.0-SNAPSHOT.jar
+  python scripts/smoke_runtime.py --jar backend/target/typeforge-backend-0.4.0-SNAPSHOT.jar
   python .work/mysql-validation/with_mysql.py python scripts/smoke_runtime.py --profile mysql
 
 The default uses a new task-owned H2 file database. MySQL mode requires an explicit
@@ -57,10 +57,12 @@ class Client:
         self.csrf_header = None
         self.csrf_token = None
 
-    def request(self, method, path, body=None, expected=(200,), key=None, csrf=True):
+    def request(self, method, path, body=None, expected=(200,), key=None, csrf=True, extra_headers=None):
         if not path.startswith(API + "/"):
             raise SmokeFailure("HTTP smoke requests must use the local API prefix")
         headers = {"Accept": "application/json"}
+        if extra_headers:
+            headers.update(extra_headers)
         data = None
         if body is not None:
             data = json.dumps(body, ensure_ascii=False).encode("utf-8")
@@ -92,6 +94,17 @@ class Client:
             detail = self.smoke.redact(json.dumps(result, ensure_ascii=False))[:700]
             raise SmokeFailure(f"{method} {path}: expected {expected}, received {status}: {detail}")
         return result
+
+    def download(self, path):
+        if not re.fullmatch(r'/api/v1/export-jobs/[a-f0-9-]{36}/download', path):
+            raise SmokeFailure('Refusing a download outside the authenticated export API')
+        with self.opener.open(self.base + path, timeout=8) as response:
+            content = response.read(MAX_RESPONSE + 1)
+            if response.status != 200 or len(content) > MAX_RESPONSE:
+                raise SmokeFailure('Invalid export download status or size')
+            if not response.headers.get('Content-Disposition', '').startswith('attachment;') or response.headers.get('Cache-Control') != 'private, no-store':
+                raise SmokeFailure('Export download omitted private attachment headers')
+        return content
 
     def csrf(self):
         token = self.request("GET", API + "/auth/csrf")
@@ -144,6 +157,10 @@ class Application:
                    "--spring.datasource.driver-class-name=" + driver,
                    "--spring.flyway.locations=" + migrations,
                    "--typeforge.events.dispatch-enabled=true", "--typeforge.events.poll-millis=200",
+                   "--typeforge.export.dispatch-enabled=true", "--typeforge.export.poll-millis=200",
+                   "--typeforge.tutor.provider-url=", "--typeforge.tutor.api-key=", "--typeforge.tutor.model=",
+                   "--typeforge.tutor.worker-enabled=true",
+                   "--typeforge.bootstrap.editor-users=", "--typeforge.bootstrap.admin-users=",
                    "--server.servlet.session.cookie.secure=false"]
         self.process = subprocess.Popen(command, cwd=self.smoke.work, env=self.smoke.env,
                                         stdin=subprocess.DEVNULL, stdout=self.log,
@@ -314,6 +331,7 @@ class Smoke:
         self.check("capabilities distinguish working local services from unconfigured model/compiler/media",
                    capabilities["businessReady"] is False and not enabled.intersection(unavailable)
                    and {"CHOICE_GRADING", "LOCAL_EVIDENCE_WORKFLOW", "OUTBOX_PROJECTIONS"} <= enabled
+                   and {"FINITE_TYPE_LAB", "NOTEBOOK_ACTIONS", "STATIC_EXPORT", "TUTOR_EVIDENCE_ONLY", "EDITORIAL_PUBLISHING"} <= enabled
                    and {"LLM_PLANNING", "LLM_TUTOR", "UNTRUSTED_CODE_EXECUTION", "MEDIA_GENERATION", "BINARY_EXPORT"} <= unavailable)
         return capabilities
 
@@ -441,6 +459,52 @@ class Smoke:
         unsupported = client.request("POST", API + "/attempts", {**attempt_input, "answer": {"kind": "CODE", "source": "class Demo {}"}},
                                      expected=(503,), key="code-" + uuid.uuid4().hex)
         self.check("untrusted code is refused without a compiler worker", unsupported.get("code") == "CAPABILITY_UNAVAILABLE")
+        # v0.4: actual HTTP linkage, persisted on both H2 and MySQL, then compared after restart.
+        preference = client.request("GET", API + "/me/preferences")
+        preference = client.request("PUT", API + "/me/preferences", {**preference, "theme": "dark", "reducedMotion": True},
+                                    extra_headers={"If-Match": '"' + str(preference["revision"]) + '"'})
+        self.check("preference CAS persists a new revision", preference["revision"] == 2 and preference["theme"] == "dark")
+        lab = client.request("POST", API + "/labs/sessions", {"workspaceId": workspace_id, "releaseId": release,
+                             "labType": "ASSIGNMENT", "sourceType": "List<Integer>", "targetType": "List<Number>", "prediction": "ALLOWED"},
+                             expected=(201,), key="lab-" + uuid.uuid4().hex)
+        self.check("finite laboratory records a real supported type verdict without executing code",
+                   lab["verdict"] == "DENIED" and lab["predictionCorrect"] is False and lab["jobId"] is None)
+        reading = client.request("POST", API + "/learning-events", {"workspaceId": workspace_id, "releaseId": release,
+                                 "conceptId": concepts[0]["id"], "eventType": "READ_COMPLETED"}, expected=(201,), key="reading-" + uuid.uuid4().hex)
+        self.check("reading is activity evidence with a server timestamp", reading["evidenceClass"] == "ACTIVITY_NOT_MASTERY" and bool(reading["occurredAt"]))
+        block = version["content"]["blocks"][0]
+        action = client.request("POST", API + f"/notebooks/{notebook['id']}/actions", {"artifactRevision": 1, "blockId": block["id"],
+                                "expectedBlockRevision": block["revision"], "action": "submitAnswer", "selection": "",
+                                "answer": {"kind": "CHOICE", "optionIds": oracle["correctOptionIds"]}}, key="notebook-action-" + uuid.uuid4().hex)
+        corrected = client.request("GET", API + "/attempts/" + action["attemptId"])
+        self.check("notebook action calls the real grader and keeps repeated-family practice assisted",
+                   action["status"] == "COMPLETED" and corrected["score"] == 100 and corrected["hintLevel"] == 4)
+        conversation = client.request("POST", API + "/tutor/conversations", {"workspaceId": workspace_id, "releaseId": release, "title": "PECS evidence"},
+                                      expected=(201,), key="conversation-" + uuid.uuid4().hex)
+        tutor = client.request("POST", API + "/tutor/requests", {"conversationId": conversation["id"], "snapshotId": context["id"],
+                               "mode": "EVIDENCE_ONLY", "question": "PECS 泛型通配符", "hintLevel": 1, "attemptId": attempt["id"]},
+                               expected=(202,), key="tutor-" + uuid.uuid4().hex)
+        tutor = self.wait_for("durable evidence-only tutor completes with real citations",
+                              lambda: client.request("GET", API + "/tutor/requests/" + tutor["id"]),
+                              lambda value: value["status"] in ("COMPLETED", "FAILED", "CANCELLED"))
+        self.check("evidence tutor distinguishes deterministic output from a model call",
+                   tutor["status"] == "COMPLETED" and tutor["mode"] == "EVIDENCE_ONLY" and tutor["evidenceRefs"]
+                   and tutor["usage"]["reservedTokens"] == 0 and tutor["sourceState"] == "CURRENT")
+        document = client.request("POST", API + f"/tutor/requests/{tutor['id']}/document", {"title": "PECS evidence document"},
+                                  expected=(201,), key="tutor-document-" + uuid.uuid4().hex)
+        document_id = document["artifactId"]
+        document_version = client.request("GET", API + f"/artifacts/{document_id}/revisions?revision=1")
+        self.check("tutor document remains DRAFT and inherits revocable memory provenance",
+                   document_version["reviewStatus"] == "DRAFT" and any(ref["kind"] == "MEMORY" for ref in document_version["inputRefs"]))
+        export = client.request("POST", API + f"/artifacts/{document_id}/exports", {"artifactRevision": 1, "format": "HTML"},
+                                expected=(202,), key="export-" + uuid.uuid4().hex)
+        export = self.wait_for("persistent text export produces a real file",
+                               lambda: client.request("GET", API + "/export-jobs/" + export["id"]),
+                               lambda value: value["status"] in ("SUCCEEDED", "FAILED", "CANCELLED"))
+        self.check("successful export exposes an authenticated file whose bytes match the stored hash",
+                   export["status"] == "SUCCEEDED" and export["downloadPath"] is not None
+                   and hashlib.sha256(client.download(export["downloadPath"])).hexdigest() == export["contentHash"])
+        extras = {"preference": preference, "lab": lab, "tutor": tutor, "export": export, "documentId": document_id}
         attacker = Client(self, base)
         other_password = secrets.token_urlsafe(24)
         self.secrets.add(other_password)
@@ -480,6 +544,10 @@ class Smoke:
         reloaded = restored.request("GET", API + f"/workspaces/{workspace_id}")
         self.check("workspace and release binding survive restart", reloaded["id"] == workspace_id and reloaded["releaseId"] == release)
         comparisons = [
+            ("saved appearance preferences", "/me/preferences", extras["preference"]),
+            ("finite type experiment", f"/labs/sessions/{extras['lab']['id']}", extras["lab"]),
+            ("tutor answer and accounting", f"/tutor/requests/{extras['tutor']['id']}", extras["tutor"]),
+            ("actual export file metadata", f"/export-jobs/{extras['export']['id']}", extras["export"]),
             ("immutable graded attempt", f"/attempts/{attempt['id']}", saved["attempt"]),
             ("notebook DSL and provenance hash", f"/artifacts/{notebook['id']}/revisions?revision=1", saved["version"]),
             ("durable run and output references", f"/agent-runs/{run['id']}", saved["run"]),
@@ -494,6 +562,14 @@ class Smoke:
             self.check(name + " survives process restart unchanged", actual == expected)
         self.check("capability honesty survives restart", self.capabilities(restored) == saved["capabilities"])
         self.verify_private_sql(saved)
+        self.check("export bytes survive actual process restart", hashlib.sha256(restored.download(extras["export"]["downloadPath"])).hexdigest() == extras["export"]["contentHash"])
+        restored.request("POST", API + f"/memories/{memory['id']}/revoke", {"expectedRevision": memory["revision"]}, expected=(204,))
+        stale_export = restored.request("GET", API + "/export-jobs/" + extras["export"]["id"])
+        stale_tutor = restored.request("GET", API + "/tutor/requests/" + extras["tutor"]["id"])
+        self.check("memory revocation hides dependent tutor answer and prevents old download",
+                   stale_export["downloadPath"] is None and stale_export["sourceState"] == "STALE"
+                   and stale_tutor["sourceState"] != "CURRENT" and not stale_tutor["answer"])
+        restored.request("GET", extras["export"]["downloadPath"], expected=(409,))
         restored.request("DELETE", API + "/auth/session", expected=(204,))
         restored.request("GET", API + f"/workspaces/{workspace_id}", expected=(401,))
         self.check("logout invalidates subsequent private-resource access", True)

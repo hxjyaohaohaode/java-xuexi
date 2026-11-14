@@ -17,8 +17,9 @@ public class FrameworkController {
     public record Framework(String phase, boolean businessReady, List<Module> modules) {}
     private final JdbcTemplate jdbc;
     private final List<Module> modules;
-    public FrameworkController(JdbcTemplate jdbc,JsonCodec json) throws IOException {
-        this.jdbc=jdbc;
+    private final List<RuntimeCapabilityProvider> adapters;
+    public FrameworkController(JdbcTemplate jdbc,JsonCodec json,List<RuntimeCapabilityProvider> adapters) throws IOException {
+        this.jdbc=jdbc;this.adapters=List.copyOf(adapters);
         JsonNode source=json.tree(new ClassPathResource("contracts/modules.json").getContentAsString(StandardCharsets.UTF_8));
         var values=new ArrayList<Module>();
         source.forEach(m->values.add(new Module(m.path("id").asText(),m.path("name").asText(),m.path("owner").asText(),m.path("status").asText())));
@@ -27,18 +28,21 @@ public class FrameworkController {
     @GetMapping("/api/v1/health")
     public Health health() {
         jdbc.queryForObject("SELECT 1",Integer.class);
-        return new Health("UP", "process-and-database; model/compiler/media not configured");
+        return new Health("UP", "process-and-database; external adapters are reported separately by capabilities");
     }
     @GetMapping("/api/v1/framework")
     public Framework framework() {
-        return new Framework("durable-learning-runtime", false, modules);
+        return new Framework("integrated-learning-workbench", false, modules);
     }
     @GetMapping("/api/v1/capabilities")
     public Map<String,Object> capabilities() {
-        return Map.of("runtimeVersion","0.3","businessReady",false,
-            "enabled",List.of("SESSION_AUTH","PUBLISHED_COURSE_READ","BM25_RETRIEVAL","CHOICE_GRADING","ORDERED_EVENTS","OUTBOX_PROJECTIONS","CONTEXT_AND_REVOCATION","ARTIFACT_DSL_VERSIONING","NOTEBOOK_SOURCE","LOCAL_EVIDENCE_WORKFLOW","DURABLE_DAG_CONTROL"),
-            "unavailable",List.of("LLM_PLANNING","LLM_TUTOR","UNTRUSTED_CODE_EXECUTION","MEDIA_GENERATION","BINARY_EXPORT","FRONTEND","EDITORIAL_PUBLISHING"),
+        var enabled=new ArrayList<>(List.of("SESSION_AUTH","PUBLISHED_COURSE_READ","BM25_RETRIEVAL","CHOICE_GRADING","ORDERED_EVENTS","OUTBOX_PROJECTIONS","CONTEXT_AND_REVOCATION","ARTIFACT_DSL_VERSIONING","NOTEBOOK_SOURCE","LOCAL_EVIDENCE_WORKFLOW","DURABLE_DAG_CONTROL","USER_PREFERENCES","READING_EVENTS","FINITE_TYPE_LAB","NOTEBOOK_ACTIONS","STATIC_EXPORT","TUTOR_EVIDENCE_ONLY","EDITORIAL_PUBLISHING","MANUAL_INGESTION"));
+        var unavailable=new ArrayList<>(List.of("LLM_PLANNING","UNTRUSTED_CODE_EXECUTION","MEDIA_GENERATION","BINARY_EXPORT","AUTOMATIC_ASSET_UPLOAD"));
+        if(adapters.stream().anyMatch(adapter->adapter.enabledCapabilities().contains("TUTOR_MODEL"))) enabled.add("TUTOR_MODEL");else unavailable.add("LLM_TUTOR");
+        if(new ClassPathResource("static/index.html").exists()) enabled.add("FRONTEND");else unavailable.add("FRONTEND");
+        return Map.of("runtimeVersion","0.4","businessReady",false,
+            "enabled",List.copyOf(enabled),"unavailable",List.copyOf(unavailable),
             "learningEvidence","Only server-graded first attempts from distinct families contribute independent samples",
-            "localWorkflow","Deterministic evidence retrieval; no model call and no invented natural-language answer");
+            "localWorkflow","Evidence workflow is deterministic. Tutor EVIDENCE_ONLY and configured MODEL are separate request modes.");
     }
 }

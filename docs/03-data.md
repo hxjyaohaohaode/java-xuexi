@@ -1,118 +1,126 @@
-# 数据模型、数据库与隐私边界
+# 数据模型、数据库与一致性边界
 
-## 1. 结构
+## 1. 当前结构：v0.4，6 次迁移，69 张业务表
 
-数据库迁移包含 [V001 课程表](../database/V001__baseline.sql)、[V002 工作空间表](../database/V002__agent_workspace.sql)及 [V003 运行时完整性](../database/V003__runtime_integrity.sql)。V003 新增 5 张运行时关联/投影表并扩展 outbox 重试字段。字段、约束与索引见 [课程字典](../database/data-dictionary.md)、[Agent 字典](../database/agent-data-dictionary.md)及[运行时字典](../database/runtime-data-dictionary.md)。v0.3 后端已通过 JDBC/Flyway 真实连接数据库并写入工作空间、作答、事件、任务和作品版本；表存在不代表所有预留业务都已实现。
+当前后端通过 Spring JDBC 和 Flyway 读写真实数据库；默认使用持久 H2 文件，MySQL Profile 执行原始 MySQL SQL。**V001–V006 累积 69 张业务表，不含 Flyway 元数据表。** 表结构与字段以[唯一字段字典](../database/data-dictionary.md)为准，业务完成度以[模块指南](02-modules.md)、[接口状态](../contracts/README.md)和实际服务为准；保留的编译、素材、Agent 审校等表不意味着对应完整业务已经开放。
 
-```mermaid
-erDiagram
-    app_user ||--o{ exercise_attempt : submits
-    app_user ||--o{ conversation : owns
-    app_user ||--o{ learning_event : records
-    concept ||--o{ knowledge_chunk : explains
-    knowledge_chunk ||--o{ chunk_source : cites
-    knowledge_source ||--o{ chunk_source : supports
-    content_release ||--o{ release_concept : freezes_graph
-    concept ||--o{ release_concept : versioned_in
-    content_release ||--o{ release_chunk : contains
-    knowledge_chunk ||--o{ release_chunk : selected_version
-    content_release ||--o{ release_exercise : contains
-    exercise ||--o{ release_exercise : selected_version
-    release_exercise ||--o{ exercise_attempt : attempted_version
-    exercise_attempt o|--o{ compile_job : verified_by
-    exercise_attempt ||--o{ review_item : suggests
-    content_release ||--o{ index_snapshot : indexed_by
-    content_release ||--o{ conversation : grounds
-    conversation ||--o{ tutor_request : contains
-    tutor_request ||--o| tutor_message : completes
-    tutor_message ||--o{ message_citation : cites
-    release_chunk ||--o{ message_citation : grounds
-    outbox_event ||--o{ event_receipt : deduplicates
-```
+| 迁移 | 新表数 | 当前作用 |
+|---|---:|---|
+| [V001](../database/V001__baseline.sql) | 31 | 账户、知识与题库、发布、作答、学习投影、导师基础表、审计与幂等 |
+| [V002](../database/V002__agent_workspace.sql) | 20 | 工作空间、目标与快照、持久任务、作品版本、记忆、依赖与运行事件 |
+| [V003](../database/V003__runtime_integrity.sql) | 5 | 空间作答关联、题目家族证据、空间投影、作品输入闭包、本地证据工作流；扩展 outbox 重试字段 |
+| [V004](../database/V004__tutor_runtime.sql) | 4 | 空间会话关联、按用户日额度、导师持久请求、回答到文档的来源链接 |
+| [V005](../database/V005__content_workbench.sql) | 6 | 编辑准入锁、人工采集收据、知识到收据、题目到知识、独立审核证据、发布清单 |
+| [V006](../database/V006__interactive_learning.sql) | 3 | 空间实验关联、交互动作收据、真实导出文件内容；扩展导出失败码 |
 
-此 ER 为核心关系图，完整辅助表和所有 FK 以 SQL/数据字典为准。`concept_edge` 是编辑中的前置关系；发布时复制为 `release_concept` 的标题与前置 ID 快照，阅读必须按发布读快照，避免后续调整概念图影响旧学习记录。
+已执行迁移不得修改或删除。[迁移哈希清单](../database/migrations.lock.json)保护这条升级链；后续结构变化使用新的前向迁移。H2 兼容迁移与 MySQL SQL 是两套实际运行入口，不能用 H2 通过代替 MySQL 行为验证。
 
 ## 2. 聚合与写入责任
 
-| 表组 | 唯一写入模块 | 读者 | 约束 |
-|---|---|---|---|
-| app_user / user_preference | M01 | 各模块经权限服务 | 规范化账号唯一；密码仅散列 |
-| concept / concept_edge / source / chunk / chunk_source | M07/M10 | M02/M08 | 卡片 id+revision 不覆盖；来源变更新建记录 |
-| exercise / exercise_concept | M10 | M05 | 标准答案不进入公共 API；权重合计应用校验 |
-| content_review / release_* / active_release / index_snapshot | M10 | M02/M05/M08/M09 | 独立审核；指针原子更新；发布成员不可变 |
-| exercise_attempt | M05 | M06/M09 | 固定发布和题版本；终态判分不可覆盖 |
-| compile_job / lab_session | M04/M03 | M05/M09 | 归属与 release 一致；租约 CAS |
-| learning_event / learner_concept / review_item | M06 | 本人仪表盘/M09 | 事实与投影分离；重复不加分 |
-| workspace_attempt / learning_family_evidence | M05/M06 | M15/M16 | 作答归属明确；每人每概念每题家族最多一个独立样本 |
-| workspace_projection | M12 事件消费者 | M15/本人空间 | 连续游标与活动计数；不作为掌握度 |
-| artifact_input_reference | M14 | M15/M16/失效服务 | 同空间输入血缘、固定 revision/hash、多态引用逐项授权 |
-| local_evidence_workflow | M09 本地证据适配器 | M13 | 私有 query、固定 adapter 版本；不代表 LLM 调用 |
-| outbox_event / event_receipt | 发布事件模块/对应消费者 | M12 | at-least-once + 事务内去重 |
-| conversation / tutor_request / tutor_message / message_citation | M09 | 本人导师页 | 不跨用户、跨发布引用 |
-| retrieval_log / audit_event / idempotency_record | M08/M12/请求模块 | 授权维护者 | 日志最小化，幂等按用户和操作隔离 |
+| 表组 | 写入责任 | 关键不变量 |
+|---|---|---|
+| `app_user` / `user_preference` | M01 身份 | 规范化账号唯一；密码仅散列；界面偏好有 revision / ETag |
+| `knowledge_source` / `content_ingestion` | M07 人工资料工作台 | 来源不可被收据换绑；原稿、清洗稿与实际内容哈希一起持久化 |
+| `concept` / `concept_edge` / `knowledge_chunk` / `chunk_source` / `chunk_ingestion` | M10 内容草稿，读取 M07 收据 | 追加 `id+revision`，不覆盖旧正文；来源和具体采集收据一同绑定 |
+| `exercise` / `exercise_concept` / `exercise_knowledge` | M10 题目草稿 | 当前仅单选/多选；家族固定；概念权重合计 1；支持知识精确到版本 |
+| `content_review` / `content_review_evidence` | M10 独立审核 | 作者不能审核自己；目标版本只有一次终态决定；审核绑定完整 review hash |
+| `content_release` / `release_*` / `release_manifest` / `active_release` / `index_snapshot` | M10 发布 | 成员与概念图冻结；清单复验；活动指针 CAS；旧工作空间不自动迁移 |
+| `exercise_attempt` / `workspace_attempt` | M05 判分 | 本人、同空间、固定 release 与题版本；终态结果不覆盖 |
+| `learning_event` / `learning_family_evidence` / `learner_concept` / `review_item` | M06 学习证据与投影 | 事实和投影分开；同人同概念同题目家族最多一个独立样本 |
+| `lab_session` / `workspace_lab` | M03 有限类型实验 | 实际规则结果、本人预测与固定空间；不冒充任意源码编译或独立掌握证据 |
+| `learning_workspace` / `learning_goal` / `context_snapshot` / `learner_memory` | M15 工作空间 | 本人归属；release 固定；目标有版本；快照引用可复验；记忆可撤回或到期 |
+| `workspace_event` / `workspace_projection` / `outbox_event` / `event_receipt` | 领域事件生产者、M12 消费者 | 顺序事件；业务与 outbox 同事务；回执与投影同事务 |
+| `agent_run` / `agent_step` / 依赖、工具、运行事件表 | M13 持久运行时 | plan revision、epoch、lease 与执行键；预算原子预留/结算；实际执行器按注册能力准入 |
+| `local_evidence_workflow` | M09 本地证据适配器 | 私有 query、固定检索适配器；结果明确为证据整理 |
+| `conversation` / `workspace_conversation` / `tutor_request*` / `tutor_message` / `message_citation` / `tutor_daily_budget` | M09 导师 | 同人同空间同发布；队列、取消、来源复验；已派发但结果未知的请求保留额度 |
+| `learning_artifact` / `artifact_revision` / `artifact_dependency` / `artifact_input_reference` | M14 作品 | 不可变源版本、显式直接引用与传递闭包；源变更传播过期 |
+| `tutor_artifact_link` | M09 到 M14 的应用编排 | 回答、快照、响应哈希与首次文档版本对应；后续学生编辑不抹除来源 |
+| `notebook_entry` / `notebook_action_receipt` | M16 复练 | 本人真实错题；当前作品/块版本；动作幂等并复用实际判分服务 |
+| `export_job` / `artifact_export_content` | M14 本地导出 | 固定源版本、渲染器版本与 UTF-8 文件哈希；下载再验来源 |
+| `retrieval_log` / `audit_event` / `idempotency_record` | 对应应用服务 | 日志最小化；幂等按用户和操作隔离；同 key 不同请求拒绝 |
 
-跨模块读取使用应用端口，不绕过服务直接修改另一模块表。多个领域可共享同一 MySQL 事务，但必须由应用服务明确编排。
+写入通过所属服务；跨模块工作由应用服务编排，不让前端或模型指定 owner、审核人或最终成绩。`ingestion` 不反向依赖 `publishing`；后者读取人工采集收据，公共编辑授权位于 `identity.ContentAccess`，保持模块依赖无环。
 
-## 3. 数据库能保证与不能独立保证的事
-
-主外键保证目标存在；复合外键保证提交使用发布中真正存在的题目版本、引用来自该发布的知识卡；唯一键防止重复版本、重复事件凭据和重复幂等 key；CHECK 校验状态、分数和范围。
-
-数据库本身不能从普通 FK 自动保证：attempt.userId 与 compile_job.userId 相同；conversation 与引用的 release 相同；发布时 reviewer 真的是内容作者以外的人且有编辑权限；同发布概念前置均存在且无环；题目权重合计 1；稿件最新 revision 与提交 baseRevision 一致。以上必须在应用事务、授权条件和集成测试中落实。`content_review` 为多态目标，targetId 没有虚构的跨表 FK，应用要校验目标和版本。
-
-## 4. 索引与查询
-
-- 本人提交/实验/会话：`user_id,created_at,id`，按 cursor 翻页。
-- 作业领取：`status,lease_until,created_at,id`；事务短，领取后立即提交。
-- 概念知识：`concept_id,status`，读已选发布成员；对正文不做无界 LIKE。
-- 复习：`user_id,status,due_at,id`；先过滤本人再排序。
-- 阅读/评分事实：`user_id,concept_id,occurred_at,id`。
-- 发布关联表用复合主键；实际数据量建立后再 EXPLAIN，不凭索引存在声称高性能。
-
-## 5. 迁移、保留与删除
-
-Flyway 已接入并按 V001→V002→V003 管理 schema history；默认 H2 使用兼容适配，MySQL Profile 使用原始 SQL。不改写已经执行过的迁移，不把已手工建表的库当成空库再次初始化。部署前备份并校验迁移兼容性；当前独立验证脚本只使用自己创建的临时库，不连接用户已有数据库。真实引擎与验证结果见 [v0.3 验收记录](../evidence/runtime-review.md)。
-
-业务建议保留策略：私人临时代码/编译输出 30 天、对话 90 天（用户可提前删）、审计最小元数据 180 天；这是待两人确认的项目配置，不是法律期限。成绩事实与发布快照保留至课程验收完成并根据用户选择导出/删除。`RESTRICT` 避免误级联，删除账户要按依赖顺序删除私有记录或经明确策略匿名化；知识作者署名和审计可采用无个人身份的已删除主体，不能直接删掉被 FK 引用的账户。
-
-outbox 与 receipt 要共同考虑重放窗口，不能先删除 receipt 再把旧事件重放一次。数据清理、备份和恢复都要包含索引快照/发布清单，单独恢复 MySQL 而丢失旧索引不算恢复成功。
-
-## 6. 当前测试数据
-
-`seed-demo.sql` 仍只插入禁用的占位作者、来源索引、概念、草稿卡、草稿发布和概念快照，用于独立 SQL 检查；只加载该脚本时 active_release 为空。
-
-另有显式 `demo` Profile 的 `DemoContentInitializer`：事务保存 16 个概念、16 张原创知识卡、12 道题与演示发布。它的作者禁用，来源标记 `demo-authored-code-reviewed`，没有可登录默认口令、学生成绩、模型回答或伪造 `content_review`。存储状态 `REVIEWED` 不能被解释成已完成正式双人审核；内容正文和审计明确这一限制。标准 Profile 不自动启用此 fixture，后续正式发布仍需实现完整审核管线。
-
-## Agent 与作品数据链
+## 3. 内容从人工资料进入可学习发布
 
 ```mermaid
-erDiagram
-    app_user ||--o{ learning_workspace : owns
-    content_release ||--o{ learning_workspace : fixes_knowledge
-    learning_workspace ||--o{ learning_goal : contains
-    learning_workspace ||--o{ workspace_event : orders
-    learning_workspace ||--o{ context_snapshot : freezes
-    learning_goal ||--o{ agent_run : drives
-    context_snapshot ||--o{ agent_run : grounds
-    agent_run ||--o{ agent_step : schedules
-    agent_step ||--o{ tool_execution : executes
-    agent_run ||--o{ agent_run_event : replays
-    learning_workspace ||--o{ learning_artifact : contains
-    learning_artifact ||--o{ artifact_revision : versions
-    artifact_revision ||--o{ export_job : renders
-    artifact_revision ||--o{ agent_verdict : checks
-    artifact_revision ||--o{ notebook_entry : contains
-    exercise_attempt ||--o{ notebook_entry : explains
-    learning_workspace ||--o{ learner_memory : contextualizes
+flowchart TD
+    A[来源登记] --> B[原稿与清洗收据]
+    B --> C[知识版本]
+    C --> D[独立编辑审核]
+    D --> E[题目及知识引用]
+    E --> F[独立题目审核]
+    D --> G[不可变发布清单]
+    F --> G
+    G --> H[原子发布指针]
+    H --> I[新空间选择课程]
+    G --> J[旧空间保留原课程]
 ```
 
-写入所有者：M15负责workspace/goal/event/snapshot/memory；M13负责run/step/dependency/message/tool/run_event及租约调度；M14负责artifact/revision/asset/export/dependency/verdict；M16负责notebook_entry。只有 M05/M06 可以产生成绩/学习事实。
+来源 URL 只作登记，不触发网络抓取。`content_ingestion` 保存用户实际提交的原稿、清洗稿、处理说明、作者和时间；规范化换行后计算两个内容哈希。`chunk_ingestion` 的复合外键使收据不能挂到另一个来源。首次实际采集才填入来源的 `raw_hash`；它表示提交文本的哈希，不证明服务器下载或验证过 URL 全文。
 
-SQL直接强制：目标和快照必须同workspace；依赖边必须同run同planRevision；素材/作品引用必须同workspace；触发事件去重；调用executionKey唯一；作品版本唯一；写租约一作品一条；预算已花费+预留不超过总额；状态枚举及数值范围。
+草稿使用 `baseRevision` 比较并追加版本。审核绑定知识标题、正文、来源与收据，或题目完整私有答案、概念权重与知识引用；只对正文做哈希不足以保护题目答案和来源说明。当前“双人”规则是**作者与另一位已授权编辑**，不是两个审核者，也不是系统对现实身份的认证。测试账户和 demo 元数据不算真人审核。
 
-**需要应用事务和最终业务测试的不变量**：空间必须属于当前会话且release已发布；触发事件、生产步骤、导出结果、原始作答都与目标作品同owner/workspace/release；复合FK未覆盖的跨表关系逐个校验。agent_step.planRevision必须为正在执行计划；run.plan_json与节点/边一致；依赖图和作品派生图无环；所有输入引用合法且未撤回；current_revision必须指向实际存在版本；作品kind与DSL匹配；素材只有CLEAN才使用；verdict不能由作品作者角色自封通过；导出format与kind兼容。
+构建 release 时，所有知识和题目都必须有独立批准证据；冻结完整前置概念图，检查无环、前置概念有知识覆盖、题目支持知识属于同一 release。`release_manifest` 保存确定性清单及检查器版本，`index_snapshot` 记录实际 SQL BM25 语料校验；`READY` 不表示构建了向量文件或完成模型质量评测。
 
-**作品提交事务**：锁artifact→检查baseRevision→检查run.status/epoch、step lease、artifact_write_lease.token/until→再次核对输入撤回状态→插入新revision→更新current_revision→写依赖失效事件与outbox→释放租约→提交。所有业务路径按同一锁顺序执行，死锁有限退避，不跨网络持锁。用户编辑优先：撤销/提升租约epoch后保存自己的分支，旧Agent结果保留为未合并候选，不覆盖用户稿。
+发布事务重新计算审核和清单哈希，核对真实索引记录，再比较 `expectedActiveRevision`，一并写入 `PUBLISHED`、发布时间、活动指针和审计。失败整笔回滚。历史激活只接受已发布的正式清单，同样复验；原发布时间和成员不变。幂等重放返回资源当前视图，不会把后来已切换的指针再次激活。新 release 可由 M02/M08/M05 直接读取；所有已有 `learning_workspace.release_id` 保持不变。
 
-**预算事务**：锁run，按最坏可计费量预留；供应商调用完成后以唯一executionKey结算spent/reserved，结果未知继续保留额度并主动对账。总额CHECK提供最后一道保护；模型额度、媒体时长和token也需应用层并行预留。使用整数微美元，API限制金额范围以保持JS安全整数；该单位不是对供应商价格的预测。
+## 4. 统一引用与当前有效性
 
-**恢复与保留**：事件序号/状态/费用和产物版本是事实，聊天摘要不是事实库；运行重启先恢复租约/对账而非重放全部工具。撤回记忆先禁用内容引用，再清理派生摘要与缓存；审计只留匿名id、操作、时间，不保留删除正文。原始学习结果按用户设置处理，不能借撤回推断记忆悄悄删除真实成绩，也不能让旧快照重新引用已删除记忆。
+API 中的资源引用为 `kind / id / revision / contentHash`。owner、workspace 和 release 由当前会话及关联表验证，不能信任请求自行声明的归属。当前源引用包括 `GOAL`、`MEMORY`、`ATTEMPT`、`KNOWLEDGE_CHUNK`、`ARTIFACT`；作品保存不接受尚未实现展开语义的 `SNAPSHOT` 引用，应使用明确源项。
+
+`artifact_revision.input_refs` 是直接来源清单，`artifact_input_reference` 是持久化的传递闭包。保存最多 64 个直接来源、256 个不同的直接及间接来源；同一类型/id 经两条路径出现不同 revision/hash 时拒绝，不静默选择一版。
+
+当前已实现的上下文读取、导师、作品保存、复练动作和导出，在消费 `ARTIFACT` 输入时统一进入 `WorkspaceService.validateReferences`。未来自动作品输出适配器也必须复用完整来源校验，不能只比较数据库里的 hash 字符串。该校验：
+
+1. 从真实 `content_json` 重新计算 root 与祖先作品哈希；要求当前版本和允许使用的状态。
+2. 从直接清单有界展开到 256 项，核对每个祖先直接清单属于自身索引，祖先索引属于根闭包，最终闭包完全一致；拒绝缺索引、额外边、冲突版本和循环。
+3. 对非作品叶子分批复验归属、release、实际内容哈希、状态及时间有效性；同次验证缓存已读祖先，不为每个祖先递归重跑整套闭包。
+
+因此，自然到期的 MEMORY 即使没有触发显式 revoke 事件，也不能通过“先派生作品 A，再派生 B”继续进入旧上下文或下载。显式目标编辑、记忆撤回、作品换版还会同步传播 `STALE`。这两层分别处理主动变化和被动时间变化；只有事件传播不能替代消费时复验。
+
+## 5. 事务隔离与锁顺序
+
+共享 `TransactionTemplate` 明确使用 **READ_COMMITTED**。MySQL 默认 REPEATABLE READ 下，事务先普通读、后等行锁，再普通读可能仍看旧快照；单独加锁不足以保证锁后的普通读看到新额度。本仓库保留准入行锁，并用实际 MySQL 的双事务屏障及 REPEATABLE READ 负对照验证这一行为，见[隔离回归](../backend/src/test/java/io/typeforge/TransactionIsolationTest.java)。
+
+| 写路径 | 锁顺序及事务边界 |
+|---|---|
+| 私人空间、学习动作、作品、导出 | 当前用户 → 工作空间 → 具体作品/任务等对象；先锁归属，再复验与写入 |
+| M13 运行控制 | 当前用户 → 工作空间 → run；校验计划 revision、epoch、lease 后改变状态或账本 |
+| M09 导师 | 当前用户 → 工作空间 → request；准入/派发标记/完成各自短事务，外部 HTTP 在事务之外 |
+| M07/M10 编辑 | `content_workbench_lock(1)` → 当前编辑用户 → 目标版本/release → `active_release` |
+| 启动授权配置 | 非空配置先取同一编辑锁，再取待提升的用户行；全空配置无动作 |
+
+编辑侧粗粒度锁适合当前两人团队，使版本、审核、清单和指针决策串行。它限制写入吞吐，但避免多处局部锁难以审查的竞态；锁内不抓网页、不调用模型。启动授权也采用这一顺序，避免滚动启动时与“审核人行锁 + 作者外键锁”形成锁环。
+
+`TYPEFORGE_EDITOR_USERS` / `TYPEFORGE_ADMIN_USERS` 只提升已存在的 ACTIVE 账户，并写审计；没有默认密码、自动建号或 HTTP 自我升权。角色只允许 `LEARNER / EDITOR / ADMIN`，未知名称不获授权。编辑读写都复查当前数据库角色，旧会话不能绕过撤销。
+
+用户保存作品时先比较 `baseRevision`、验证 DSL 和完整输入闭包，再追加版本、撤销旧作品写租约、更新 current revision 并写事件。M13 的 lease/epoch 防止过期执行实例提交；**当前已注册执行链不等于任意多专家生成器已经实现**。未来自动写作品必须复用相同版本、归属和来源准入，不能仅因持有任务 ID 就绕过用户版本。
+
+## 6. 学习、运行、导师与导出账本
+
+真实作答由服务端按固定题目版本判分，再持久化学习事件、outbox 和归属关联。消费者在同一事务写回执与学习投影，重复投递不会重复累计。题目家族去重限制独立样本；看过提示的复练和 notebook 提交保留辅助标记。阅读完成与类型实验属于活动事实，不因停留时长或重复点击增加掌握度。
+
+M13 保存运行/步骤/依赖、顺序事件、工具 execution key 和整数微美元/token 预算。先按可计费上限预留，结算以执行键幂等；外部结果未知时不能当作未执行释放费用。运行状态来自数据库，聊天摘要不代替状态库。静态任务协议、端口和表存在均不表示自主规划器或每一种媒体适配器已接通。
+
+M09 当前提供明确标识的 `EVIDENCE_ONLY`，以及仅在服务器配置有效时启用的 `MODEL` HTTP 适配器。导师请求固定快照和证据，使用租约、epoch、绝对截止时间及 UTC 日额度；HTTP 派发前记账，崩溃后对已派发而结果未知的请求不盲重放。`used_tokens` 是经边界校验的供应商自报用量，不是已核对的货币账单。实际端口为 `TutorAnswerProvider`。
+
+M14 当前真实文件范围为 Markdown、HTML、SVG：队列消费在本人/空间锁下重新判断状态，将受控渲染字节、哈希、大小和成功状态一并提交。固定 `renderer_version` 不匹配时受控失败；源码 JSON/hash 不匹配、来源变旧或到期时拒绝生成/下载。返回私有附件并禁缓存；不执行作品中的 HTML/JavaScript。PPTX、DOCX、PDF、图片、音频和视频仍需独立生产与验收。
+
+## 7. 数据库保证与应用保证
+
+主外键保证目标存在；复合外键保证发布中的题版本、来源收据归属和部分空间关联；唯一键防重复版本、审核终态、幂等键及消费回执；CHECK 限制状态、分数、预算与数值范围。
+
+普通外键不能证明“当前会话有权访问”“审核人不是作者”“所有源仍有效”“概念图无环”“答案语义正确”“权重合计 1”“发布清单与实际内容相符”。`content_review` 与统一源引用包含多态目标，不虚构一个能跨任意表的外键。这些条件由服务、事务和正反向集成测试落实。发布不可变是应用写入协议；高权限直接改库仍可能破坏数据，重验应拒绝被破坏的内容，不能声称 SQL 已禁止一切管理员修改。
+
+查询先按 owner/workspace/release 缩小范围。当前编辑列表限制 1–100 条、发布清单最多各 1,000 个知识/题目引用、概念闭包最多 100 个；不同页面的列表/游标能力以接口为准。不要把预留索引写成所有接口已有游标分页，也不凭索引存在宣称高负载性能；实际规模建立后再测量并用 EXPLAIN 核验。
+
+## 8. 迁移、保留、删除与测试数据
+
+独立 SQL 验证只使用专用测试数据库；MySQL 服务回归需要显式命名的 loopback 测试连接，不能连接用户的现有业务库。`verify_mysql.py` 检查原始迁移与约束；`verify_transaction_isolation.py` 检查实际隔离语义；`verify_content_mysql.py` 复跑内容事务并要求 JDBC 引擎证据；HTTP smoke 检查文件库和 MySQL 的真实重启持久化。最终运行结果和环境统一记录在[验收记录](../evidence/runtime-review.md)，测试源码或报告文件名不等于执行通过。
+
+`seed-demo.sql` 用于独立结构检查，只含禁用占位作者、来源索引、概念与草稿，active_release 为空。显式 `demo` Profile 则保存 16 个概念、16 张原创卡、12 道客观题与演示发布，作者不可登录、无默认口令、无学生成绩、无伪造 `content_review`。其 `REVIEWED` 标签不满足正式审核证据；正式构建会拒绝直接把 demo 装成真人审核发布。demo 初始化只在活动指针为空时设置它，不覆盖已有正式课程。
+
+私人临时代码/编译输出 30 天、对话 90 天、最小审计元数据 180 天仍是**待确认的保留建议**，不是已实现定时清理或法律期限。记忆撤回阻止后续使用，不等于已实现账户级物理擦除。删除账户、导出全部个人数据、清理备份及相关索引仍需明确策略和专项实现，不能直接删除仍被 FK 引用的主体。
+
+备份必须包含发布清单、源版本、关联、运行/额度账本与导出数据。outbox 与 receipt 一起考虑重放窗口，不能先删 receipt 再重放旧事件。未来增加外部索引或对象存储后，其版本与恢复校验也应纳入同一次恢复演练。

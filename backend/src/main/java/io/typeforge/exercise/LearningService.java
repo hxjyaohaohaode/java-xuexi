@@ -82,6 +82,10 @@ public class LearningService {
         workspaces.requireOwned(owner,rows.get(0).workspaceId());
         return rows.get(0);
     }
+    public List<Attempt> list(UUID owner,UUID workspace) {
+        workspaces.requireOwned(owner,workspace);
+        return jdbc.query("SELECT a.*,wa.workspace_id FROM exercise_attempt a JOIN workspace_attempt wa ON wa.attempt_id=a.id WHERE a.user_id=? AND wa.workspace_id=? ORDER BY a.created_at DESC,a.id LIMIT 100",this::attempt,owner.toString(),workspace.toString());
+    }
     private Attempt attempt(ResultSet rs,int row) throws SQLException {
         UUID id=UUID.fromString(rs.getString("id"));
         JsonNode feedback=json.tree(rs.getString("feedback")); JsonNode answer=json.tree(rs.getString("answer"));

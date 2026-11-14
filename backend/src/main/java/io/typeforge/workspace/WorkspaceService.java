@@ -9,8 +9,11 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -111,6 +114,23 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
         if (result.isEmpty()) throw DomainException.missing();
         return result.get(0);
     }
+    public List<Goal> goals(UUID owner,UUID workspace) {
+        requireOwned(owner,workspace);
+        return jdbc.queryForList("SELECT id FROM learning_goal WHERE workspace_id=? ORDER BY created_at DESC,id LIMIT 100",String.class,workspace.toString()).stream().map(id->goal(owner,workspace,UUID.fromString(id))).toList();
+    }
+    public Goal updateGoal(UUID owner,UUID id,int expectedRevision,String text,List<String> acceptance,String state) {
+        requireText(text,4000);
+        if(expectedRevision<1 || expectedRevision==Integer.MAX_VALUE || acceptance==null || acceptance.isEmpty() || acceptance.size()>20 || state==null || !Set.of("ACTIVE","ARCHIVED").contains(state)) throw DomainException.invalid("Invalid goal revision, criteria or state");
+        acceptance.forEach(value->requireText(value,500));
+        return tx.execute(status->{
+            UUID workspace=workspaceFor(owner,"GOAL",id);lockOwned(owner,workspace);
+            if(goal(owner,workspace,id).revision()!=expectedRevision) throw DomainException.conflict("Goal changed; preserve your draft and merge with the current goal");
+            jdbc.update("UPDATE learning_goal SET goal_text=?,acceptance=?,status=?,revision=revision+1 WHERE id=?",text,json.write(acceptance),state,id.toString());
+            events.append(workspace,"GOAL_UPDATED","CLIENT",Map.of("goalId",id,"revision",expectedRevision+1,"status",state));
+            invalidation.invalidate(workspace,"GOAL",id,expectedRevision+1);
+            return goal(owner,workspace,id);
+        });
+    }
     public EventJournal.Event recordClientEvent(UUID owner,UUID workspace,UUID eventId,String type,List<Reference> refs,int expectedRevision) {
         if (!Set.of("VIEW_CHANGED","SELECTION_COMMITTED","HELP_REQUESTED","DRAFT_CHANGED").contains(type)) throw DomainException.invalid("Clients cannot assert learning facts");
         if (refs==null || refs.size()>16) throw DomainException.invalid("Too many references");
@@ -181,10 +201,18 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
         var scope=requireOwned(owner,workspace);
         if (refs==null || refs.size()>64) throw DomainException.invalid("At most 64 context references are allowed");
         var keys=new HashSet<String>();
+        var cache=new SourceValidationCache();
         for (Reference ref:refs) {
-            if (ref==null || ref.id()==null || ref.kind()==null || ref.revision()<1 || ref.contentHash()==null || !ref.contentHash().matches("[a-f0-9]{64}") || !keys.add(ref.kind()+":"+ref.id())) throw DomainException.invalid("Invalid or duplicate context reference");
-            String hash;
-            switch (ref.kind()) {
+            if (!validReference(ref) || !keys.add(sourceKey(ref))) throw DomainException.invalid("Invalid or duplicate context reference");
+            if(ref.kind().equals("ARTIFACT")) validateArtifactReference(owner,scope,ref,cache);
+            else validateLeafReference(owner,scope,ref,cache);
+        }
+    }
+    private void validateLeafReference(UUID owner,OwnedWorkspace scope,Reference ref,SourceValidationCache cache) {
+        if(cache.validatedLeaves.contains(ref)) return;
+        UUID workspace=scope.id();
+        String hash;
+        switch (ref.kind()) {
                 case "GOAL" -> {
                     Goal goal=goal(owner,workspace,ref.id());
                     if (goal.revision()!=ref.revision() || !goal.status().equals("ACTIVE")) throw DomainException.conflict("Goal reference changed");
@@ -195,15 +223,11 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
                     if (rows.isEmpty()) throw DomainException.conflict("Memory is revoked, expired or changed");
                     hash=json.hash(json.tree(rows.get(0)));
                 }
-                case "ARTIFACT" -> {
-                    var rows=jdbc.queryForList("SELECT r.content_hash FROM learning_artifact a JOIN artifact_revision r ON r.artifact_id=a.id AND r.revision=a.current_revision WHERE a.id=? AND a.workspace_id=? AND r.revision=? AND r.review_status<>'STALE'",String.class,ref.id().toString(),workspace.toString(),ref.revision());
-                    if (rows.isEmpty()) throw DomainException.conflict("Artifact reference is no longer current");
-                    hash=rows.get(0);
-                }
                 case "KNOWLEDGE_CHUNK" -> {
-                    var rows=jdbc.queryForList("SELECT c.content_hash FROM knowledge_chunk c JOIN release_chunk rc ON rc.chunk_id=c.id AND rc.chunk_revision=c.revision JOIN content_release r ON r.id=rc.release_id WHERE c.id=? AND c.revision=? AND rc.release_id=? AND c.status='REVIEWED' AND r.status='PUBLISHED'",String.class,ref.id().toString(),ref.revision(),scope.releaseId().toString());
+                    var rows=jdbc.queryForList("SELECT c.content_hash,c.body FROM knowledge_chunk c JOIN release_chunk rc ON rc.chunk_id=c.id AND rc.chunk_revision=c.revision JOIN content_release r ON r.id=rc.release_id WHERE c.id=? AND c.revision=? AND rc.release_id=? AND c.status='REVIEWED' AND r.status='PUBLISHED'",ref.id().toString(),ref.revision(),scope.releaseId().toString());
                     if (rows.isEmpty()) throw DomainException.conflict("Knowledge evidence is unavailable in this release");
-                    hash=rows.get(0);
+                    hash=rows.get(0).get("content_hash").toString();
+                    if(!json.sha256(rows.get(0).get("body").toString()).equals(hash)) throw new DomainException("CONTENT_INTEGRITY_FAILURE",503,"Knowledge source no longer matches its published content hash");
                 }
                 case "ATTEMPT" -> {
                     if (ref.revision()!=1) throw DomainException.invalid("Attempts have a single immutable result revision");
@@ -212,9 +236,107 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
                     hash=json.hash(rows.get(0));
                 }
                 default -> throw DomainException.invalid("Reference kind is not supported by this runtime");
-            }
-            if (!hash.equals(ref.contentHash())) throw DomainException.conflict("Reference content hash does not match authoritative state");
         }
+        if (!hash.equals(ref.contentHash())) throw DomainException.conflict("Reference content hash does not match authoritative state");
+        cache.validatedLeaves.add(ref);
+    }
+    private static final int MAX_ARTIFACT_SOURCES=256;
+    private record ArtifactSourceNode(List<Reference> direct,Map<String,Reference> index) {}
+    private static final class SourceValidationCache {
+        final Map<Reference,ArtifactSourceNode> nodes=new HashMap<>();
+        final Set<Reference> validatedRoots=new HashSet<>();
+        final Set<Reference> validatedLeaves=new HashSet<>();
+    }
+    /**
+     * One bounded walk of authoritative manifests. Ancestor ARTIFACTs are checked directly,
+     * never by recursively starting this entire algorithm again. The per-call cache shares
+     * SQL reads when a snapshot names both an ancestor and a descendant.
+     */
+    private void validateArtifactReference(UUID owner,OwnedWorkspace scope,Reference root,SourceValidationCache cache) {
+        if(cache.validatedRoots.contains(root)) return;
+        ArtifactSourceNode rootNode=artifactSourceNode(scope.id(),root,cache);
+        var expected=new LinkedHashMap<String,Reference>();
+        var pending=new ArrayDeque<Reference>();
+        var visitedArtifacts=new HashSet<Reference>();
+        var graph=new LinkedHashMap<UUID,List<UUID>>();
+        pending.add(root);
+        while(!pending.isEmpty()) {
+            Reference current=pending.remove();
+            if(!visitedArtifacts.add(current)) continue;
+            ArtifactSourceNode node=artifactSourceNode(scope.id(),current,cache);
+            requireSourceSubset(node.direct(),node.index());
+            requireSourceSubset(node.index().values(),rootNode.index());
+            if(node.index().containsKey("ARTIFACT:"+current.id())) throw lineageRepair("Artifact lineage contains a self or cyclic dependency");
+            graph.put(current.id(),node.direct().stream().filter(ref->ref.kind().equals("ARTIFACT")).map(Reference::id).toList());
+            for(Reference input:node.direct()) {
+                if(input.kind().equals("ARTIFACT") && input.id().equals(root.id())) throw lineageRepair("Artifact lineage returns to its own root");
+                Reference previous=expected.putIfAbsent(sourceKey(input),input);
+                if(previous!=null && !previous.equals(input)) throw lineageVersionConflict();
+                if(expected.size()>MAX_ARTIFACT_SOURCES) throw lineageRepair("Artifact lineage exceeds the admitted limit");
+                if(previous==null && input.kind().equals("ARTIFACT")) pending.add(input);
+            }
+        }
+        if(!expected.equals(rootNode.index())) throw lineageRepair("Artifact source index does not match its immutable input manifest");
+        requireAcyclicArtifacts(graph);
+        var leaves=expected.values().stream().filter(ref->!ref.kind().equals("ARTIFACT")).toList();
+        for(int start=0;start<leaves.size();start+=64) {
+            for(Reference leaf:leaves.subList(start,Math.min(start+64,leaves.size()))) validateLeafReference(owner,scope,leaf,cache);
+        }
+        cache.validatedRoots.add(root);
+    }
+    private ArtifactSourceNode artifactSourceNode(UUID workspace,Reference ref,SourceValidationCache cache) {
+        ArtifactSourceNode cached=cache.nodes.get(ref);
+        if(cached!=null) return cached;
+        var rows=jdbc.queryForList("SELECT r.content_hash,r.content_json,r.input_refs FROM learning_artifact a JOIN artifact_revision r ON r.artifact_id=a.id AND r.revision=a.current_revision WHERE a.id=? AND a.workspace_id=? AND r.revision=? AND r.review_status IN ('DRAFT','VERIFIED')",ref.id().toString(),workspace.toString(),ref.revision());
+        if(rows.isEmpty()) throw DomainException.conflict("Artifact reference is no longer current or usable");
+        var row=rows.get(0);String hash=row.get("content_hash").toString();
+        if(!hash.equals(ref.contentHash())) throw DomainException.conflict("Artifact reference hash no longer matches its source revision");
+        List<Reference> direct;
+        try {
+            if(!json.hash(json.tree(row.get("content_json"))).equals(hash)) throw new DomainException("ARTIFACT_INTEGRITY_FAILURE",503,"Referenced artifact content has changed without a valid revision");
+            direct=List.of(json.read(json.write(json.tree(row.get("input_refs"))),Reference[].class));
+        } catch(IllegalArgumentException | NullPointerException malformed) {
+            throw new DomainException("ARTIFACT_INTEGRITY_FAILURE",503,"Stored artifact content or input manifest is malformed");
+        }
+        if(direct.size()>64) throw lineageRepair("Artifact direct input manifest exceeds the supported limit");
+        var directKeys=new HashSet<String>();
+        for(Reference input:direct) if(!validReference(input) || !directKeys.add(sourceKey(input))) throw lineageRepair("Artifact direct input manifest is malformed or duplicated");
+        var sources=jdbc.query("SELECT source_kind,source_id,source_revision,source_hash FROM artifact_input_reference WHERE workspace_id=? AND artifact_id=? AND artifact_revision=? LIMIT 257",(rs,n)->new Reference(rs.getString(1),UUID.fromString(rs.getString(2)),rs.getInt(3),rs.getString(4)),workspace.toString(),ref.id().toString(),ref.revision());
+        if(sources.size()>MAX_ARTIFACT_SOURCES) throw lineageRepair("Artifact source index exceeds the admitted limit");
+        var index=new LinkedHashMap<String,Reference>();
+        for(Reference source:sources) {
+            if(!validReference(source) || index.putIfAbsent(sourceKey(source),source)!=null) throw lineageRepair("Artifact source index is malformed or duplicated");
+        }
+        var node=new ArtifactSourceNode(direct,index);cache.nodes.put(ref,node);return node;
+    }
+    private static void requireSourceSubset(Iterable<Reference> required,Map<String,Reference> index) {
+        for(Reference input:required) {
+            Reference stored=index.get(sourceKey(input));
+            if(stored==null) throw lineageRepair("Artifact source index is missing a direct or transitive input reference");
+            if(!stored.equals(input)) throw lineageVersionConflict();
+        }
+    }
+    private static void requireAcyclicArtifacts(Map<UUID,List<UUID>> graph) {
+        var indegrees=new HashMap<UUID,Integer>();graph.keySet().forEach(id->indegrees.put(id,0));
+        for(var inputs:graph.values()) for(UUID input:inputs) {
+            if(!indegrees.containsKey(input)) throw lineageRepair("Artifact dependency graph has an unresolved ancestor");
+            indegrees.compute(input,(id,count)->count+1);
+        }
+        var ready=new ArrayDeque<UUID>();indegrees.forEach((id,count)->{if(count==0) ready.add(id);});
+        int visited=0;
+        while(!ready.isEmpty()) {
+            UUID current=ready.remove();visited++;
+            for(UUID input:graph.get(current)) if(indegrees.compute(input,(id,count)->count-1)==0) ready.add(input);
+        }
+        if(visited!=graph.size()) throw lineageRepair("Artifact source manifests contain a cycle");
+    }
+    private static boolean validReference(Reference ref) {
+        return ref!=null && ref.id()!=null && ref.kind()!=null && ref.revision()>0 && ref.contentHash()!=null && ref.contentHash().matches("[a-f0-9]{64}");
+    }
+    private static String sourceKey(Reference ref) { return ref.kind()+":"+ref.id(); }
+    private static DomainException lineageRepair(String detail) { return new DomainException("LINEAGE_REBUILD_REQUIRED",409,detail); }
+    private static DomainException lineageVersionConflict() {
+        return new DomainException("LINEAGE_VERSION_CONFLICT",409,"Artifact source manifests and indexes contain conflicting revisions or hashes");
     }
     public Memory stateMemory(UUID owner,UUID workspace,String summary,String key) {
         requireText(summary,2000); requireKey(key);
@@ -266,7 +388,7 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
         return new Projection(scope.eventSequence(),sequence,count,sequence==scope.eventSequence(),dead==null?0:dead);
     }
     public UUID workspaceFor(UUID owner,String kind,UUID resource) {
-        String table=switch(kind) { case "MEMORY"->"learner_memory"; case "ARTIFACT"->"learning_artifact"; case "RUN"->"agent_run"; default->throw DomainException.invalid("Unsupported resource lookup"); };
+        String table=switch(kind) { case "MEMORY"->"learner_memory"; case "ARTIFACT"->"learning_artifact"; case "RUN"->"agent_run"; case "GOAL"->"learning_goal"; default->throw DomainException.invalid("Unsupported resource lookup"); };
         var ids=jdbc.queryForList("SELECT r.workspace_id FROM "+table+" r JOIN learning_workspace w ON w.id=r.workspace_id WHERE r.id=? AND w.owner_id=?",String.class,resource.toString(),owner.toString());
         if (ids.isEmpty()) throw DomainException.missing();
         UUID id=UUID.fromString(ids.get(0)); requireOwned(owner,id); return id;

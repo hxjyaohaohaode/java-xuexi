@@ -2,7 +2,7 @@
 
 ## 1. 当前与最终的检查边界
 
-v0.3 的验证对象包括设计/契约、固定泛型案例、迁移后的 SQL 应用服务、会话与对象归属、幂等/事件投影、学习证据、作品版本、持久任务准入及 HTTP 边界。具体哪些已经运行和通过、数据库引擎与环境限制，以 [本轮验收记录](../evidence/runtime-review.md) 为准；[v0.2 基线记录](../evidence/baseline-review.md)仅保留历史证据。前端 209 条台账是研究记录，沙箱隔离、真实模型质量、浏览器交互、媒体导出、负载与生产恢复仍需对应实现后实测；不得用“方案已写”或“测试已编写”代替“功能已通过”。
+v0.4 的验证覆盖当前路由与契约、固定 javac 语义、SQL 事务、身份和编辑角色、学习投影、来源闭包、导师队列及本地 HTTP 协议夹具、内容审核发布、真实文本导出、前端组件和真实后端操作。实际命令、结果、环境和未验证限制只以 [当前验收](../evidence/runtime-review.md)为准；旧版本报告保留在 Git 历史。前端 209 条台账仍是参考研究记录，不能视为 209 个已运行组件。真实供应商教学质量、沙箱隔离、完整媒体、生产负载与备份恢复仍需专项实测。
 
 ## 2. 逐模块验收清单
 
@@ -62,15 +62,22 @@ v0.3 的验证对象包括设计/契约、固定泛型案例、迁移后的 SQL 
 
 ```sh
 python -m pip install -r requirements-dev.txt
+python scripts/sync_contract_index.py --check
 python scripts/verify.py
-mvn -f backend/pom.xml verify
+npm --prefix frontend ci
+npm --prefix frontend run check
+npm --prefix frontend run build
+mvn -B -ntp -f backend/pom.xml clean verify
 python scripts/verify_mysql.py
+python scripts/smoke_runtime.py --profile h2
+# 已安装 Playwright Chromium 后，运行真实浏览器集成：
+python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.4.0-SNAPSHOT.jar
 ```
 
 没有本地 JDK/Maven 时，在仓库根目录用容器（PowerShell）构建：
 
 ```powershell
-docker run --rm --mount "type=bind,source=$((Get-Location).Path),target=/workspace" --workdir /workspace maven:3.9-eclipse-temurin-17 mvn -B -ntp -f backend/pom.xml verify
+docker run --rm --mount "type=bind,source=$((Get-Location).Path),target=/workspace" --workdir /workspace maven:3.9-eclipse-temurin-17 mvn -B -ntp -f backend/pom.xml clean verify
 ```
 
 启动命令与 Profile 详见 [后端说明](../backend/README.md)：`mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=demo` 可启用演示课程。数据库迁移/连接、会话/CSRF 和部分业务 API 已实现；注册后登录并重新取 CSRF 才能使用受保护接口。正式部署仍需 TLS/安全 cookie、真实 MySQL 环境校验、限流与日志/备份、独立 worker、模型/媒体适配和完整前端；当前整体仍为 `businessReady=false`。

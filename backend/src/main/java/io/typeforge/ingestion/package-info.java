@@ -1,2 +1,2 @@
-/** M07 数据集与知识加工。业务实现待开发；边界见 docs/02-modules.md。 */
+/** M07 来源登记及实际手工采集、确定性清洗记录和精确去重；无自动外网抓取。 */
 package io.typeforge.ingestion;

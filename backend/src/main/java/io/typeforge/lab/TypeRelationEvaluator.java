@@ -10,6 +10,6 @@ public interface TypeRelationEvaluator {
     enum Bound { UNBOUNDED, EXTENDS, SUPER }
     record Wildcard(Bound bound, Named type) implements TypeExpression {}
     record Evaluation(Verdict verdict, String ruleCode, String explanation, String rulesVersion) {}
-    // Future adapter must explicitly reject syntax outside the supported teaching subset.
+    // The finite implementation explicitly reports unsupported syntax; it never executes user code.
     Evaluation evaluate(TypeExpression source, TypeExpression target);
 }

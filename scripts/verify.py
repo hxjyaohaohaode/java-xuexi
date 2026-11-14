@@ -4,6 +4,8 @@ import csv
 import json
 import re
 import sys
+import hashlib
+from sync_contract_index import generated_files
 from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,9 +38,9 @@ implemented = {(p,m) for p,m,o in operations if o['x-status']=='implemented'}
 controller_routes=set()
 for source in (ROOT/'backend/src/main/java').rglob('*Controller.java'):
     code=source.read_text(encoding='utf-8')
-    prefix_match=re.search(r'@RequestMapping\("([^"]+)"\)\s*public class',code)
+    prefix_match=re.search(r'@RequestMapping\("([^"]+)"\)\s*public (?:final )?class',code)
     prefix=prefix_match.group(1) if prefix_match else ''
-    for method,path in re.findall(r'@(Get|Post|Put|Patch|Delete)Mapping\("([^"]+)"\)',code):
+    for method,path in re.findall(r'@(Get|Post|Put|Patch|Delete)Mapping(?:\("([^"]*)"\))?(?=\s|@)',code):
         full=prefix+path
         if full.startswith('/api/v1/'):
             controller_routes.add((full[len('/api/v1'):],method.lower()))
@@ -70,7 +72,7 @@ check(not v.is_valid({**valid_attempt,'exerciseRevision':0}), 'revision zero rej
 check(not v.is_valid({**valid_attempt,'answer':{'kind':'CODE','source':''}}), 'empty source rejected')
 check(not v.is_valid({**valid_attempt,'answer':{'kind':'CHOICE','optionIds':['A','A']}}), 'duplicate option ids rejected')
 check(not validator('CompileInput').is_valid({'releaseId':valid_id,'source':'x','mode':'SHELL'}), 'unknown execution mode rejected')
-check(validator('LabInput').is_valid({'releaseId':valid_id,'labType':'ERASURE','source':'class D {}','prediction':'UNKNOWN'}), 'code laboratory input differs from relation DSL')
+check(validator('LabInput').is_valid({'workspaceId':valid_id,'releaseId':valid_id,'labType':'ERASURE','source':'class D {}','prediction':'UNKNOWN'}), 'code laboratory input differs from relation DSL and fixes its workspace')
 
 concepts=read_json('knowledge/concepts.json')
 sources=read_json('knowledge/sources.json')
@@ -129,16 +131,23 @@ check(not cycles,'actual Java module imports are acyclic: '+('; '.join(cycles) i
 sql='\n'.join(p.read_text(encoding='utf-8') for p in sorted((ROOT/'database').glob('V*.sql')))
 table_names=re.findall(r'CREATE TABLE (\w+)',sql)
 dictionary='\n'.join(p.read_text(encoding='utf-8') for p in (ROOT/'database').glob('*data-dictionary.md'))
-check(len(table_names)==56 and len(set(table_names))==56,'56 unique SQL tables including additive runtime integrity migration')
+check(len(table_names)>=56 and len(set(table_names))==len(table_names),'all cumulative SQL table identities are unique')
 check(all('## '+t+' ' in dictionary for t in table_names),'all SQL tables documented')
 for table,body in re.findall(r'CREATE TABLE (\w+) \((.*?)\) ENGINE=InnoDB',sql,re.S):
     marker='## '+table+' '
     if marker not in dictionary:continue  # The explicit all-tables check above already records this as a failure.
     section=dictionary.split(marker,1)[1].split('\n## ',1)[0]
-    columns=re.findall(r"^  (\w+) .+ COMMENT '[^']*'",body,re.M)
+    columns=re.findall(r"^  ([a-z][a-z0-9_]*) .+",body,re.M)
+    columns+=re.findall(r'ALTER TABLE '+re.escape(table)+r' ADD COLUMN (\w+) ',sql)
     documented_columns=set(re.findall(r'^\| `?([a-z][a-z0-9_]*)`? \|',section,re.M))
     check(set(columns)==documented_columns,table+' dictionary covers exactly all columns')
 check(not re.search(r'(?im)^\s*(DROP|DELETE|TRUNCATE)\b',sql),'migration contains no destructive statements')
+for relative,expected in generated_files().items():
+    check((ROOT/relative).read_text(encoding='utf-8')==expected,'generated current index is synchronized: '+relative)
+lock_path=ROOT/'database/migrations.lock.json'
+if lock_path.exists():
+    for filename,digest in json.loads(lock_path.read_text(encoding='utf-8')).items():
+        check((ROOT/'database'/filename).exists() and hashlib.sha256((ROOT/'database'/filename).read_bytes()).hexdigest()==digest,'published forward migration is immutable: '+filename)
 
 with (ROOT/'evidence/traceability.csv').open(encoding='utf-8',newline='') as f: trace=list(csv.DictReader(f))
 check({r['module'] for r in trace}=={m['id'] for m in modules},'traceability covers all modules')
@@ -160,7 +169,7 @@ check({c['id'] for c in capabilities['capabilities']}==tool_ids,'capability matr
 check(all(not c['enabled'] or (c['status']=='implemented' and c['adapterReady'] and c['verificationEvidence']) for c in capabilities['capabilities']),'enabled tools require an adapter and verification evidence')
 check(all(m['status']==('partial' if any(o['tags'][0]==m['id'] and o['x-status']=='implemented' for _,_,o in operations) else 'planned') for m in modules),'module status distinguishes partial runtime from planned product scope')
 state=read_json('frontend/state-contract.json')
-check(state.get('frontendImplemented') is False,'frontend state contract does not pretend UI implementation')
+check(state.get('frontendImplemented') is True and (ROOT/'frontend/src/App.tsx').exists() and (ROOT/'frontend/package-lock.json').exists(),'frontend state contract points to implemented React source and locked dependencies')
 for entity in state['entityVersions']:
     fields=set(entity['idFields']+entity['versionFields']+entity['scopeFields'])
     check(fields <= set(schemas[entity['schema']]['properties']),entity['schema']+' frontend state fields exist in the current wire contract')

@@ -1,2 +1,2 @@
-/** M05 练习与类型安全改造。业务实现待开发；边界见 docs/02-modules.md。 */
+/** M05 版本化客观选择题判分与题目家族证据；代码/文本题 grader 尚待实现。 */
 package io.typeforge.exercise;

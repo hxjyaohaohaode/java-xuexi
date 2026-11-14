@@ -23,6 +23,7 @@ public class LearningController {
         return learning.submit(owner(principal),UUID.fromString(input.path("workspaceId").asText()),UUID.fromString(input.path("releaseId").asText()),UUID.fromString(input.path("exerciseId").asText()),input.path("exerciseRevision").asInt(),input.path("answer"),key);
     }
     @GetMapping("/attempts/{id}") public LearningService.Attempt get(Principal principal,@PathVariable UUID id) { return learning.get(owner(principal),id); }
+    @GetMapping("/workspaces/{id}/attempts") public List<LearningService.Attempt> list(Principal principal,@PathVariable UUID id) {return learning.list(owner(principal),id);}
     @GetMapping("/me/progress") public LearningService.Progress progress(Principal principal) { return learning.progress(owner(principal)); }
     @GetMapping("/me/reviews") public List<LearningService.Review> reviews(Principal principal) { return learning.reviews(owner(principal)); }
     @PatchMapping("/me/reviews/{id}") @ResponseStatus(HttpStatus.NO_CONTENT)
