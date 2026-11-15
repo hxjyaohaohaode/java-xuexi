@@ -2,7 +2,7 @@
   "schemaVersion": "1.1",
   "result": "PASS",
   "scope": "v0.5 implemented runtime/local verification; graphical browser is an independent remote CI gate; not final course acceptance",
-  "recordedAt": "2026-11-15T17:34:14.363438+00:00",
+  "recordedAt": "2026-11-15T17:52:01.829219+00:00",
   "baselineCommit": "60f5a836f7afb64f908a367403ea2307d85a70d5",
   "environment": {
     "os": "Linux",
@@ -17,12 +17,12 @@
   },
   "sourceSnapshot": {
     "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-    "digest": "72605d5d511ab36fdaece8af341fdd6ad2943ead62bcb079d0ae141b88ed82c4",
+    "digest": "985dc065c37239173c9a6bcce492272240d8c2cde84f6f9f4a702e7d5c8efb38",
     "excludedReports": [
       "evidence/runtime-check-results.json",
       "evidence/runtime-review.md"
     ],
-    "fileCount": 315,
+    "fileCount": 316,
     "files": {
       ".gitattributes": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c",
       ".github/workflows/baseline.yml": "ee38a76d8b1dfe7954c4bdaf73fa68f03c9c4b948083b0058cc46d5feab59ed4",
@@ -114,7 +114,7 @@
       "backend/src/main/java/io/typeforge/notebook/NotebookService.java": "eb5555b9c78c4aded4e400c98a69d98ade375084129cac74826bb59083a0b8ca",
       "backend/src/main/java/io/typeforge/notebook/package-info.java": "59742096175a9225621d1c316b9ec58e8e869814924e27447dd058b10b510a4b",
       "backend/src/main/java/io/typeforge/operations/DemoContentInitializer.java": "d9191b33d00488f1a9cf232a6b7a8e64cf338ccf7d950faa2ada867ca1f6d19f",
-      "backend/src/main/java/io/typeforge/operations/FrameworkController.java": "a4f5706f18ad56f225d513f4f3c67933d4c44fc7f917fb8ab4fd7a5c70a3f22a",
+      "backend/src/main/java/io/typeforge/operations/FrameworkController.java": "e02a205faa493d033ca90f160a59600b3aeb5c17e02c414f462cba7e046873b8",
       "backend/src/main/java/io/typeforge/operations/LearningAnalyticsService.java": "ccc9af7397c38a3758b7f65463ad535cd1e429c3a311f87fd4e363417c5e4451",
       "backend/src/main/java/io/typeforge/operations/OperationsController.java": "215a4c31d0195049d3293792027797b893fbb4df44ea455058e7de2d3adf7d77",
       "backend/src/main/java/io/typeforge/operations/ProblemHandler.java": "9efc973f4161972a7bc8f542a4a52e259d7b346dc158e25d883330867c498815",
@@ -198,8 +198,9 @@
       "backend/src/test/java/io/typeforge/CompileQueueTest.java": "889812e859e0e68f1f1ab87d2d6d5426ca937f278189812c5bec4066ac760d43",
       "backend/src/test/java/io/typeforge/DurableAgentRuntimeTest.java": "1a968f4202069f03eea435a5412a463872f28b33a21cbb8b21d4048def1236f9",
       "backend/src/test/java/io/typeforge/EvidenceWorkflowRecoveryTest.java": "9e84547cddd76e647e7cfbec6c821b444a3d0c17f1270c7b09411f456306aebb",
+      "backend/src/test/java/io/typeforge/ExerciseHintCapabilityIntegrationTest.java": "cd77dc1648da2997b3d3b4b551c07e15637c32b48b152797148ae79615c7a724",
       "backend/src/test/java/io/typeforge/FiniteTypeEvaluatorTest.java": "b20553f34e4685614cc30d97a2ddb19094c5a65711877ef29a0416f4e124b2e3",
-      "backend/src/test/java/io/typeforge/FrameworkHttpTest.java": "b6c84823eaf69ad4f0a6ede7f60289b4d8babd1f028b763233f5fba25adedb19",
+      "backend/src/test/java/io/typeforge/FrameworkHttpTest.java": "c88c12d05a9c77d1624de59eb08759f7b6a6f197ec74976f9b3b81af0c25658a",
       "backend/src/test/java/io/typeforge/FullLearningLoopIntegrationTest.java": "87ea02b44ef556fb833cbe23e7160fb624bdefe94e2603adf95cd297a5d833ca",
       "backend/src/test/java/io/typeforge/GenericEdgeCasesTest.java": "eedf58512e17ee23f13c78767b4d0d8db367c099664b5d6bdb7eaa30ad35018a",
       "backend/src/test/java/io/typeforge/GenericSemanticsTest.java": "edd96f9d51b39d9c5d314a515f06b137485c4f46d343ff518b3c561eb95dc18d",
@@ -225,7 +226,7 @@
       "backend/src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker": "8eca853a5a457f17e0479b71dfbe95f2a13aff9eeff250261ecdc8ca9b847a6a",
       "contracts/README.md": "14ea4f18e3ad25cc403a2ee5d1392330ded4145826bcdf0cbd4b38af4cd8ca68",
       "contracts/modules.json": "ef3ecfc82904d16417de9068d33bf1562c5655939a74f77782e83262bd59ffe0",
-      "contracts/openapi.json": "4cba051af079704175949f1145760f93d226a12366ba5c33a579da000809bef3",
+      "contracts/openapi.json": "0a7beef692302793fe3b40ac07296f7922b0843228195fa0b318afe4d14a6fe9",
       "database/README.md": "ac98beefe7fdc22c951a614fc4657d2cf97442d5f1e8804326876c55a4ddfc10",
       "database/V001__baseline.sql": "e1a1cbb328f092f3b7788cfd57d846d526e0cd8a3de3fefde42cf11879b47896",
       "database/V002__agent_workspace.sql": "1c13efbb02105da2daa8b38898fba87185bb5751c2992fe00c7c501b13abe730",
@@ -255,13 +256,13 @@
       "docs/11-learning-artifacts.md": "b97c9f964e4c714ccec3f43c561685197a4fde1f0b56aefde40e0b5740ac30ca",
       "docs/13-architecture-upgrade.md": "6eaa92b26c1562f285e2942e594c76500fd25134ddf88fae9610ae51a684c9cf",
       "docs/14-research-decisions.md": "3dae82c886ce1e732275270530e96d7f221e0d20c27f24df08b89094bf8ae8df",
-      "docs/15-frontend-state-network.md": "d31120cff3baa7f87802b5f53cc6bd8eda6521af9e550183a54d56127344e52b",
+      "docs/15-frontend-state-network.md": "c6029b004e53f32ee91766b902c40fe923af4d885523e8a87359ce14d4efd761",
       "docs/16-course-delivery.md": "32c54461bf6a06b164315a3502556ac618720de358dc2ad42eee957c227f811c",
       "docs/22-account-assets-operations.md": "fffbbf4e6dc212070c6ff390430e6f273442a8081615b3ddd64f51c06920dd15",
       "docs/23-study-and-exports.md": "e77cef75c8c9632c64191f82a22a8013ae8b4c08b75582f30f3fc3c7add51998",
       "evidence/ai-context.md": "f90768a364793759fe994f5f5f9f9e33c157d4ae4351b5c47fe33d5555b58e01",
       "evidence/course-acceptance-matrix.csv": "e814ab7719b5cf61ac70438d04d0b362c84c4ef7312dae38bbb2f0fdff8ea233",
-      "evidence/development-review-v05.md": "c64d9daca5364104b27d120b30912c7ce4af5c63ab2bf786f63cdaefe24c51bb",
+      "evidence/development-review-v05.md": "6f53aff18ebd31afe906020597e1374dbe07f46e9b5e358c87d5bed5255e63d2",
       "evidence/inputs.md": "20c063334e5fc20674442a7f3ecd3193e6b36e4058c0c471c36d13cdec62ac0b",
       "evidence/traceability.csv": "642c76f09b24df17bceff7d154e4ffa025e587a948bdc751c5227c434714e824",
       "frontend/.gitignore": "63fa8234cc9d77ae1d515140848ec1abc485a8f99c34a0c9281d52574bed2226",
@@ -288,7 +289,7 @@
       "frontend/src/components/SourcePreview.tsx": "722abf048d45e5308df489def7cc52e3af8c24f6ea02c0d6d1a358a158b3f7aa",
       "frontend/src/components/ui.tsx": "9ce9ccf729738c53d26d0791941ece39deedd342f68789de0f01f65ca33220a7",
       "frontend/src/context.tsx": "971f16fc6f78b61e3cbe6b699230f1401c24538ab405586b737cc28b182e34fb",
-      "frontend/src/experience.css": "f674d7316ea929ab7c9a825b77282089a2e9ab0d5fd4017f405bffe96056b152",
+      "frontend/src/experience.css": "1b08c73d222b7fbf01cd71d8b3a24a5a5cf44405e0780b80bfbadc338551a4bc",
       "frontend/src/hooks.test.tsx": "a943a541d6d5e0b60d5f8850335f1656664cffb584f1e3cd5ff93572819da4f1",
       "frontend/src/hooks.ts": "ecfd4fdac158bb17baee2dd3ed26a3971bdf7013e83a870b45bf1c90de92c352",
       "frontend/src/main.tsx": "887fd00dea562611c598cc2ec5b5ef55193401b05cb481c3baed3f35a966a20c",
@@ -304,9 +305,9 @@
       "frontend/src/pages/Personal.tsx": "a26e2dff1cd91bec20c7e36a90e67a057b2185957deaf581b95389a81788067f",
       "frontend/src/pages/Practice.test.tsx": "86251d583c6bcbf739a64238d6df7c5bae95d83d32bb40deee900e6289bcb399",
       "frontend/src/pages/Practice.tsx": "91d1903c258d462a62320dff25608f9faabc1d3a86e700ec14cb100e53e9343b",
-      "frontend/src/pages/Progress.tsx": "73d15de45e62226ee308e462ee0898d2308edd0ffb8433965639b4d3ae7730be",
-      "frontend/src/pages/Studio.test.tsx": "0206d5cd0c14a7d8933a7aaaf8fb673a95172872284fe9ec40e10ee799e7276d",
-      "frontend/src/pages/Studio.tsx": "8b09202051e7f896f95b4b9d49255051afd7e967b1236b8be56b6042ed34c494",
+      "frontend/src/pages/Progress.tsx": "1471f2ac76527426b2b64545378a25ca2a93b17befb2a13fa00e4021da2ab59b",
+      "frontend/src/pages/Studio.test.tsx": "4b6e9000eb5ad155076c77df746ed21d267928efa4fd67e070772d422f0cd0b6",
+      "frontend/src/pages/Studio.tsx": "813676d2b6e5dc1635f37e18eb7b2086bced2fc110281702e3995cd882e6bcdd",
       "frontend/src/pages/Tutor.tsx": "2506b1edd4d593041f36d080bcc5a576fedc9af4dc9f83bf68d4d8ac3a5f5364",
       "frontend/src/state.test.ts": "14e92c7485bea17fd152e5e89630f2fb1e7c20d6449dc4a900054de8279ebabc",
       "frontend/src/state.ts": "58c66e1b9421e60ef9ff8913bbf7e0ff6142c6c27e02cfc965ebde200633e354",
@@ -314,8 +315,8 @@
       "frontend/src/test/setup.ts": "7c35a2e906e7da3a429c42158474e37bb5fab80a4c727907a3779884de4c83a6",
       "frontend/src/types.ts": "9fd5c47745f96c12717343d3c2b5d43e4e246235b1209c35765f1a72088e2200",
       "frontend/state-contract.json": "b406aba79bc6aaae3dbf850b5731a91516a71bb99d169084c4768de8d3c44a6e",
-      "frontend/tests/browser.mjs": "799806053d7f8c86e44c3d45d28db3168ffb13e5f0d39ebebe1faaff45e061bf",
-      "frontend/tests/live-dom.test.tsx": "06a413f77898549e7794ed0c9a708c0987cb44763d56816262114a4668fdef92",
+      "frontend/tests/browser.mjs": "f7d0561b3e7823edeb909411472249aa987cc5019b94ecb0e5c32a68d5911a62",
+      "frontend/tests/live-dom.test.tsx": "621a7430bfbc9962ef3157243ecbcafcbecf685f7bdfc68b3e032ab03e355a75",
       "frontend/tsconfig.json": "47561f3f27d357589d429c1b6304e006b097f8483fa6ad54e3def0b7bce4f385",
       "frontend/vite.config.ts": "e30502cb1e7cf251dd9c728b8f2ba89436c1cf70c1b233a881c216e31448465b",
       "frontend/vite.live.config.ts": "b2237f57d62900888f03bad006d0dec9fa56c0d793f04c3c74eb399e7e61cc34",
@@ -325,7 +326,7 @@
       "requirements-dev.txt": "f05b125ce5fe722d3b07c7d39216074421794588c88c31b8d21c11275b84d960",
       "scripts/browser_runtime.py": "5fd4b4933770c079a7e8c32568594dcbf94f5a0d4d05d67ecd6150088a9cb5d8",
       "scripts/prepare_ci_mysql.py": "0b33d95b72966d47003c794ed663f0c5fdafa821b3e9ab88f8e7568791fedc0d",
-      "scripts/record_verification.py": "70ee5d3c5e9f977a3366ec3152820c5a848ed1ea81d439bd7b525fcfc217e87f",
+      "scripts/record_verification.py": "a579f4eac797aa23b6adea14644f2d51ca5fd82246f76357faadb0f7d44bd1af",
       "scripts/smoke_runtime.py": "dbd298aa37591552003b565208976bfd1ed6564a77b264247ff26edc84008da5",
       "scripts/sync_contract_index.py": "88ea5b03862ef1fd153edccb16640d4a393a3554fc9002066c6525551ce3578d",
       "scripts/verify.py": "a64a2f579f3a564b8c0963813670fa05edc1f4a3e015e89e781126603d862417",
@@ -344,11 +345,11 @@
   "java": {
     "command": "mvn -B -ntp -f backend/pom.xml clean verify",
     "result": "PASS",
-    "tests": 356,
+    "tests": 359,
     "failures": 0,
     "errors": 0,
     "skipped": 0,
-    "jarSha256": "f573b50dd6aa44ef5346e2057fc00d24e91f0c5c067bc8aea1eb3341cefae453",
+    "jarSha256": "c3b35a2f0ef19124a101f49e2bc793f9c0f96349af7b6e1417c701f6de06dd98",
     "suites": [
       {
         "name": "io.typeforge.AccountLifecycleIntegrationTest",
@@ -356,7 +357,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 13.851,
+        "seconds": 28.415,
         "testCases": [
           "accountClosureIsAtomicOnWrongConfirmationAndDoesNotEraseConcurrentPasswordChange",
           "sessionsArePrivateRevocableAndNeverExposeCookieOrAddress",
@@ -380,7 +381,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.034,
+        "seconds": 0.024,
         "testCases": [
           "rejectsDuplicateDependency",
           "writerWaitsForActiveReader",
@@ -415,7 +416,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.794,
+        "seconds": 2.013,
         "testCases": [
           "identicalExportsReuseBytesAndObsoleteCacheIsReclaimed",
           "docxRoundTripKeepsEditableChineseTextAndSourceMetadata",
@@ -435,7 +436,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 3.291,
+        "seconds": 2.752,
         "testCases": [
           "everyPublishedCodeLabExampleHasVerifiedPositiveAndNegativeFixedSource",
           "emptyCompilableAndRawUnsafeProgramsDoNotPassTheTypeContract",
@@ -449,7 +450,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.545,
+        "seconds": 1.576,
         "testCases": [
           "mismatchedHashLeaseAndIsolationPolicyFailClosed",
           "oversizedResponseIsStoppedAtTheTransportBoundary",
@@ -467,7 +468,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 6.826,
+        "seconds": 6.608,
         "testCases": [
           "cancellingAnActiveJobRejectsLateLeaseAndDoesNotInventAnAttempt",
           "expiredLeaseAndQueueDeadlineArePersistedAsInfrastructureFailures",
@@ -491,7 +492,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.511,
+        "seconds": 0.475,
         "testCases": [
           "stableExecutionKeysAndSettlementPreventDuplicateCharges",
           "unknownExternalEffectRetainsReservationAcrossCrashAndCannotBeBlindlyRetried",
@@ -527,10 +528,23 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.381,
+        "seconds": 0.459,
         "testCases": [
           "aReconstructedWorkerResumesAnExpiredClaimWithoutRepeatingCommittedSteps",
           "aFullBatchOfRevokedSnapshotsCannotPermanentlyStarveAHealthyWorkspace"
+        ]
+      },
+      {
+        "name": "io.typeforge.ExerciseHintCapabilityIntegrationTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 3.332,
+        "testCases": [
+          "advertisedHintsStillEnforceOwnershipVersionAndLevel",
+          "threeLevelHintsAndNotebookActionsRemainAvailableAndAssistedWithoutAWorker",
+          "capabilityContractIncludesHintsIndependentlyOfCompilerAndModel"
         ]
       },
       {
@@ -539,7 +553,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 2.63,
+        "seconds": 2.54,
         "testCases": [
           "assignmentSubsetAgreesWithRealJavac(String, String)[1]",
           "assignmentSubsetAgreesWithRealJavac(String, String)[2]",
@@ -591,7 +605,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.382,
+        "seconds": 0.393,
         "testCases": [
           "healthActuallyQueriesDatabaseWithoutClaimingProviderReadiness",
           "noBusinessOrAdminRouteIsAccidentallyPublic",
@@ -604,7 +618,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 5.227,
+        "seconds": 5.295,
         "testCases": [
           "jsonSizeAndIntegerBoundsApplyBeforeNarrowingOrObjectMaterialization",
           "pauseResumeCancelUseEpochFencingAndSteeringRequiresAnActualPlanner",
@@ -623,7 +637,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.424,
+        "seconds": 1.444,
         "testCases": [
           "anInterfaceCanBeTheLeftmostErasureBound",
           "arraysAreCovariantButValidateTheirActualComponentTypeAtRuntime",
@@ -657,7 +671,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.767,
+        "seconds": 1.73,
         "testCases": [
           "validatesWithRealJavac(String, String, boolean, boolean)[1]",
           "validatesWithRealJavac(String, String, boolean, boolean)[2]",
@@ -701,7 +715,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 7.055,
+        "seconds": 6.962,
         "testCases": [
           "readingReceiptIsServerTimedAndNotMasteryEvidence",
           "oldRendererAndTamperedSourceFailWithoutRenderingUnderFalseIdentity",
@@ -725,7 +739,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.355,
+        "seconds": 0.455,
         "testCases": [
           "tamperedPublishedBodyFailsIntegrityInsteadOfReturningStaleHashEvidence",
           "reinitializationDoesNotDuplicateOrOverwritePublishedFixtures",
@@ -746,7 +760,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.576,
+        "seconds": 0.5,
         "testCases": [
           "workflowPersistsHashesOfTheRealSchemaInputsForBothTypedTools",
           "contextToolReturnsTheExistingValidatedSnapshotWithoutCreatingState",
@@ -764,7 +778,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 3.995,
+        "seconds": 4.574,
         "testCases": [
           "quotaUsesStoredBytesAndRevocationFreesActualPayload",
           "assetRevocationInvalidatesDirectAndTransitiveSourceRevisions",
@@ -782,7 +796,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 10.094,
+        "seconds": 10.163,
         "testCases": [
           "embeddedArtifactAndReviewLinksCannotBypassTheTypedInputManifest",
           "timestampTiesAndReverseUuidOrderCannotStarveTheWorkspaceHead",
@@ -816,7 +830,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.382,
+        "seconds": 1.447,
         "testCases": [
           "unknownModelUsageCommitsItsHoldAndNeverAutomaticallyRetries",
           "insufficientRemainingBudgetStopsBeforeTheNextModelDispatch",
@@ -834,7 +848,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 2.263,
+        "seconds": 2.176,
         "testCases": [
           "modelModeDoesNotPretendToWorkWithoutConfiguredProvider",
           "localWorkflowReallyPlansReviewsAndExportsEditableArtifacts",
@@ -855,7 +869,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.318,
+        "seconds": 14.326,
         "testCases": [
           "transactionTemplateUsesReadCommittedJdbcConnection",
           "readAfterOwnerLockSeesCommittedWorkspaceChange"
@@ -867,7 +881,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 2.757,
+        "seconds": 2.937,
         "testCases": [
           "completeHttpJourneyIncludesConversationRequestEvidenceAndDraftDocument",
           "cancelUsesExpectedEpochAndForeignRequestIdsRemainPrivate",
@@ -880,7 +894,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.926,
+        "seconds": 0.772,
         "testCases": [
           "timeoutKeepsUnknownReservationAndDoesNotBlindlyReplay",
           "redirectsNeverForwardTheCredentialAndOversizedResponsesAreBounded",
@@ -907,7 +921,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.541,
+        "seconds": 0.864,
         "testCases": [
           "expiredUndispatchedLeaseCanRecoverButOriginalEpochCannotOverwrite",
           "expiredDeadlineAndLeaseAreDistinguishedFromChangedContext",
@@ -933,7 +947,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.656,
+        "seconds": 0.709,
         "testCases": [
           "oldArtifactOnlyContextCannotBypassNaturallyExpiredTransitiveMemory"
         ]
@@ -944,7 +958,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.91,
+        "seconds": 1.933,
         "testCases": [
           "explicitSelectionIncludesOlderGradedAttemptsInExactCallerOrder",
           "privateWrongWorkspaceUnfinishedAndInvalidSelectionsNeverPersistASnapshot",
@@ -957,7 +971,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 30.932,
+        "seconds": 31.269,
         "testCases": [
           "editingPublishedKnowledgeAppendsAndDoesNotChangeAnExistingCourse",
           "reviewPinsTitleAndPrivateAnswerInsteadOfOnlyTheKnowledgeBody",
@@ -982,22 +996,26 @@
     "numTotalTestSuites": 14,
     "numPassedTestSuites": 14,
     "numFailedTestSuites": 0,
-    "numTotalTests": 41,
-    "numPassedTests": 41,
+    "numTotalTests": 42,
+    "numPassedTests": 42,
     "numFailedTests": 0,
     "numPendingTests": 0,
     "success": true,
     "integration": {
       "driver": "jsdom with real HTTP; not a graphical browser",
       "status": "PASS",
-      "jarSha256": "f573b50dd6aa44ef5346e2057fc00d24e91f0c5c067bc8aea1eb3341cefae453",
+      "jarSha256": "c3b35a2f0ef19124a101f49e2bc793f9c0f96349af7b6e1417c701f6de06dd98",
       "steps": [
         {
           "name": "register/login/CSRF and workspace creation",
           "status": "PASS"
         },
         {
-          "name": "wrong attempt -> notebook source -> real reattempt",
+          "name": "wrong attempt -> notebook source -> real hints and assisted reattempt",
+          "status": "PASS"
+        },
+        {
+          "name": "practice reveals three real hints and first assisted attempt does not increase independent mastery",
           "status": "PASS"
         },
         {
@@ -1609,7 +1627,7 @@
       "repeatableReadControl": "before",
       "writerCommitted": true
     },
-    "durationSeconds": 20.518
+    "durationSeconds": 17.598
   },
   "mysqlEditorial": {
     "result": "PASS",
@@ -1639,11 +1657,11 @@
       "publicationCasHistoryAndRetryPreserveExistingPersonalReleasePins"
     ],
     "engineVersion": "8.4.13",
-    "durationSeconds": 41.709
+    "durationSeconds": 34.309
   },
   "mysqlAccountsAndAssets": {
     "result": "PASS",
-    "generatedAt": "2026-11-15T17:21:28.562721+00:00",
+    "generatedAt": "2026-11-15T17:51:11.820774+00:00",
     "scope": "Explicit real-MySQL account lifecycle and private asset HTTP/SQL regression; no external media or model provider claim",
     "mavenExitCode": 0,
     "tests": 22,
@@ -2080,11 +2098,11 @@
           "result": "PASS"
         }
       ],
-      "startedAt": "2026-11-15T17:24:30.800303+00:00",
-      "jarSha256": "f573b50dd6aa44ef5346e2057fc00d24e91f0c5c067bc8aea1eb3341cefae453",
+      "startedAt": "2026-11-15T17:48:46.937660+00:00",
+      "jarSha256": "c3b35a2f0ef19124a101f49e2bc793f9c0f96349af7b6e1417c701f6de06dd98",
       "engine": "H2 persistent file (not MySQL)",
       "unexpectedLogErrors": [],
-      "finishedAt": "2026-11-15T17:24:56.471732+00:00",
+      "finishedAt": "2026-11-15T17:49:11.033932+00:00",
       "scope": "Real HTTP authentication, learning/artifact/evidence linkage and process-restart persistence; no model/media/compiler adapters are simulated",
       "httpRequests": 129,
       "shutdown": "graceful process termination and restart against the same database"
@@ -2509,13 +2527,13 @@
           "result": "PASS"
         }
       ],
-      "startedAt": "2026-11-15T17:24:31.933737+00:00",
-      "jarSha256": "f573b50dd6aa44ef5346e2057fc00d24e91f0c5c067bc8aea1eb3341cefae453",
+      "startedAt": "2026-11-15T17:48:48.335380+00:00",
+      "jarSha256": "c3b35a2f0ef19124a101f49e2bc793f9c0f96349af7b6e1417c701f6de06dd98",
       "engine": "MySQL 8.4.13",
       "unexpectedLogErrors": [],
-      "finishedAt": "2026-11-15T17:24:58.198166+00:00",
+      "finishedAt": "2026-11-15T17:49:14.126090+00:00",
       "scope": "Real HTTP authentication, learning/artifact/evidence linkage and process-restart persistence; no model/media/compiler adapters are simulated",
-      "httpRequests": 133,
+      "httpRequests": 131,
       "shutdown": "graceful process termination and restart against the same database"
     }
   },
@@ -2528,7 +2546,7 @@
     "real supplier model teaching quality or billing invoices",
     "unrestricted autonomous planner and full expert/media tool roster",
     "untrusted user-code execution sandbox",
-    "generative image/audio/video services and real container-isolation deployment",
+    "generative image/audio/video services and production deployment of the isolated compiler service",
     "formal human review of the complete course corpus",
     "production load/SLO/backup restore",
     "hard-kill recovery of paid external effects with a real provider",

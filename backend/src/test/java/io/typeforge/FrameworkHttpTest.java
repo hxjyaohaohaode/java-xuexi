@@ -1,4 +1,6 @@
 package io.typeforge;
+import io.typeforge.shared.JsonCodec;
+import io.typeforge.shared.SchemaCatalog;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -12,10 +14,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class FrameworkHttpTest {
     @Autowired private MockMvc mvc;
+    @Autowired private JsonCodec json;
+    @Autowired private SchemaCatalog schemas;
     @Test void exposesHonestPartialRuntimeStatus() throws Exception {
-        mvc.perform(get("/api/v1/framework")).andExpect(status().isOk())
+        var response=mvc.perform(get("/api/v1/framework")).andExpect(status().isOk())
+            .andExpect(jsonPath("$.phase").value("connected-learning-studio"))
             .andExpect(jsonPath("$.businessReady").value(false))
-            .andExpect(jsonPath("$.modules.length()").value(16));
+            .andExpect(jsonPath("$.modules.length()").value(16)).andReturn().getResponse();
+        schemas.validate("Framework",json.tree(response.getContentAsString()));
     }
     @Test void healthActuallyQueriesDatabaseWithoutClaimingProviderReadiness() throws Exception {
         mvc.perform(get("/api/v1/health")).andExpect(status().isOk())

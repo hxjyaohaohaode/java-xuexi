@@ -112,6 +112,78 @@ function view(state: WorkspaceState) {
   );
 }
 
+it('keeps failed notebook hints retryable and stops requesting after the third confirmed hint', async () => {
+  const notebook: Artifact = { ...artifact, kind: 'NOTEBOOK', title: '复练笔记' };
+  const version: ArtifactVersion = {
+    ...original,
+    content: {
+      kind: 'NOTEBOOK',
+      schemaVersion: '1.0',
+      blocks: [
+        {
+          id: 'hint-block',
+          kind: 'ERROR_CONTEXT',
+          revision: 1,
+          prompt: '分析读写边界',
+          conceptIds: [],
+          exerciseRef: { id: 'exercise-1', revision: 1 },
+          attemptId: 'attempt-1',
+          allowedActions: ['requestHint'],
+          evidenceRefs: [],
+          config: {},
+        },
+      ],
+    },
+  };
+  vi.spyOn(api, 'get').mockImplementation((path) => {
+    if (path === '/workspaces/workspace-1/artifacts') return Promise.resolve([notebook]);
+    if (path === '/artifacts/document-1/revisions?revision=1') return Promise.resolve(version);
+    if (path === '/concepts?releaseId=release-1') return Promise.resolve({ items: [] });
+    if (path === '/exercises/exercise-1?releaseId=release-1&revision=1')
+      return Promise.resolve({
+        id: 'exercise-1',
+        revision: 1,
+        releaseId: 'release-1',
+        kind: 'SINGLE',
+        prompt: '分析读写边界',
+        difficulty: 1,
+        conceptIds: [],
+        options: [{ id: 'A', text: '先检查读取类型' }],
+      });
+    throw new Error(`Unexpected read: ${path}`);
+  });
+  const request = vi
+    .spyOn(api, 'request')
+    .mockRejectedValueOnce(new ApiError(503, 'UNAVAILABLE', '提示暂时不可用'))
+    .mockImplementation((_path, _method, body) =>
+      Promise.resolve({
+        attemptId: null,
+        compileJobId: null,
+        evidenceRefs: [],
+        message: `服务端提示 ${(body as { hintLevel: number }).hintLevel}`,
+      }),
+    );
+  const user = userEvent.setup();
+  render(
+    view({ ...context(), can: (name) => ['NOTEBOOK_ACTIONS', 'EXERCISE_HINTS'].includes(name) }),
+  );
+  await user.click(await screen.findByRole('button', { name: '查看第 1 级提示' }));
+  await screen.findByRole('alert');
+  expect(screen.getByRole('button', { name: '查看第 1 级提示' })).toBeEnabled();
+  expect(screen.queryByRole('button', { name: '查看第 2 级提示' })).not.toBeInTheDocument();
+  for (const level of [1, 2, 3]) {
+    await user.click(screen.getByRole('button', { name: `查看第 ${level} 级提示` }));
+    await screen.findByText(`服务端提示 ${level}`);
+  }
+  const complete = screen.getByRole('button', { name: '已查看全部提示' });
+  expect(complete).toBeDisabled();
+  await user.click(complete);
+  expect(request).toHaveBeenCalledTimes(4);
+  expect(request.mock.calls.map((call) => (call[2] as { hintLevel: number }).hintLevel)).toEqual([
+    1, 1, 2, 3,
+  ]);
+});
+
 it('locks source edits and references until a save completes, and retains edits after a failed save', async () => {
   serve();
   const firstSave = deferred<ArtifactVersion>();

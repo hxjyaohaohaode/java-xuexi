@@ -127,7 +127,7 @@ def main():
         'remoteCi':{'status':'VERIFY_EXACT_COMMIT_IN_GITHUB_ACTIONS','workflow':'.github/workflows/baseline.yml',
                     'note':'This report records local gates. The published commit Actions run independently verifies Java 17, Docker MySQL, the actual isolated javac worker and real Chromium.'},
         'notVerified':['real supplier model teaching quality or billing invoices','unrestricted autonomous planner and full expert/media tool roster',
-                       'untrusted user-code execution sandbox','generative image/audio/video services and real container-isolation deployment',
+                       'untrusted user-code execution sandbox','generative image/audio/video services and production deployment of the isolated compiler service',
                        'formal human review of the complete course corpus','production load/SLO/backup restore',
                        'hard-kill recovery of paid external effects with a real provider','final grading or individual student contributions']}
     (ROOT/REPORT).write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
@@ -203,7 +203,7 @@ python scripts/browser_runtime.py --jar backend/target/typeforge-backend-{versio
 
 ## 仍未完成和未验证
 
-真实供应商模型的教学效果、费用账单、通用任意工具调度、真实容器隔离部署、生成式图像/音频/视频、全课程人工审核、生产负载与备份恢复、正式答辩和个人贡献均不在本轮PASS范围内。逐模块剩余事项及代码入口见 [接手指南](../docs/02-modules.md)。最终40项课程验收保持独立，不因自动测试通过而自动升级。
+真实供应商模型的教学效果、费用账单、通用任意工具调度、隔离编译服务的生产部署、生成式图像/音频/视频、全课程人工审核、生产负载与备份恢复、正式答辩和个人贡献均不在本轮PASS范围内。真实 Docker 编译检查由远端 CI 独立证明，不等于生产部署。逐模块剩余事项及代码入口见 [接手指南](../docs/02-modules.md)。最终40项课程验收保持独立，不因自动测试通过而自动升级。
 
 旧基线报告和重复字段字典已清理；历史保留在Git。V001–V011为合法升级链，由 `database/migrations.lock.json`锁定，不能为清理旧版本而删除。
 '''

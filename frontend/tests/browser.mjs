@@ -92,6 +92,18 @@ const until = async (work, message, timeout = 25000) => {
   }
   throw new Error(message);
 };
+const settledProgress = async () => {
+  let progress;
+  await until(async () => {
+    const response = await context.request.get(`${base}/api/v1/me/progress`);
+    assert.equal(response.status(), 200);
+    progress = await response.json();
+    return !progress.rebuilding;
+  }, 'Learning evidence projection did not settle');
+  return progress;
+};
+const independentSamples = (progress) =>
+  progress.items.reduce((count, item) => count + item.independentSamples, 0);
 let workspaceA, artifactId;
 const username = `web_${Date.now().toString(36)}`;
 const password = `BrowserStudy-${crypto.randomUUID()}`;
@@ -187,12 +199,15 @@ try {
     await page.getByRole('heading', { name: '泛型与类型安全', exact: true }).waitFor();
     workspaceA = await page.locator('#workspace-select').inputValue();
     assert.match(workspaceA, /^[a-f0-9-]{36}$/);
+    const capabilities = await context.request.get(`${base}/api/v1/capabilities`);
+    assert.equal(capabilities.status(), 200);
+    assert.ok((await capabilities.json()).enabled.includes('EXERCISE_HINTS'));
     await page.getByRole('button', { name: '记录已读', exact: true }).click();
     await page.getByText('服务端已记录本次阅读。', { exact: true }).waitFor();
     await capturePage(page, '01-learning-desktop.png');
   });
   await check(
-    'wrong answer creates evidence notebook and notebook submits a real new attempt',
+    'wrong answer creates evidence notebook, real hints and an assisted new attempt',
     async () => {
       await page.getByRole('link', { name: '练习与反馈', exact: true }).click();
       await page.locator('.question-card .answer-option input').first().waitFor();
@@ -212,6 +227,46 @@ try {
       await page
         .getByText('已记录你的预测；预测不会被当作独立掌握证据。', { exact: true })
         .waitFor();
+      const beforeHints = await settledProgress();
+      const hintEvents = [];
+      for (const level of [1, 2, 3]) {
+        const [response] = await Promise.all([
+          page.waitForResponse(
+            (response) =>
+              response.request().method() === 'POST' &&
+              /\/api\/v1\/notebooks\/[^/]+\/actions$/.test(response.url()) &&
+              response.request().postDataJSON().action === 'requestHint',
+          ),
+          page.getByRole('button', { name: `查看第 ${level} 级提示`, exact: true }).click(),
+        ]);
+        assert.equal(response.status(), 200);
+        const receipt = await response.json();
+        assert.equal(receipt.status, 'COMPLETED');
+        assert.ok(receipt.message.length > 10);
+        hintEvents.push(receipt.eventId);
+        await page.getByText(receipt.message, { exact: true }).waitFor();
+        if (level < 3)
+          assert.ok(
+            await page
+              .getByRole('button', { name: `查看第 ${level + 1} 级提示`, exact: true })
+              .isEnabled(),
+          );
+      }
+      assert.equal(new Set(hintEvents).size, 3);
+      assert.ok(
+        await page.getByRole('button', { name: '已查看全部提示', exact: true }).isDisabled(),
+      );
+      const eventResponse = await context.request.get(
+        `${base}/api/v1/workspaces/${workspaceA}/events?limit=100`,
+      );
+      assert.equal(eventResponse.status(), 200);
+      const events = await eventResponse.json();
+      assert.deepEqual(
+        events
+          .filter((event) => event.type === 'EXERCISE_HINT_REVEALED')
+          .map((event) => event.data.hintLevel),
+        [1, 2, 3],
+      );
       await page.locator('.notebook-block .answer-option input').first().check();
       await page.getByRole('button', { name: '提交复练', exact: true }).click();
       await page.getByRole('heading', { name: /复练反馈/ }).waitFor();
@@ -221,8 +276,9 @@ try {
       assert.equal(response.status(), 200);
       const attempts = await response.json();
       assert.ok(attempts.length >= 2);
-      assert.ok(attempts.some((a) => a.hintLevel > 0));
+      assert.ok(attempts.some((a) => a.hintLevel === 4 && a.status === 'GRADED'));
       assert.equal(new Set(attempts.map((a) => a.workspaceId)).size, 1);
+      assert.equal(independentSamples(await settledProgress()), independentSamples(beforeHints));
       await page.getByRole('button', { name: '查看关联证据', exact: true }).click();
       await page.locator('.notebook-block .evidence-card').first().waitFor();
       await page.setViewportSize({ width: 390, height: 844 });
@@ -238,6 +294,58 @@ try {
       );
       await capturePage(page, '02-notebook-mobile.png');
       await page.setViewportSize({ width: 1440, height: 1000 });
+    },
+  );
+  await check(
+    'practice reveals three real hints and assisted first attempt cannot increase independent mastery',
+    async () => {
+      const before = await settledProgress();
+      const previous = await (
+        await context.request.get(`${base}/api/v1/workspaces/${workspaceA}/attempts`)
+      ).json();
+      await page.getByRole('link', { name: '练习与反馈', exact: true }).click();
+      await page.locator('.exercise-nav').nth(1).click();
+      const hints = [];
+      for (const level of [1, 2, 3]) {
+        const [response] = await Promise.all([
+          page.waitForResponse(
+            (response) =>
+              response.request().method() === 'POST' &&
+              /\/api\/v1\/exercises\/[^/]+\/hints$/.test(response.url()),
+          ),
+          page.getByRole('button', { name: `查看第 ${level} 级提示`, exact: true }).click(),
+        ]);
+        assert.equal(response.status(), 200);
+        const hint = await response.json();
+        assert.equal(hint.level, level);
+        assert.equal(hint.workspaceId, workspaceA);
+        assert.equal(hint.evidenceClass, 'ASSISTED_PRACTICE');
+        hints.push(hint);
+        await page.getByText(hint.text, { exact: true }).waitFor();
+      }
+      assert.equal(new Set(hints.map((hint) => hint.id)).size, 3);
+      assert.ok(
+        await page.getByRole('button', { name: '已查看全部提示', exact: true }).isDisabled(),
+      );
+      const exerciseId = hints[0].exerciseId;
+      assert.ok(!previous.some((attempt) => attempt.exerciseId === exerciseId));
+      await page.locator('.question-card .answer-option input').first().check();
+      const [response] = await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.request().method() === 'POST' && response.url() === `${base}/api/v1/attempts`,
+        ),
+        page.getByRole('button', { name: '提交作答', exact: true }).click(),
+      ]);
+      assert.equal(response.status(), 201);
+      const attempt = await response.json();
+      assert.equal(attempt.exerciseId, exerciseId);
+      assert.equal(attempt.status, 'GRADED');
+      assert.equal(attempt.hintLevel, 3);
+      await page.getByRole('heading', { name: '服务端反馈', exact: true }).waitFor();
+      assert.equal(independentSamples(await settledProgress()), independentSamples(before));
+      await page.getByRole('link', { name: '作品与错题集', exact: true }).click();
+      await page.getByRole('button', { name: '新建作品', exact: true }).waitFor();
     },
   );
   await check(
@@ -446,6 +554,48 @@ try {
         await page.locator(ready).first().waitFor();
         for (const width of [1440, 390, 320]) {
           await page.setViewportSize({ width, height: width === 1440 ? 1000 : 844 });
+          if (route === 'progress' && width < 760) {
+            const evidence = page.getByRole('region', { name: '概念证据表格', exact: true });
+            await evidence.waitFor();
+            const concept = evidence.locator('tbody tr').first().locator('td').first();
+            assert.ok(
+              (await concept.boundingBox()).width >= 160,
+              `concept evidence text is squeezed at ${width}px`,
+            );
+            await evidence.focus();
+            await page.keyboard.press('ArrowRight');
+            await until(
+              () => evidence.evaluate((element) => element.scrollLeft > 0),
+              `evidence table cannot scroll with the keyboard at ${width}px`,
+              5000,
+            );
+            const practice = evidence
+              .getByRole('button', { name: '继续练习', exact: true })
+              .first();
+            await practice.focus();
+            await until(
+              async () => {
+                const frame = await evidence.boundingBox();
+                const button = await practice.boundingBox();
+                return (
+                  button.x >= frame.x - 1 && button.x + button.width <= frame.x + frame.width + 1
+                );
+              },
+              `evidence action cannot be reached at ${width}px`,
+              5000,
+            );
+            const heading = page.locator('.review-section-heading h2');
+            assert.ok(
+              await heading.evaluate((element) => {
+                const style = getComputedStyle(element);
+                return element.getBoundingClientRect().height <= parseFloat(style.lineHeight) * 1.5;
+              }),
+              `review heading wraps into squeezed characters at ${width}px`,
+            );
+            await evidence.evaluate((element) => {
+              element.scrollLeft = 0;
+            });
+          }
           assert.ok(
             await page.evaluate(
               () => document.documentElement.scrollWidth <= window.innerWidth + 1,

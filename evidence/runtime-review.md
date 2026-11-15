@@ -1,12 +1,12 @@
 # v0.5 当前运行验收记录
 
-这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-15T17:34:14.363438+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
+这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-15T17:52:01.829219+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
 
 ## 实际结果
 
 | 门禁 | 已观察的结果 | 证明边界 |
 |---|---|---|
-| Java/Maven | 356 项，失败/错误/跳过均为 0 | 固定语言语义、账户/会话、SQL/HTTP、编译协议、学习任务/模型协议夹具、发布、素材与原生文件导出回归 |
+| Java/Maven | 359 项，失败/错误/跳过均为 0 | 固定语言语义、账户/会话、SQL/HTTP、编译协议、学习任务/模型协议夹具、发布、素材与原生文件导出回归 |
 | 契约与架构 | 669 项通过；109 个 implemented / 0 个 planned 操作 | 真实路由、schema、模块依赖、索引和文档对应；数量不是产品完成率 |
 | MySQL 8.4 | 123 项；79 张业务表；11 条迁移 | 真实 MySQL 建表、复合外键、唯一性、CHECK、JSON与新增队列/审核/导出约束 |
 | MySQL 隔离 | 2 项 | 实际 READ COMMITTED、锁后可见已提交写入，并有 REPEATABLE READ 对照 |
@@ -14,9 +14,9 @@
 | MySQL 账户与素材 | 22 项 | 实际 JDBC 引擎证明；账户关闭/会话/并发身份、UTC统计、上传/撤回/配额及下载隔离 |
 | 编译 broker Python | 13 项 | 离线协议/边界/清理归属；真实容器隔离在远端 CI 独立执行 |
 | H2 实际 HTTP/重启 | 72 项；129 次请求 | 单独进程、真实会话/CSRF、业务链、真实下载、重启保留与撤回后失效 |
-| MySQL 实际 HTTP/重启 | 83 项；133 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
-| 前端类型/构建/单元 | 41 项单元通过；TypeScript 与 Vite 构建成功 | 编译与组件/状态逻辑；不等于真实浏览器布局验收 |
-| 前端 DOM + 真实 HTTP | 13 条链通过 | 无服务端响应 mock；jsdom 驱动真实后端；不验证浏览器布局/原生下载 |
+| MySQL 实际 HTTP/重启 | 83 项；131 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
+| 前端类型/构建/单元 | 42 项单元通过；TypeScript 与 Vite 构建成功 | 编译与组件/状态逻辑；不等于真实浏览器布局验收 |
+| 前端 DOM + 真实 HTTP | 14 条链通过 | 无服务端响应 mock；jsdom 驱动真实后端；不验证浏览器布局/原生下载 |
 | Chromium 浏览器 | 本地被环境阻止；精确提交由 GitHub Actions 运行 | 本地 AF_UNIX 创建受限，不记成通过；远端 Playwright失败会阻断CI |
 
 Java 各测试类的实际汇总：
@@ -31,6 +31,7 @@ Java 各测试类的实际汇总：
 | `CompileQueueTest` | 14 | 0 / 0 / 0 |
 | `DurableAgentRuntimeTest` | 26 | 0 / 0 / 0 |
 | `EvidenceWorkflowRecoveryTest` | 2 | 0 / 0 / 0 |
+| `ExerciseHintCapabilityIntegrationTest` | 3 | 0 / 0 / 0 |
 | `FiniteTypeEvaluatorTest` | 42 | 0 / 0 / 0 |
 | `FrameworkHttpTest` | 3 | 0 / 0 / 0 |
 | `FullLearningLoopIntegrationTest` | 9 | 0 / 0 / 0 |
@@ -88,13 +89,13 @@ python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.5.0-S
 
 ## 当前包与源码
 
-- JAR SHA-256：`f573b50dd6aa44ef5346e2057fc00d24e91f0c5c067bc8aea1eb3341cefae453`。
-- 源码文件数：315；SHA-256 摘要：`72605d5d511ab36fdaece8af341fdd6ad2943ead62bcb079d0ae141b88ed82c4`。
+- JAR SHA-256：`c3b35a2f0ef19124a101f49e2bc793f9c0f96349af7b6e1417c701f6de06dd98`。
+- 源码文件数：316；SHA-256 摘要：`985dc065c37239173c9a6bcce492272240d8c2cde84f6f9f4a702e7d5c8efb38`。
 - 只有本记录与机器报告自身从源码摘要排除，避免循环hash；迁移、代码、契约、页面、锁文件、文档及CI均包含。
 - 发布提交的远端结果在 [GitHub Actions](https://github.com/hxjyaohaohaode/java-xuexi/actions)核对，不能把本地环境结果当成Java17/Ubuntu/Chromium结果。
 
 ## 仍未完成和未验证
 
-真实供应商模型的教学效果、费用账单、通用任意工具调度、真实容器隔离部署、生成式图像/音频/视频、全课程人工审核、生产负载与备份恢复、正式答辩和个人贡献均不在本轮PASS范围内。逐模块剩余事项及代码入口见 [接手指南](../docs/02-modules.md)。最终40项课程验收保持独立，不因自动测试通过而自动升级。
+真实供应商模型的教学效果、费用账单、通用任意工具调度、隔离编译服务的生产部署、生成式图像/音频/视频、全课程人工审核、生产负载与备份恢复、正式答辩和个人贡献均不在本轮PASS范围内。真实 Docker 编译检查由远端 CI 独立证明，不等于生产部署。逐模块剩余事项及代码入口见 [接手指南](../docs/02-modules.md)。最终40项课程验收保持独立，不因自动测试通过而自动升级。
 
 旧基线报告和重复字段字典已清理；历史保留在Git。V001–V011为合法升级链，由 `database/migrations.lock.json`锁定，不能为清理旧版本而删除。

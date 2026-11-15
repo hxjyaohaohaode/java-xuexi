@@ -967,7 +967,8 @@ function NotebookBlock({
     `tf.notebook-compile.${session.userId}.${workspace.id}.${artifact.id}.${block.id}`,
     '',
   );
-  const [hintLevel, setHintLevel] = useState(1);
+  const [seenHintLevel, setSeenHintLevel] = useState(0);
+  const hintLevel = Math.min(seenHintLevel + 1, 3);
   const [poll, setPoll] = useState(0);
   const [feedback, setFeedback] = useSessionDraft<Attempt | null>(
     `tf.notebook-feedback.${session.userId}.${workspace.id}.${artifact.id}.${block.id}`,
@@ -1035,7 +1036,7 @@ function NotebookBlock({
         setNotice(result.message);
         if (attempt) setFeedback(attempt);
         if (result.compileJobId) setCompileId(result.compileJobId);
-        if (action === 'requestHint') setHintLevel((value) => Math.min(value + 1, 3));
+        if (action === 'requestHint') setSeenHintLevel(hintLevel);
         if (action === 'openEvidence') setShowEvidence(true);
         refresh();
       },
@@ -1146,10 +1147,10 @@ function NotebookBlock({
         </button>
         {block.allowedActions.includes('requestHint') && can('EXERCISE_HINTS') && (
           <button
-            disabled={disabled || mutation.busy || pending}
+            disabled={disabled || mutation.busy || pending || seenHintLevel >= 3}
             onClick={() => void action('requestHint')}
           >
-            查看第 {hintLevel} 级提示
+            {seenHintLevel >= 3 ? '已查看全部提示' : `查看第 ${hintLevel} 级提示`}
           </button>
         )}
         {block.allowedActions.includes('requestCompile') && can('COMPILE_ONLY') && (

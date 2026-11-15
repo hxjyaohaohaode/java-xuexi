@@ -5,11 +5,18 @@ import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { act, configure, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../src/App';
+import type { Attempt, Progress } from '../src/types';
 
 const base = process.env.TYPEFORGE_BASE_URL;
 const nativeFetch = globalThis.fetch;
 const cookies = new Map<string, string>();
 const steps: { name: string; status: string }[] = [];
+const receipts: {
+  path: string;
+  action?: string;
+  status: number;
+  body: Record<string, unknown>;
+}[] = [];
 let failure: string | undefined;
 beforeAll(() => {
   configure({
@@ -86,6 +93,23 @@ beforeAll(() => {
       const i = pair.indexOf('=');
       cookies.set(pair.slice(0, i), pair.slice(i + 1));
     }
+    if (
+      init.method === 'POST' &&
+      (/\/exercises\/[^/]+\/hints$/.test(url.pathname) ||
+        /\/notebooks\/[^/]+\/actions$/.test(url.pathname) ||
+        url.pathname === '/api/v1/attempts')
+    ) {
+      // Observe actual responses only; never replace the application's response or score.
+      receipts.push({
+        path: url.pathname,
+        action: typeof init.body === 'string' ? JSON.parse(init.body).action : undefined,
+        status: result.status,
+        body: await result
+          .clone()
+          .json()
+          .catch(() => ({})),
+      });
+    }
     return result;
   });
 });
@@ -129,6 +153,21 @@ const step = async (name: string, work: () => Promise<void>) => {
 };
 const find = (role: Parameters<typeof screen.findByRole>[0], name: string | RegExp) =>
   screen.findByRole(role, { name }, { timeout: 25000 });
+const settledProgress = async () => {
+  let result: Progress | undefined;
+  await waitFor(
+    async () => {
+      const response = await fetch('/api/v1/me/progress');
+      expect(response.status).toBe(200);
+      result = await response.json();
+      expect(result?.rebuilding).toBe(false);
+    },
+    { interval: 200 },
+  );
+  return result!;
+};
+const independentSamples = (progress: Progress) =>
+  progress.items.reduce((count, item) => count + item.independentSamples, 0);
 
 function pngFixture() {
   const chunk = (name: string, data: Buffer) => {
@@ -187,10 +226,12 @@ it('connects the rendered workspace learning, notebook, artifact, tutor and inva
     await user.click(screen.getByRole('button', { name: '创建工作空间' }));
     await find('heading', '泛型与类型安全');
     workspaceA = (screen.getByLabelText('当前工作空间') as HTMLSelectElement).value;
+    const capabilities = await (await fetch('/api/v1/capabilities')).json();
+    expect(capabilities.enabled).toContain('EXERCISE_HINTS');
     await user.click(await find('button', '记录已读'));
     await screen.findByText('服务端已记录本次阅读。', {}, { timeout: 25000 });
   });
-  await step('wrong attempt -> notebook source -> real reattempt', async () => {
+  await step('wrong attempt -> notebook source -> real hints and assisted reattempt', async () => {
     await user.click(screen.getByRole('link', { name: '练习与反馈' }));
     await waitFor(() =>
       expect(
@@ -209,6 +250,30 @@ it('connects the rendered workspace learning, notebook, artifact, tutor and inva
     );
     await user.click(screen.getByRole('button', { name: '记录预测' }));
     await screen.findByText('已记录你的预测；预测不会被当作独立掌握证据。', {}, { timeout: 25000 });
+    const beforeHints = await settledProgress();
+    const hintEvents: string[] = [];
+    for (const level of [1, 2, 3]) {
+      const start = receipts.length;
+      await user.click(await find('button', `查看第 ${level} 级提示`));
+      await waitFor(() =>
+        expect(receipts.slice(start).some((item) => item.action === 'requestHint')).toBe(true),
+      );
+      const receipt = receipts.slice(start).find((item) => item.action === 'requestHint')!;
+      expect(receipt.status).toBe(200);
+      expect(receipt.body.status).toBe('COMPLETED');
+      expect(String(receipt.body.message).length).toBeGreaterThan(10);
+      hintEvents.push(String(receipt.body.eventId));
+      await screen.findByText(String(receipt.body.message), { exact: true });
+      if (level < 3) expect(await find('button', `查看第 ${level + 1} 级提示`)).toBeEnabled();
+    }
+    expect(new Set(hintEvents).size).toBe(3);
+    expect(await find('button', '已查看全部提示')).toBeDisabled();
+    const events = await (await fetch(`/api/v1/workspaces/${workspaceA}/events?limit=100`)).json();
+    expect(
+      events
+        .filter((event: { type: string }) => event.type === 'EXERCISE_HINT_REVEALED')
+        .map((event: { data: { hintLevel: number } }) => event.data.hintLevel),
+    ).toEqual([1, 2, 3]);
     await user.click(
       document.querySelector<HTMLInputElement>('.notebook-block .answer-option input')!,
     );
@@ -218,8 +283,56 @@ it('connects the rendered workspace learning, notebook, artifact, tutor and inva
     expect(r.status).toBe(200);
     const attempts = await r.json();
     expect(attempts.length).toBeGreaterThanOrEqual(2);
-    expect(attempts.some((a: { hintLevel: number }) => a.hintLevel > 0)).toBe(true);
+    expect(attempts.some((a: Attempt) => a.hintLevel === 4 && a.status === 'GRADED')).toBe(true);
+    expect(independentSamples(await settledProgress())).toBe(independentSamples(beforeHints));
   });
+  await step(
+    'practice reveals three real hints and first assisted attempt does not increase independent mastery',
+    async () => {
+      const before = await settledProgress();
+      const previous: Attempt[] = await (
+        await fetch(`/api/v1/workspaces/${workspaceA}/attempts`)
+      ).json();
+      await user.click(screen.getByRole('link', { name: '练习与反馈' }));
+      await waitFor(() =>
+        expect(document.querySelectorAll('.exercise-nav').length).toBeGreaterThan(1),
+      );
+      await user.click(document.querySelectorAll<HTMLButtonElement>('.exercise-nav')[1]);
+      const receivedHints: Record<string, unknown>[] = [];
+      for (const level of [1, 2, 3]) {
+        const start = receipts.length;
+        await user.click(await find('button', `查看第 ${level} 级提示`));
+        await waitFor(() =>
+          expect(receipts.slice(start).some((item) => /\/hints$/.test(item.path))).toBe(true),
+        );
+        const receipt = receipts.slice(start).find((item) => /\/hints$/.test(item.path))!;
+        expect(receipt.status).toBe(200);
+        expect(receipt.body).toMatchObject({
+          level,
+          workspaceId: workspaceA,
+          evidenceClass: 'ASSISTED_PRACTICE',
+        });
+        receivedHints.push(receipt.body);
+        await screen.findByText(String(receipt.body.text), { exact: true });
+      }
+      expect(new Set(receivedHints.map((hint) => hint.id)).size).toBe(3);
+      expect(await find('button', '已查看全部提示')).toBeDisabled();
+      const exerciseId = String(receivedHints[0].exerciseId);
+      expect(previous.some((attempt) => attempt.exerciseId === exerciseId)).toBe(false);
+      await user.click(
+        document.querySelector<HTMLInputElement>('.question-card .answer-option input')!,
+      );
+      const start = receipts.length;
+      await user.click(screen.getByRole('button', { name: '提交作答' }));
+      await find('heading', '服务端反馈');
+      const receipt = receipts.slice(start).find((item) => item.path === '/api/v1/attempts')!;
+      expect(receipt.status).toBe(201);
+      expect(receipt.body).toMatchObject({ exerciseId, status: 'GRADED', hintLevel: 3 });
+      expect(independentSamples(await settledProgress())).toBe(independentSamples(before));
+      await user.click(screen.getByRole('link', { name: '作品与错题集' }));
+      await find('button', '新建作品');
+    },
+  );
   await step('source editing, safe preview and actual export bytes', async () => {
     await user.click(await find('button', '新建作品'));
     const title = screen.getByLabelText('作品名称');

@@ -143,6 +143,8 @@ Agent只能提出已登记的作品DSL和业务动作。前端使用显式组件
 
 ## 11. 当前实现的验证入口
 
-`npm --prefix frontend run check` 检查类型与 41 项状态、内容、账户、异步判分及安全预览单元测试，并写入 `frontend/test-results/unit-report.json`。`python3 scripts/browser_runtime.py --jar <实际构建jar> --driver dom` 挂载真实 React 页面，通过真实 HTTP 服务验证主链，写入 live-dom-report.json 和带 jarSha256 的 dom-runtime-report.json。`--driver browser` 使用 Playwright Chromium 验证真实页面、双标签冲突、移动视口和原生下载，写入 browser-report.json 与 browser-runtime-report.json。
+`npm --prefix frontend run check` 检查类型与 42 项状态、内容、账户、异步判分及安全预览单元测试，并写入 `frontend/test-results/unit-report.json`。`python3 scripts/browser_runtime.py --jar <实际构建jar> --driver dom` 挂载真实 React 页面，通过真实 HTTP 服务验证主链，写入 live-dom-report.json 和带 jarSha256 的 dom-runtime-report.json。`--driver browser` 使用 Playwright Chromium 验证真实页面、双标签冲突、移动视口和原生下载，写入 browser-report.json 与 browser-runtime-report.json。
+
+提示必须从实际能力响应开启，练习页与错题集都核对三级回执、失败后重试、完成后停止请求和受助成绩；受助练习不会增加独立掌握样本。窄屏证据表除检查整页不溢出，还检查概念列可读宽度、方向键横向滚动、末列按钮聚焦后可见及标题不被挤成逐字换行。真实截图仍需逐张复核，布局断言通过不能代替视觉审查。
 
 受管本地环境的 Chromium 在打开页面前被拒绝创建内部 socket；该结果标 BLOCKED，不能产生虚构截图或浏览器 PASS。CI 使用可运行 Chromium 完成图形浏览器门禁。机器摘要 `frontend/state-contract.json` 区分已实现状态、未实现边界和真实报告位置。

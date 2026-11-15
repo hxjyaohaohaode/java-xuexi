@@ -57,9 +57,20 @@ export function ProgressPage() {
             </div>
             <section className="panel">
               <h2>概念证据</h2>
+              {progress.data.items.length > 0 && (
+                <p id="concept-evidence-scroll-hint" className="muted small evidence-scroll-hint">
+                  左右滑动查看全部字段，也可以聚焦表格后用方向键滚动。
+                </p>
+              )}
               {progress.data.items.length ? (
-                <div className="table-scroll">
-                  <table>
+                <div
+                  className="table-scroll concept-evidence-scroll"
+                  role="region"
+                  aria-label="概念证据表格"
+                  aria-describedby="concept-evidence-scroll-hint"
+                  tabIndex={0}
+                >
+                  <table className="concept-evidence-table">
                     <thead>
                       <tr>
                         <th>概念</th>
@@ -116,7 +127,7 @@ export function ProgressPage() {
         )
       )}
       <section className="panel">
-        <div className="row spread">
+        <div className="row spread review-section-heading">
           <h2>复习安排</h2>
           <span className="muted">主动练习，或明确移除安排</span>
         </div>

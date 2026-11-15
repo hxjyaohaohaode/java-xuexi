@@ -109,6 +109,38 @@ h1 {
 .row > * {
   min-width: 0;
 }
+.concept-evidence-scroll {
+  max-width: 100%;
+  overscroll-behavior-inline: contain;
+}
+.concept-evidence-table {
+  min-width: 640px;
+}
+.concept-evidence-table th,
+.concept-evidence-table td {
+  white-space: nowrap;
+}
+.concept-evidence-table th:first-child,
+.concept-evidence-table td:first-child {
+  min-width: 180px;
+  max-width: 280px;
+  white-space: normal;
+}
+.evidence-scroll-hint {
+  display: none;
+}
+.review-section-heading {
+  flex-wrap: wrap;
+}
+.review-section-heading h2 {
+  flex-shrink: 0;
+}
+@media (max-width: 760px) {
+  .evidence-scroll-hint {
+    display: block;
+    margin: 0 0 16px;
+  }
+}
 .panel > .row,
 .section-title,
 .review-row,

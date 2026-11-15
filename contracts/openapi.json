@@ -11290,7 +11290,7 @@
           "M05"
         ],
         "x-status": "implemented",
-        "description": "持久隔离编译与固定版本学习联动；私有资源由会话鉴权。",
+        "description": "EXERCISE_HINTS：返回固定题目版本的已编写提示或确定性的三级学习引导，无需模型或编译 worker。真实会话归属、发布版本与幂等键均校验；领取提示保存受助记录，后续同题族作答不计入独立掌握样本。",
         "responses": {
           "400": {
             "description": "受控错误，详见 docs/04-api.md",
@@ -13192,7 +13192,7 @@
         "additionalProperties": false,
         "properties": {
           "phase": {
-            "const": "integrated-learning-workbench"
+            "const": "connected-learning-studio"
           },
           "businessReady": {
             "const": false
@@ -18558,7 +18558,11 @@
               "maxLength": 64
             },
             "minItems": 0,
-            "maxItems": 64
+            "maxItems": 64,
+            "contains": {
+              "const": "EXERCISE_HINTS"
+            },
+            "description": "EXERCISE_HINTS 是内置、确定性的三级题目提示，不依赖模型或编译 worker；COMPILE_ONLY、CODE_GRADING 仅在独立 worker 配置就绪时启用。"
           },
           "unavailable": {
             "type": "array",
@@ -18568,7 +18572,12 @@
               "maxLength": 64
             },
             "minItems": 0,
-            "maxItems": 64
+            "maxItems": 64,
+            "not": {
+              "contains": {
+                "const": "EXERCISE_HINTS"
+              }
+            }
           },
           "learningEvidence": {
             "type": "string",
