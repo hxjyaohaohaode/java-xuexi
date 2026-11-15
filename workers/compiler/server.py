@@ -33,7 +33,9 @@ RUNNING_LOCK = threading.Lock()
 TOKEN = ""
 IMAGE = ""
 JDK_VERSION = ""
-DIAGNOSTIC = re.compile(r"^(?:(?:/input/)?([^:]+\.java):(\d+):(\d+): )?(compiler\.(err|warn|note)\.[A-Za-z0-9_.]+)(?:: (.*))?$")
+# javac -XDrawDiagnostics prefixes diagnostics without a source position with "- ".
+# In particular, -Werror emits its rejecting ERROR this way after positioned warnings.
+DIAGNOSTIC = re.compile(r"^(?:(?:/input/)?([^:]+\.java):(\d+):(\d+): |- )?(compiler\.(err|warn|note)\.[A-Za-z0-9_.]+)(?:: (.*))?$")
 
 
 def unique_json(pairs):

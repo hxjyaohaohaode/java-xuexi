@@ -86,6 +86,29 @@ class WorkerProtocolTest(unittest.TestCase):
         self.assertEqual(["Probe_check1.java", "Main.java"], paths)
         self.assertFalse(all(path == "Probe_check1.java" for path in paths))
 
+    def test_javac_global_werror_rejection_is_a_compile_error(self):
+        # Exact diagnostic shape observed from the fixed raw-types fixture on javac 17.0.21.
+        output = ("Main.java:1:45: compiler.warn.raw.class.use: java.util.List, java.util.List<E>\n"
+                  "Main.java:1:66: compiler.warn.raw.class.use: java.util.ArrayList, java.util.ArrayList<E>\n"
+                  "Main.java:1:85: compiler.warn.unchecked.call.mbr.of.raw.type: add(E), java.util.List\n"
+                  "- compiler.err.warnings.and.werror\n1 error\n3 warnings\n")
+        with patch.object(server, "run_bounded", return_value=(None, 1, output)):
+            status, rows, locations, truncated = server.compile_one(
+                "public class Main {}", None, threading.Event(), time.monotonic() + 5)
+        self.assertEqual("COMPILE_ERROR", status)
+        self.assertEqual(["WARNING", "WARNING", "WARNING", "ERROR"], [row["severity"] for row in rows])
+        self.assertEqual("compiler.err.warnings.and.werror", rows[-1]["code"])
+        self.assertEqual((-1, -1), (rows[-1]["line"], rows[-1]["column"]))
+        self.assertIsNone(locations[-1])
+        self.assertFalse(truncated)
+
+    def test_unknown_nonzero_failures_never_become_wrong_answers(self):
+        for output in ("docker: Error response from daemon: unavailable\n",
+                       "Main.java:1:1: compiler.warn.raw.class.use: java.util.List\n"):
+            with self.subTest(output=output), patch.object(server, "run_bounded", return_value=(None, 1, output)):
+                result = server.compile_one("public class Main {}", None, threading.Event(), time.monotonic() + 5)
+                self.assertEqual("INFRA_ERROR", result[0])
+
 
 if __name__ == "__main__":
     unittest.main()

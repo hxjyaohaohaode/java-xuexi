@@ -2,7 +2,7 @@
   "schemaVersion": "1.1",
   "result": "PASS",
   "scope": "v0.5 implemented runtime/local verification; graphical browser is an independent remote CI gate; not final course acceptance",
-  "recordedAt": "2026-11-15T17:29:53.510837+00:00",
+  "recordedAt": "2026-11-15T17:34:14.363438+00:00",
   "baselineCommit": "60f5a836f7afb64f908a367403ea2307d85a70d5",
   "environment": {
     "os": "Linux",
@@ -17,7 +17,7 @@
   },
   "sourceSnapshot": {
     "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-    "digest": "7de08c87b42047e439bcaf37dece0c97deeacc710104f324fecd06ac03b24a70",
+    "digest": "72605d5d511ab36fdaece8af341fdd6ad2943ead62bcb079d0ae141b88ed82c4",
     "excludedReports": [
       "evidence/runtime-check-results.json",
       "evidence/runtime-review.md"
@@ -261,7 +261,7 @@
       "docs/23-study-and-exports.md": "e77cef75c8c9632c64191f82a22a8013ae8b4c08b75582f30f3fc3c7add51998",
       "evidence/ai-context.md": "f90768a364793759fe994f5f5f9f9e33c157d4ae4351b5c47fe33d5555b58e01",
       "evidence/course-acceptance-matrix.csv": "e814ab7719b5cf61ac70438d04d0b362c84c4ef7312dae38bbb2f0fdff8ea233",
-      "evidence/development-review-v05.md": "a596f2bceda417160cd4f9d2a02663d4632425ee9ca8712599803f1c9f5a726b",
+      "evidence/development-review-v05.md": "c64d9daca5364104b27d120b30912c7ce4af5c63ab2bf786f63cdaefe24c51bb",
       "evidence/inputs.md": "20c063334e5fc20674442a7f3ecd3193e6b36e4058c0c471c36d13cdec62ac0b",
       "evidence/traceability.csv": "642c76f09b24df17bceff7d154e4ffa025e587a948bdc751c5227c434714e824",
       "frontend/.gitignore": "63fa8234cc9d77ae1d515140848ec1abc485a8f99c34a0c9281d52574bed2226",
@@ -335,9 +335,9 @@
       "scripts/verify_transaction_isolation.py": "7bb6409f45f8983746bfe6b478a8e897144360cde078661710fbdb8fa09c6f8b",
       "workers/compiler/Dockerfile": "6017d5e00563641bd3172407282a93e417cb0b5cdd89144ebd3b7e5ba9b800a6",
       "workers/compiler/README.md": "a6871f837abfc2f9a17c1e389852beeabed947fd158b79409b823b98218e3504",
-      "workers/compiler/server.py": "5e0127153551f040b2778f5074c38b8027e0d3476623834b4cdaffaa56a556ae",
+      "workers/compiler/server.py": "6d1bbcc43f57cfec0be86245240f6f6a9fb930c9bceec4f0a0d98366a7741667",
       "workers/compiler/test_verifier.py": "84a5e18880dcbafc2ed0fecaaf8bccd7a910bdba537328fe1dce9f93ba8f938b",
-      "workers/compiler/test_worker.py": "a4514ecf15b82d994edf688e13676e0e06081cb4003d7084238270b0869025c3",
+      "workers/compiler/test_worker.py": "c5620d2e29fe0c8a548122b43f9e5225667ed71607b9f4e95677833b4e120b1a",
       "workers/compiler/verify_docker.py": "95e211c39d72fb40013f2a54a7b9ac3436e8976c0e93dd5085103365b5cd8043"
     }
   },
@@ -1058,7 +1058,7 @@
   },
   "contractsAndArchitecture": {
     "result": "PASS",
-    "checksPassed": 668,
+    "checksPassed": 669,
     "errors": [],
     "operations": 109,
     "implementedOperations": 109,
@@ -1708,7 +1708,7 @@
   },
   "compilerPython": {
     "result": "PASS",
-    "tests": 11,
+    "tests": 13,
     "failures": 0,
     "errors": 0,
     "skipped": 0,
