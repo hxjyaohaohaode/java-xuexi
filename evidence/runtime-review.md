@@ -1,6 +1,6 @@
 # v0.5 当前运行验收记录
 
-这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-15T17:52:01.829219+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
+这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-15T18:01:18.878872+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
 
 ## 实际结果
 
@@ -90,7 +90,7 @@ python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.5.0-S
 ## 当前包与源码
 
 - JAR SHA-256：`c3b35a2f0ef19124a101f49e2bc793f9c0f96349af7b6e1417c701f6de06dd98`。
-- 源码文件数：316；SHA-256 摘要：`985dc065c37239173c9a6bcce492272240d8c2cde84f6f9f4a702e7d5c8efb38`。
+- 源码文件数：316；SHA-256 摘要：`32e4d1b62eb0cd0eec3757339e6b66b26599b2909e1c562dc56e2c495f1be7ca`。
 - 只有本记录与机器报告自身从源码摘要排除，避免循环hash；迁移、代码、契约、页面、锁文件、文档及CI均包含。
 - 发布提交的远端结果在 [GitHub Actions](https://github.com/hxjyaohaohaode/java-xuexi/actions)核对，不能把本地环境结果当成Java17/Ubuntu/Chromium结果。
 

@@ -11,7 +11,7 @@
 | M01 身份、权限、偏好 | 注册登录、CSRF、UUID/epoch 会话绑定；显示资料 CAS、改密、设备会话撤销、账号关闭；数据库原子认证限流、ETag 偏好；关闭经领域端口撤销任务与素材 | 邮件等可核验找回流程、面向运维的角色撤权界面、完整隐私擦除策略与多实例 Servlet 会话部署 | `identity/AccountService`、`AccountClosureService`、`AuthenticationLimit`、`PreferenceService` |
 | M02 知识地图与阅读 | 固定 release 的概念、前置、知识卡、练习关联；阅读事件与按空间的历史恢复，旧真实事件回填 | 大规模地图交互、完整人工审核语料与教学可用性评测 | `curriculum/CurriculumService`、`learning/ReadingService` |
 | M03 类型实验 | ASSIGNMENT/READ_WRITE 有限类型推演；边界、推断、捕获、擦除、原始类型改造、API 设计六组可编辑正反例；配置编译 worker 后运行真实编译检查与诊断 | 更广泛类型系统建模、反编译/桥接字节码与运行时实验、实际教学效果验证 | `lab/FiniteTypeEvaluator`、`CodeLabCatalog`、`LabService` |
-| M04 编译诊断与沙箱 | 持久编译队列、配额、源码 hash、租约/超时/取消、公开诊断；独立 HTTP broker 每次任务用受限 Docker 容器执行固定 Java 17 编译，API JVM 不编译用户代码 | 本轮环境无 Docker，仍需真实宿主隔离与资源限制验收；任意程序执行、算法输出及运行时性能判定尚未开放 | `compiler/CompileService`、`CompileWorker`、`HttpCompileProvider`、`workers/compiler/` |
+| M04 编译诊断与沙箱 | 持久编译队列、配额、源码 hash、租约/超时/取消、公开诊断；独立 HTTP broker 每次任务用受限 Docker 容器执行固定 Java 17 编译，API JVM 不编译用户代码；独立 CI 已通过八项真实容器检查 | 生产宿主部署、持续容量与运维验收；任意程序执行、算法输出及运行时性能判定尚未开放 | `compiler/CompileService`、`CompileWorker`、`HttpCompileProvider`、`workers/compiler/` |
 | M05 练习与判分 | 客观选项集合精确判分、版本及幂等、作答历史；CODE 题经审核的正向/反向编译契约检查后异步判分；多层提示及同题族受助记录 | TEXT 自由文本的可审核判分规则、运行时算法题、完整综合重构题集与人工校准 | `exercise/LearningService`、`CodeGradeConsumer`、`compiler/CodeRubric` |
 | M06 学习证据与复习 | 独立题族证据、复习项、阅读活动、投影新鲜度；UTC 每日真实统计、相邻时间窗比较，空数据不伪造时长或掌握度 | 校准学习模型、个性化复习间隔和有实验证据的推荐策略 | `learning/LearningEvidenceProjection`、`operations/LearningAnalyticsService` |
 | M07 数据集与加工 | 实际来源登记、原稿/清洗稿、规范化 hash 去重、采集详情与知识来源链；前端可录入和查看 | 批量文档解析、经过授权的自动抓取、相似去重评测及失败恢复工具 | `ingestion/ManualIngestionService`、前端 `Content` |
@@ -63,7 +63,7 @@ EVIDENCE_ONLY 从实际课程证据整理，不调用模型。MODEL 必须有服
 
 API JVM 从不编译或运行用户输入。独立 broker 每个检查启动新的 Docker 容器，非 root、无网络、只读基础系统、丢弃 capabilities，限定 CPU/内存/PIDs/输出/时间并禁用注解处理。当前只允许 `COMPILE_ONLY`，不运行生成字节码；没有 Docker 时拒绝启动，不退回主机 `javac`。
 
-队列、源码 hash、worker 协议、检查清单、lease、超时和取消共同保护结果。仓库内固定语义测试可在构建时使用 JavaCompiler，但不能把它当线上沙箱。本轮无 Docker 的环境仅证明协议/队列/固定语义测试通过，真实容器隔离与宿主容量验收仍待专用环境执行。部署见 [worker 说明](../workers/compiler/README.md)。
+队列、源码 hash、worker 协议、检查清单、lease、超时和取消共同保护结果。仓库内固定语义测试可在构建时使用 JavaCompiler，但不能把它当线上沙箱。本地执行环境没有 Docker；本轮已在独立 GitHub Actions 宿主通过八项真实容器检查，核对资源与隔离配置，并实际验证编译、取消、超时、输出限制和零残留清理，见[对应 CI 记录](https://github.com/hxjyaohaohaode/java-xuexi/actions/runs/43743602623/job/132901926094)。该结果不等于生产宿主部署、容量压测或通用逃逸认证；部署见 [worker 说明](../workers/compiler/README.md)。
 
 ### 6. 成功导出必须对应真实且仍可用的文件
 
@@ -85,7 +85,7 @@ API JVM 从不编译或运行用户输入。独立 broker 每个检查启动新�
 | --- | --- | --- |
 | P0 · A+B | 从干净 clone 复现当前 README，各自审查一条跨模块链 | 构建、真实浏览器、SQL/HTTP 重启、会话越权和来源撤回可复现，并记录各自真实判断 |
 | P0 · A | 对已实现 MODEL 工作流配置真实供应商，建立人工标准问题集 | 记录规划/专家/审阅来源、引用、失败、取消、用量与供应商账单；教学效果不混同协议测试 |
-| P0 · B | 部署现有独立编译 broker，在真实 Docker 宿主验证隔离 | 固定镜像 digest；网络、文件、CPU/内存/PIDs、超时、进程清理实测；不开放主机编译降级 |
+| P0 · B | 在拟部署的生产 Docker 宿主部署现有独立编译 broker，复验隔离与容量 | 固定镜像 digest；网络、文件、CPU/内存/PIDs、超时、进程清理及生产负载实测；不开放主机编译降级，CI 结果不代替生产宿主验收 |
 | P0 · A+B | 评估受限教学分工后，再扩展通用工具调度 | 每个新增工具具备权限、输入输出、预算、撤回与迟到结果门禁；与单 Agent/固定工作流做真实比较 |
 | P1 · A | 扩充人工审核课程、CODE 正反例与检索 gold set | 实际第二编辑审核、正确/错误/边界解、题族独立性和检索质量可复算 |
 | P1 · B | 在已有私有素材与文件导出之上实现图像/TTS/视频 worker | 真实文件与音轨/字幕/版式；幂等、取消、清理、费用及来源撤回全链贯通，不以静态预览冒充成品 |
