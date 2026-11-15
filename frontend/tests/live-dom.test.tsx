@@ -1,4 +1,5 @@
 import { webcrypto } from 'node:crypto';
+import { deflateSync } from 'node:zlib';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { act, configure, render, screen, waitFor, within } from '@testing-library/react';
@@ -25,6 +26,21 @@ beforeAll(() => {
   });
   if (!base) throw new Error('TYPEFORGE_BASE_URL must point to a real running demo backend.');
   vi.stubGlobal('crypto', webcrypto);
+  // jsdom has no viewport scroll; transport and business results remain real.
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+  // jsdom provides FileReader but omits Blob.arrayBuffer; preserve actual selected bytes.
+  if (!Blob.prototype.arrayBuffer)
+    Object.defineProperty(Blob.prototype, 'arrayBuffer', {
+      configurable: true,
+      value(this: Blob) {
+        return new Promise<ArrayBuffer>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as ArrayBuffer);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsArrayBuffer(this);
+        });
+      },
+    });
   vi.stubGlobal('matchMedia', (query: string) => ({
     matches: false,
     media: query,
@@ -40,7 +56,31 @@ beforeAll(() => {
       typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
       base,
     );
-    const result = await nativeFetch(url, { ...init, headers });
+    let body = init.body;
+    if (body instanceof FormData) {
+      // Encode real DOM-selected bytes for Node fetch. jsdom FormData is not undici FormData.
+      const boundary = `typeforge-dom-${crypto.randomUUID()}`;
+      const parts: Buffer[] = [];
+      const quoted = (value: string) => value.replace(/[\r\n"]/g, '_');
+      for (const [key, value] of body.entries()) {
+        parts.push(
+          Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="${quoted(key)}"`),
+        );
+        if (typeof value === 'string') parts.push(Buffer.from(`\r\n\r\n${value}\r\n`));
+        else
+          parts.push(
+            Buffer.from(
+              `; filename="${quoted(value.name)}"\r\nContent-Type: ${value.type || 'application/octet-stream'}\r\n\r\n`,
+            ),
+            Buffer.from(await value.arrayBuffer()),
+            Buffer.from('\r\n'),
+          );
+      }
+      parts.push(Buffer.from(`--${boundary}--\r\n`));
+      headers.set('Content-Type', `multipart/form-data; boundary=${boundary}`);
+      body = new Uint8Array(Buffer.concat(parts));
+    }
+    const result = await nativeFetch(url, { ...init, headers, body });
     for (const cookie of result.headers.getSetCookie()) {
       const pair = cookie.split(';', 1)[0];
       const i = pair.indexOf('=');
@@ -63,7 +103,7 @@ afterAll(async () => {
         failure,
         limits: [
           'Does not verify layout, screenshots, native downloads or real keyboard/touch rendering.',
-          'Cookie storage is a transport adapter for Node fetch; no server response is mocked.',
+          'Cookie and multipart encoding adapt DOM requests to Node fetch; no server response is mocked.',
         ],
       },
       null,
@@ -90,6 +130,40 @@ const step = async (name: string, work: () => Promise<void>) => {
 const find = (role: Parameters<typeof screen.findByRole>[0], name: string | RegExp) =>
   screen.findByRole(role, { name }, { timeout: 25000 });
 
+function pngFixture() {
+  const chunk = (name: string, data: Buffer) => {
+    const content = Buffer.concat([Buffer.from(name), data]);
+    let crc = 0xffffffff;
+    for (const byte of content) {
+      crc ^= byte;
+      for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+    const length = Buffer.alloc(4),
+      digest = Buffer.alloc(4);
+    length.writeUInt32BE(data.length);
+    digest.writeUInt32BE((crc ^ 0xffffffff) >>> 0);
+    return Buffer.concat([length, content, digest]);
+  };
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(2, 0);
+  header.writeUInt32BE(2, 4);
+  header[8] = 8;
+  header[9] = 6;
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk('IHDR', header),
+    chunk(
+      'IDAT',
+      deflateSync(
+        Buffer.from([
+          0, 20, 115, 103, 255, 20, 115, 103, 255, 0, 20, 115, 103, 255, 20, 115, 103, 255,
+        ]),
+      ),
+    ),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
 it('connects the rendered workspace learning, notebook, artifact, tutor and invalidation flows to real HTTP', async () => {
   const user = userEvent.setup({ delay: null });
   render(<App />);
@@ -103,7 +177,7 @@ it('connects the rendered workspace learning, notebook, artifact, tutor and inva
       `dom_${Date.now().toString(36)}`,
     );
     await user.type(
-      screen.getByLabelText('密码', { exact: false }),
+      screen.getByLabelText('密码', { exact: true }),
       `BrowserStudy-${crypto.randomUUID()}`,
     );
     await user.click(screen.getByRole('button', { name: '注册并进入' }));
@@ -147,7 +221,7 @@ it('connects the rendered workspace learning, notebook, artifact, tutor and inva
     expect(attempts.some((a: { hintLevel: number }) => a.hintLevel > 0)).toBe(true);
   });
   await step('source editing, safe preview and actual export bytes', async () => {
-    await user.click(screen.getByRole('button', { name: '新建作品' }));
+    await user.click(await find('button', '新建作品'));
     const title = screen.getByLabelText('作品名称');
     await user.clear(title);
     await user.type(title, 'DOM 联调讲义');
@@ -280,6 +354,138 @@ it('connects the rendered workspace learning, notebook, artifact, tutor and inva
       revision = saved.revision;
     }
   });
+  await step('account profile CAS and actual analytics totals', async () => {
+    const displayName = await screen.findByLabelText(/显示名称可使用中文/);
+    await user.clear(displayName);
+    await user.type(displayName, '真实联调学习者');
+    await user.click(screen.getByRole('button', { name: '保存个人资料' }));
+    await screen.findByText('个人资料已保存。');
+    const profile = await (await fetch('/api/v1/me/profile')).json();
+    expect(profile.displayName).toBe('真实联调学习者');
+    expect(profile.revision).toBeGreaterThan(0);
+    await user.click(screen.getByRole('link', { name: '进度与复习' }));
+    await find('heading', '学习活动趋势');
+    await user.click(screen.getByRole('button', { name: '近 7 天' }));
+    const analytics = await (await fetch('/api/v1/me/analytics?days=7')).json();
+    expect(analytics.daily).toHaveLength(7);
+    expect(analytics.totals.gradedAttempts).toBeGreaterThanOrEqual(2);
+    expect(analytics.totals.completedReadings).toBeGreaterThanOrEqual(1);
+    await waitFor(() =>
+      expect(document.querySelector('.analytics-totals strong')?.textContent).toBe(
+        String(analytics.totals.gradedAttempts),
+      ),
+    );
+  });
+  await step(
+    'private image upload links an actual asset reference to editable slides and office export bytes',
+    async () => {
+      await user.click(screen.getByRole('link', { name: '作品与错题集' }));
+      await user.click(await find('button', '新建作品'));
+      const title = screen.getByLabelText('作品名称');
+      await user.clear(title);
+      await user.type(title, '带真实图片的幻灯片');
+      await user.selectOptions(screen.getByLabelText('源稿类型'), 'SLIDES');
+      await user.click(screen.getByRole('button', { name: '创建源稿' }));
+      await find('heading', '带真实图片的幻灯片');
+      const slideArtifact = decodeURIComponent(location.hash.split('/')[1]);
+      await user.click(screen.getByRole('button', { name: '插入图片' }));
+      const bytes = pngFixture();
+      await user.upload(
+        screen.getByLabelText('选择素材文件'),
+        new File([new Uint8Array(bytes)], 'verify.png', { type: 'image/png' }),
+      );
+      await user.click(screen.getByRole('button', { name: '上传素材' }));
+      await user.click(await find('button', '插入当前幻灯片'));
+      await user.click(screen.getByRole('button', { name: '保存版本' }));
+      await screen.findByText('服务端已保存版本 1。', {}, { timeout: 25000 });
+      const version = await (
+        await fetch(`/api/v1/artifacts/${slideArtifact}/revisions?revision=1`)
+      ).json();
+      const image = version.content.slides[0].elements.find(
+        (item: { kind: string }) => item.kind === 'IMAGE',
+      );
+      expect(image.assetId).toBeTruthy();
+      expect(version.inputRefs).toContainEqual(
+        expect.objectContaining({ kind: 'ASSET', id: image.assetId, revision: 1 }),
+      );
+      const stored = await fetch(`/api/v1/assets/${image.assetId}/download`);
+      expect(stored.status).toBe(200);
+      expect(Buffer.from(await stored.arrayBuffer())).toEqual(bytes);
+      await user.selectOptions(screen.getByLabelText('导出格式'), 'PPTX');
+      await user.click(screen.getByRole('button', { name: '生成导出文件' }));
+      const download = await find('link', '下载 PPTX');
+      const exported = await fetch(download.getAttribute('href')!);
+      expect(exported.status).toBe(200);
+      expect(exported.headers.get('Content-Type')).toContain('presentationml');
+      expect(
+        Buffer.from(await exported.arrayBuffer())
+          .subarray(0, 2)
+          .toString(),
+      ).toBe('PK');
+    },
+  );
+  await step('document office and PDF exports are actual downloadable files', async () => {
+    await act(async () => {
+      location.hash = `studio/${artifactId}`;
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    await find('heading', 'DOM 联调讲义');
+    for (const format of ['DOCX', 'PDF']) {
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: '生成导出文件' })).toBeEnabled(),
+      );
+      await user.selectOptions(screen.getByLabelText('导出格式'), format);
+      await user.click(screen.getByRole('button', { name: '生成导出文件' }));
+      const link = await find('link', `下载 ${format}`);
+      const response = await fetch(link.getAttribute('href')!);
+      expect(response.status).toBe(200);
+      const bytes = Buffer.from(await response.arrayBuffer());
+      expect(bytes.subarray(0, format === 'PDF' ? 5 : 2).toString()).toBe(
+        format === 'PDF' ? '%PDF-' : 'PK',
+      );
+    }
+  });
+  await step(
+    'evidence-only study workflow produces source-linked editable artifacts through visible controls',
+    async () => {
+      await user.click(screen.getByRole('link', { name: '学习创作任务' }));
+      await user.type(
+        await screen.findByLabelText('你想真正理解什么？'),
+        '用正反例分析 PECS 的读取与写入边界',
+      );
+      await user.click(screen.getByRole('button', { name: '开始学习创作' }));
+      await find('heading', '已经留下的作品');
+      await within(document.querySelector('.study-detail') as HTMLElement).findByText(
+        '已完成',
+        { exact: true },
+        { timeout: 35000 },
+      );
+      const runs = await (await fetch(`/api/v1/workspaces/${workspaceA}/agent-runs`)).json();
+      const studyRun = runs.find((item: { steps: { key: string }[] }) =>
+        item.steps.some((step) => step.key === 'planner'),
+      );
+      expect(studyRun).toBeTruthy();
+      expect(studyRun.spentTokens).toBe(0);
+      const result = await (await fetch(`/api/v1/agent-runs/${studyRun.id}/study`)).json();
+      expect(result.mode).toBe('EVIDENCE_ONLY');
+      expect(result.requestedOutputs).toEqual(['DOCUMENT', 'SLIDES']);
+      expect(result.artifactIds.length).toBeGreaterThanOrEqual(2);
+      await waitFor(() =>
+        expect(document.querySelectorAll('.study-artifacts button').length).toBe(
+          result.artifactIds.length,
+        ),
+      );
+      const products = await Promise.all(
+        result.artifactIds.map(async (id: string) =>
+          (await fetch(`/api/v1/artifacts/${id}`)).json(),
+        ),
+      );
+      expect(products.map((product) => product.kind)).toEqual(
+        expect.arrayContaining(['DOCUMENT', 'SLIDES']),
+      );
+      expect(products.every((product) => product.currentRevision >= 1)).toBe(true);
+    },
+  );
   await step('second workspace isolates persisted attempts and source drafts', async () => {
     await user.click(screen.getByRole('button', { name: '新建工作空间' }));
     const name = await screen.findByLabelText('工作空间名称');

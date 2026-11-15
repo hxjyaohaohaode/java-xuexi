@@ -2,6 +2,7 @@ package io.typeforge;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.typeforge.operations.DemoContentInitializer;
+import io.typeforge.identity.IdentityService;
 import io.typeforge.shared.JsonCodec;
 import io.typeforge.shared.SchemaCatalog;
 import io.typeforge.tutor.TutorWorker;
@@ -16,11 +17,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpMethod;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 /** HTTP/schema/CSRF gates with real SQL ownership; login itself is covered by the full-loop suite. */
@@ -35,19 +36,22 @@ class TutorHttpBoundaryTest {
     @Autowired SchemaCatalog schemas;
     @Autowired WorkspaceService workspaces;
     @Autowired TutorWorker worker;
+    @Autowired IdentityService identities;
     private UUID owner;
     private UUID workspace;
     private UUID snapshot;
     private String username;
+    private MockHttpSession session;
+    private static final String PASSWORD="fixture-password-strong-123";
     private static String key() { return UUID.randomUUID().toString(); }
-    @BeforeEach void fixture() {
-        owner=UUID.randomUUID();username="tutor-http-boundary-"+owner;
-        jdbc.update("INSERT INTO app_user(id,username,password_hash,roles) VALUES(?,?,?,'[\"LEARNER\"]')",owner.toString(),username,"fixture-not-a-login-credential");
+    @BeforeEach void fixture() throws Exception {
+        username="tutor-http-boundary-"+UUID.randomUUID();owner=identities.register(username,PASSWORD).userId();
+        session=HttpSessionFixture.login(mvc,json,username,PASSWORD);
         workspace=workspaces.create(owner,DemoContentInitializer.RELEASE_ID,"Tutor HTTP boundary","ON_DEMAND",key()).id();
         snapshot=workspaces.createContext(owner,workspace).id();
     }
     private JsonNode call(String method,String path,Object body,int status,String schema) throws Exception {
-        var request=request(HttpMethod.valueOf(method),"/api/v1"+path).with(user(username).roles("LEARNER")).with(csrf().asHeader()).header("Idempotency-Key",key());
+        var request=request(HttpMethod.valueOf(method),"/api/v1"+path).session(session).with(csrf().asHeader()).header("Idempotency-Key",key());
         if(body!=null) request.contentType("application/json").content(json.write(body));
         var response=mvc.perform(request).andReturn().getResponse();assertEquals(status,response.getStatus(),response.getContentAsString());
         JsonNode value=json.tree(response.getContentAsString());schemas.validate(status>=400?"Error":schema,value);return value;
@@ -67,7 +71,7 @@ class TutorHttpBoundaryTest {
     }
     @Test void authCsrfUnknownFieldsAndUnavailableProviderAreControlledBeforeMutation() throws Exception {
         assertEquals(401,mvc.perform(get("/api/v1/tutor/conversations")).andReturn().getResponse().getStatus());
-        assertEquals(403,mvc.perform(post("/api/v1/tutor/conversations").with(user(username).roles("LEARNER")).header("Idempotency-Key",key()).contentType("application/json").content(json.write(Map.of("workspaceId",workspace,"releaseId",DemoContentInitializer.RELEASE_ID,"title","No CSRF")))).andReturn().getResponse().getStatus());
+        assertEquals(403,mvc.perform(post("/api/v1/tutor/conversations").session(session).header("Idempotency-Key",key()).contentType("application/json").content(json.write(Map.of("workspaceId",workspace,"releaseId",DemoContentInitializer.RELEASE_ID,"title","No CSRF")))).andReturn().getResponse().getStatus());
         var conversation=conversation();
         call("POST","/tutor/requests",input(conversation,"MODEL"),503,null);
         var extra=new java.util.LinkedHashMap<>(input(conversation,"EVIDENCE_ONLY"));extra.put("apiKey","must-not-be-stored");
@@ -83,9 +87,8 @@ class TutorHttpBoundaryTest {
         var cancelled=call("POST","/tutor/requests/"+id+"/cancel",Map.of("expectedEpoch",1),200,"TutorResult");assertEquals("CANCELLED",cancelled.path("status").asText());assertEquals(2,cancelled.path("epoch").asLong());
         call("POST","/tutor/requests/"+id+"/cancel",Map.of("expectedEpoch",1),200,"TutorResult");
         call("POST","/tutor/requests/"+id+"/document",Map.of("title","Cannot materialize cancelled answer"),409,null);
-        UUID other=UUID.randomUUID();String otherName="tutor-other-"+other;
-        jdbc.update("INSERT INTO app_user(id,username,password_hash,roles) VALUES(?,?,?,'[\"LEARNER\"]')",other.toString(),otherName,"fixture-not-a-login-credential");
-        var foreign=mvc.perform(get("/api/v1/tutor/requests/"+id).with(user(otherName).roles("LEARNER"))).andReturn().getResponse();assertEquals(404,foreign.getStatus());schemas.validate("Error",json.tree(foreign.getContentAsString()));
-        var foreignCancel=mvc.perform(post("/api/v1/tutor/requests/"+id+"/cancel").with(user(otherName).roles("LEARNER")).with(csrf().asHeader()).contentType("application/json").content("{\"expectedEpoch\":2}")).andReturn().getResponse();assertEquals(404,foreignCancel.getStatus());
+        String otherName="tutor-other-"+UUID.randomUUID();identities.register(otherName,PASSWORD);var otherSession=HttpSessionFixture.login(mvc,json,otherName,PASSWORD);
+        var foreign=mvc.perform(get("/api/v1/tutor/requests/"+id).session(otherSession)).andReturn().getResponse();assertEquals(404,foreign.getStatus());schemas.validate("Error",json.tree(foreign.getContentAsString()));
+        var foreignCancel=mvc.perform(post("/api/v1/tutor/requests/"+id+"/cancel").session(otherSession).with(csrf().asHeader()).contentType("application/json").content("{\"expectedEpoch\":2}")).andReturn().getResponse();assertEquals(404,foreignCancel.getStatus());
     }
 }

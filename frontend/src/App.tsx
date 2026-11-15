@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   BookOpen,
   CheckSquare,
@@ -13,11 +13,16 @@ import {
   Settings2,
   X,
   ChevronDown,
+  PanelLeftClose,
+  PanelLeftOpen,
+  WifiOff,
+  LibraryBig,
+  Workflow,
 } from 'lucide-react';
 import { api } from './api';
 import { useMutation, useResource, useWorkspaceEvents } from './hooks';
 import { WorkspaceContext, type Route } from './context';
-import { ErrorNotice, Field, Loading, Empty } from './components/ui';
+import { Dialog, ErrorNotice, Field, Loading, Empty, lockBodyScroll } from './components/ui';
 import { Auth } from './pages/Auth';
 import { Learning } from './pages/Learning';
 import { Practice } from './pages/Practice';
@@ -26,6 +31,8 @@ import { applyPreference, MemoryPage, setPreferenceOwner, SettingsPage } from '.
 import { Studio } from './pages/Studio';
 import { Tutor } from './pages/Tutor';
 import { Lab } from './pages/Lab';
+import { Content } from './pages/Content';
+import { Agents } from './pages/Agents';
 import type { Capabilities, Preference, Session, Workspace } from './types';
 import { readSaved, writeSaved } from './state';
 
@@ -36,7 +43,9 @@ const navigation: [Route, string, typeof BookOpen][] = [
   ['lab', '类型实验', FlaskConical],
   ['studio', '作品与错题集', FolderPen],
   ['tutor', '导师与证据任务', MessageSquare],
+  ['agents', '学习创作任务', Workflow],
   ['memory', '笔记与记忆', NotebookPen],
+  ['content', '内容工作台', LibraryBig],
 ];
 function routeFromHash(): { route: Route; selection: string } {
   const [route, selection = ''] = location.hash.slice(1).split('/');
@@ -44,12 +53,19 @@ function routeFromHash(): { route: Route; selection: string } {
     route: ([...navigation.map((n) => n[0]), 'settings'] as string[]).includes(route)
       ? (route as Route)
       : 'learn',
-    selection: decodeURIComponent(selection),
+    selection: (() => {
+      try {
+        return decodeURIComponent(selection);
+      } catch {
+        return '';
+      }
+    })(),
   };
 }
 export default function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [bootError, setBootError] = useState<unknown>(null);
+  const [sessionNotice, setSessionNotice] = useState('');
   const sessionGeneration = useRef(0);
   const bootstrap = () => {
     const generation = ++sessionGeneration.current;
@@ -74,6 +90,7 @@ export default function App() {
   useEffect(() => {
     bootstrap();
     api.onUnauthenticated = () => {
+      setSessionNotice('会话已结束，请重新登录。你的已提交内容保存在服务端。');
       sessionGeneration.current += 1;
       api.clearPrivateState();
       setPreferenceOwner(null);
@@ -100,7 +117,9 @@ export default function App() {
   if (!session)
     return (
       <Auth
+        notice={sessionNotice}
         onSession={(s) => {
+          setSessionNotice('');
           sessionGeneration.current += 1;
           api.scope = s.userId;
           setPreferenceOwner(s.userId);
@@ -112,7 +131,8 @@ export default function App() {
     <SignedIn
       key={session.userId}
       session={session}
-      onLogout={() => {
+      onLogout={(notice) => {
+        setSessionNotice(notice || '你已退出登录。');
         sessionGeneration.current += 1;
         api.clearPrivateState();
         setPreferenceOwner(null);
@@ -121,7 +141,13 @@ export default function App() {
     />
   );
 }
-function SignedIn({ session, onLogout }: { session: Session; onLogout: () => void }) {
+function SignedIn({
+  session,
+  onLogout,
+}: {
+  session: Session;
+  onLogout: (notice?: string) => void;
+}) {
   const workspaces = useResource<Workspace[]>('/workspaces?limit=100');
   const capabilities = useResource<Capabilities>('/capabilities');
   const activeRelease = useResource<{ releaseId: string }>('/releases/active');
@@ -175,7 +201,11 @@ function SignedIn({ session, onLogout }: { session: Session; onLogout: () => voi
     setSelected(id);
     writeSaved(`tf.workspace.${session.userId}`, id);
   };
-  const logout = () => mutation.run(() => api.request('/auth/session', 'DELETE'), onLogout);
+  const logout = () =>
+    mutation.run(
+      () => api.request('/auth/session', 'DELETE'),
+      () => onLogout(),
+    );
   if ((workspaces.loading && !workspaces.data) || (capabilities.loading && !capabilities.data))
     return (
       <main className="boot">
@@ -248,48 +278,29 @@ function SignedIn({ session, onLogout }: { session: Session; onLogout: () => voi
         create={() => setCreating(true)}
         logout={() => void logout()}
         refreshWorkspaces={workspaces.reload}
+        endSession={onLogout}
       />
       {creating && (
-        <div className="modal-backdrop">
-          <section
-            className="modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="new-workspace"
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') setCreating(false);
-              if (e.key === 'Tab') {
-                const elements = Array.from(
-                  e.currentTarget.querySelectorAll<HTMLElement>(
-                    'button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href]',
-                  ),
-                );
-                const first = elements[0],
-                  last = elements[elements.length - 1];
-                if (e.shiftKey && document.activeElement === first) {
-                  e.preventDefault();
-                  last?.focus();
-                } else if (!e.shiftKey && document.activeElement === last) {
-                  e.preventDefault();
-                  first?.focus();
-                }
-              }
-            }}
-          >
-            <div className="row spread">
-              <h2 id="new-workspace">新建工作空间</h2>
-              <button
-                autoFocus
-                className="icon-button"
-                aria-label="关闭"
-                onClick={() => setCreating(false)}
-              >
-                <X size={20} />
-              </button>
-            </div>
-            {createForm}
-          </section>
-        </div>
+        <Dialog
+          title="新建工作空间"
+          onClose={() => {
+            if (!mutation.busy) setCreating(false);
+          }}
+        >
+          <div className="row spread">
+            <h2 id="new-workspace">新建工作空间</h2>
+            <button
+              autoFocus
+              className="icon-button"
+              aria-label="关闭"
+              disabled={mutation.busy}
+              onClick={() => setCreating(false)}
+            >
+              <X size={20} />
+            </button>
+          </div>
+          {createForm}
+        </Dialog>
       )}
     </>
   );
@@ -303,6 +314,7 @@ function WorkspaceShell({
   create,
   logout,
   refreshWorkspaces,
+  endSession,
 }: {
   workspace: Workspace;
   workspaces: Workspace[];
@@ -312,15 +324,54 @@ function WorkspaceShell({
   create: () => void;
   logout: () => void;
   refreshWorkspaces: () => void;
+  endSession: (notice?: string) => void;
 }) {
   const [locationState, setLocationState] = useState(routeFromHash);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const sidebar = useRef<HTMLElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const menuNavigation = useRef(false);
+  const scrollPositions = useRef(new Map<string, number>());
+  const routeKey = `${locationState.route}/${locationState.selection}`;
+  const previousRoute = useRef(routeKey);
   const [tick, setTick] = useState(0);
   const refresh = () => {
     setTick((n) => n + 1);
     refreshWorkspaces();
   };
   const stream = useWorkspaceEvents(workspace.id, refresh);
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const releaseScroll = lockBodyScroll();
+    sidebar.current?.querySelector<HTMLElement>('[aria-label="关闭菜单"]')?.focus();
+    const closeOnDesktop = () => {
+      if (window.innerWidth > 760) setMobileOpen(false);
+    };
+    window.addEventListener('resize', closeOnDesktop);
+    return () => {
+      releaseScroll();
+      window.removeEventListener('resize', closeOnDesktop);
+      if (menuNavigation.current)
+        document.getElementById('main-content')?.focus({ preventScroll: true });
+      else menuButton.current?.focus();
+      menuNavigation.current = false;
+    };
+  }, [mobileOpen]);
+  useLayoutEffect(() => {
+    const key = routeKey;
+    const position = scrollPositions.current.get(key) || 0;
+    const frame = requestAnimationFrame(() => {
+      window.scrollTo({ top: position, behavior: 'instant' });
+      if (previousRoute.current.split('/')[0] !== locationState.route)
+        document.getElementById('main-content')?.focus({ preventScroll: true });
+      previousRoute.current = key;
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      scrollPositions.current.set(key, window.scrollY);
+    };
+  }, [routeKey, locationState.route]);
   const navigate = (route: Route, selection = '') => {
     location.hash = `${route}${selection ? '/' + encodeURIComponent(selection) : ''}`;
     setMobileOpen(false);
@@ -333,6 +384,11 @@ function WorkspaceShell({
     window.addEventListener('hashchange', change);
     return () => window.removeEventListener('hashchange', change);
   }, []);
+  const visibleNavigation = navigation.filter(
+    ([id]) =>
+      (id !== 'content' || session.roles.some((role) => ['EDITOR', 'ADMIN'].includes(role))) &&
+      (id !== 'agents' || capabilities.enabled.includes('STUDY_WORKFLOW')),
+  );
   const selected = navigation.find((n) => n[0] === locationState.route)?.[1] || '偏好与能力';
   return (
     <WorkspaceContext.Provider
@@ -346,9 +402,10 @@ function WorkspaceShell({
         navigate,
         selection: locationState.selection,
         can: (c) => capabilities.enabled.includes(c),
+        endSession,
       }}
     >
-      <div className="app-layout">
+      <div className={`app-layout ${collapsed ? 'nav-collapsed' : ''}`}>
         <a
           className="skip-link"
           href="#main-content"
@@ -359,9 +416,40 @@ function WorkspaceShell({
         >
           跳到主要内容
         </a>
-        <aside className={`sidebar ${mobileOpen ? 'open' : ''}`} aria-label="主导航">
+        <aside
+          ref={sidebar}
+          id="workspace-navigation"
+          className={`sidebar ${mobileOpen ? 'open' : ''}`}
+          aria-label="主导航"
+          role={mobileOpen ? 'dialog' : undefined}
+          aria-modal={mobileOpen || undefined}
+          onKeyDown={(e) => {
+            if (!mobileOpen) return;
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              setMobileOpen(false);
+            }
+            if (e.key === 'Tab') {
+              const controls = Array.from(
+                e.currentTarget.querySelectorAll<HTMLElement>(
+                  'button:not(:disabled),a[href],select',
+                ),
+              );
+              const first = controls[0],
+                last = controls.at(-1);
+              if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last?.focus();
+              } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first?.focus();
+              }
+            }
+          }}
+        >
           <div className="brand">
-            <span className="brand-mark">{'<T>'}</span>TypeForge
+            <span className="brand-mark">{'<T>'}</span>
+            <span className="brand-name">TypeForge</span>
             <button
               className="mobile-only icon-button"
               aria-label="关闭菜单"
@@ -376,7 +464,13 @@ function WorkspaceShell({
               <select
                 id="workspace-select"
                 value={workspace.id}
-                onChange={(e) => choose(e.target.value)}
+                onChange={(e) => {
+                  choose(e.target.value);
+                  setMobileOpen(false);
+                  requestAnimationFrame(() =>
+                    document.getElementById('main-content')?.focus({ preventScroll: true }),
+                  );
+                }}
               >
                 {workspaces.map((w) => (
                   <option key={w.id} value={w.id}>
@@ -386,34 +480,56 @@ function WorkspaceShell({
               </select>
               <ChevronDown size={14} />
             </div>
-            <button className="text-button small" onClick={create}>
+            <button
+              className="text-button small"
+              onClick={() => {
+                setMobileOpen(false);
+                create();
+              }}
+            >
               <Plus size={15} />
               新建工作空间
             </button>
           </div>
           <nav>
-            {navigation.map(([id, label, Icon]) => (
+            {visibleNavigation.map(([id, label, Icon]) => (
               <a
                 href={`#${id}`}
                 key={id}
                 className={locationState.route === id ? 'active' : ''}
                 aria-current={locationState.route === id ? 'page' : undefined}
+                onClick={() => {
+                  menuNavigation.current = mobileOpen;
+                  setMobileOpen(false);
+                }}
               >
                 <Icon size={19} />
-                {label}
+                <span className="nav-label">{label}</span>
               </a>
             ))}
           </nav>
           <div className="sidebar-bottom">
-            <a href="#settings" className={locationState.route === 'settings' ? 'active' : ''}>
+            <a
+              href="#settings"
+              onClick={() => {
+                menuNavigation.current = mobileOpen;
+                setMobileOpen(false);
+              }}
+              aria-current={locationState.route === 'settings' ? 'page' : undefined}
+              className={locationState.route === 'settings' ? 'active' : ''}
+            >
               <Settings2 size={18} />
-              偏好与能力
+              <span className="nav-label">偏好与能力</span>
             </a>
             <div className="account">
               <span className="avatar">{session.username.slice(0, 1).toUpperCase()}</span>
               <div>
                 <strong>{session.username}</strong>
-                <small>学习者</small>
+                <small>
+                  {session.roles.includes('EDITOR') || session.roles.includes('ADMIN')
+                    ? '课程编辑'
+                    : '学习者'}
+                </small>
               </div>
               <button className="icon-button" aria-label="退出登录" onClick={logout}>
                 <LogOut size={17} />
@@ -428,27 +544,61 @@ function WorkspaceShell({
             onClick={() => setMobileOpen(false)}
           />
         )}
-        <div className="main-shell">
+        <div className="main-shell" inert={mobileOpen}>
           <header className="topbar">
             <div className="row">
               <button
                 className="mobile-only icon-button"
+                ref={menuButton}
                 aria-label="打开菜单"
+                aria-expanded={mobileOpen}
+                aria-controls="workspace-navigation"
                 onClick={() => setMobileOpen(true)}
               >
                 <Menu size={21} />
+              </button>
+              <button
+                className="desktop-only icon-button"
+                aria-label={collapsed ? '展开导航' : '收起导航'}
+                aria-expanded={!collapsed}
+                aria-controls="workspace-navigation"
+                onClick={() => setCollapsed(!collapsed)}
+              >
+                {collapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
               </button>
               <span>学习工作台</span>
               <span className="separator">/</span>
               <strong>{selected}</strong>
             </div>
-            <div className="sync-state">
+            <div
+              className="sync-state"
+              role="status"
+              title={
+                stream.lastSyncedAt
+                  ? `最近同步：${stream.lastSyncedAt.toLocaleTimeString('zh-CN')} · 已确认事件 ${stream.cursor}`
+                  : '正在连接工作空间'
+              }
+            >
               <span className={`status-dot ${!stream.online || stream.error ? 'offline' : ''}`} />
-              {!stream.online ? '离线 · 写入需恢复连接' : stream.error ? '同步中断' : '已连接'}
-              <span className="desktop-only">· 事件 {stream.cursor}</span>
+              {!stream.online
+                ? '离线'
+                : stream.error
+                  ? '正在重连'
+                  : stream.lastSyncedAt
+                    ? '已同步'
+                    : '正在连接'}
             </div>
           </header>
           <main id="main-content" className="page" tabIndex={-1}>
+            {!stream.online && (
+              <div className="notice offline-banner" role="status">
+                <WifiOff size={18} />
+                <div>
+                  <strong>暂时离线，可以继续查看和编辑</strong>
+                  <p>恢复网络后，你可以重新提交需要服务端确认的操作。</p>
+                </div>
+              </div>
+            )}
             <ErrorNotice error={stream.error} />
             {locationState.route === 'learn' ? (
               <Learning />
@@ -462,6 +612,10 @@ function WorkspaceShell({
               <SettingsPage />
             ) : locationState.route === 'studio' ? (
               <Studio />
+            ) : locationState.route === 'content' ? (
+              <Content />
+            ) : locationState.route === 'agents' ? (
+              <Agents />
             ) : locationState.route === 'tutor' ? (
               <Tutor />
             ) : (

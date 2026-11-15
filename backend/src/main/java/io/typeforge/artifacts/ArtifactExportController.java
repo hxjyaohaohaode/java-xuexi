@@ -23,7 +23,7 @@ public class ArtifactExportController {
     @PostMapping("/export-jobs/{id}/cancel") public ArtifactExportService.Job cancel(Principal principal,@PathVariable UUID id) {return exports.cancel(users.session(principal.getName()).userId(),id);}
     @GetMapping("/export-jobs/{id}/download") public ResponseEntity<byte[]> download(Principal principal,@PathVariable UUID id) {
         var file=exports.download(users.session(principal.getName()).userId(),id);
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE,file.mimeType()+"; charset=UTF-8").header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=\""+file.filename()+"\"")
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE,file.mimeType()+(file.mimeType().startsWith("text/") || file.mimeType().equals("image/svg+xml")?"; charset=UTF-8":"")).header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=\""+file.filename()+"\"")
             .header(HttpHeaders.CACHE_CONTROL,"private, no-store").header("Content-Security-Policy","sandbox; default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'").header("X-Content-Type-Options","nosniff").eTag(file.contentHash()).body(file.bytes());
     }
 }

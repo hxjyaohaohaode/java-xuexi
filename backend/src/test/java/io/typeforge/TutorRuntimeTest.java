@@ -155,7 +155,14 @@ class TutorRuntimeTest {
     @Test void deadlinesAndRetryBoundsConvergeInsteadOfKeepingAQueueHeadForever() {
         var expired=submit();jdbc.update("UPDATE tutor_request_runtime SET deadline_at=? WHERE request_id=?",Timestamp.from(Instant.now().minusSeconds(1)),expired.id().toString());
         var retry=submit();jdbc.update("UPDATE tutor_request_runtime SET attempt_count=3 WHERE request_id=?",retry.id().toString());
-        var valid=submit();assertTrue(worker.runOne());
+        var valid=submit();
+        // Millisecond timestamps can tie; random UUID order is not submission order.
+        // Fix the queue order so this test specifically proves invalid heads cannot block valid work.
+        Instant queued=Instant.now().minusSeconds(5);
+        jdbc.update("UPDATE tutor_request SET created_at=? WHERE id=?",Timestamp.from(queued),expired.id().toString());
+        jdbc.update("UPDATE tutor_request SET created_at=? WHERE id=?",Timestamp.from(queued.plusSeconds(1)),retry.id().toString());
+        jdbc.update("UPDATE tutor_request SET created_at=? WHERE id=?",Timestamp.from(queued.plusSeconds(2)),valid.id().toString());
+        assertTrue(worker.runOne());
         assertEquals("TUTOR_DEADLINE_EXCEEDED",tutors.get(owner,expired.id()).errorCode());
         assertEquals("TUTOR_RETRY_EXHAUSTED",tutors.get(owner,retry.id()).errorCode());
         assertEquals("COMPLETED",tutors.get(owner,valid.id()).status());

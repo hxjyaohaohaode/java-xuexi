@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { NotebookPen, SlidersHorizontal } from 'lucide-react';
 import { api } from '../api';
 import { useWorkspace } from '../context';
-import { useMutation, useResource } from '../hooks';
+import { useMutation, useResource, useSessionDraft, useUnsavedChanges } from '../hooks';
 import {
   Badge,
   Confirmed,
@@ -12,12 +12,14 @@ import {
   Loading,
   SectionTitle,
 } from '../components/ui';
+import { AccountPanel } from './Account';
 import type { Goal, Memory, Preference, Workspace } from '../types';
 
 export function MemoryPage() {
-  const { workspace, tick, refresh } = useWorkspace();
+  const { workspace, session, tick, refresh } = useWorkspace();
   const memories = useResource<Memory[]>(`/workspaces/${workspace.id}/memories`, tick);
-  const [text, setText] = useState('');
+  const [text, setText] = useSessionDraft(`tf.memory-input.${session.userId}.${workspace.id}`, '');
+  useUnsavedChanges(!!text.trim());
   const [saved, setSaved] = useState(false);
   const mutation = useMutation();
   const add = (e: React.SubmitEvent<HTMLFormElement>) => {
@@ -57,6 +59,7 @@ export function MemoryPage() {
                 maxLength={2000}
                 required
                 value={text}
+                disabled={mutation.busy}
                 onChange={(e) => {
                   setText(e.target.value);
                   setSaved(false);
@@ -134,10 +137,20 @@ export function MemoryPage() {
   );
 }
 function GoalsPanel() {
-  const { workspace, tick, refresh } = useWorkspace();
+  const { workspace, session, tick, refresh } = useWorkspace();
   const goals = useResource<Goal[]>(`/workspaces/${workspace.id}/goals`, tick);
-  const [text, setText] = useState('');
-  const [acceptance, setAcceptance] = useState('能用代码与规则解释自己的判断');
+  const [text, setText] = useSessionDraft(`tf.goal-input.${session.userId}.${workspace.id}`, '');
+  const [acceptance, setAcceptance] = useSessionDraft(
+    `tf.goal-criteria.${session.userId}.${workspace.id}`,
+    '能用代码与规则解释自己的判断',
+  );
+  const criteria = acceptance
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const validCriteria =
+    criteria.length > 0 && criteria.length <= 20 && criteria.every((line) => line.length <= 500);
+  useUnsavedChanges(!!text.trim());
   const mutation = useMutation();
   return (
     <section className="panel">
@@ -148,6 +161,7 @@ function GoalsPanel() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
+          if (!validCriteria) return;
           void mutation.run(
             () =>
               api.request<Goal>(
@@ -155,10 +169,7 @@ function GoalsPanel() {
                 'POST',
                 {
                   text,
-                  acceptance: acceptance
-                    .split('\n')
-                    .map((s) => s.trim())
-                    .filter(Boolean),
+                  acceptance: criteria,
                 },
                 { idempotent: true },
               ),
@@ -174,22 +185,27 @@ function GoalsPanel() {
             <textarea
               rows={3}
               required
-              maxLength={2000}
+              maxLength={4000}
               value={text}
+              disabled={mutation.busy}
               onChange={(e) => setText(e.target.value)}
             />
           </Field>
-          <Field label="验收标准（每行一条）">
+          <Field label="验收标准（每行一条）" hint="1 至 20 项，每项最多 500 字符。">
             <textarea
               rows={3}
               required
               maxLength={4000}
               value={acceptance}
+              disabled={mutation.busy}
               onChange={(e) => setAcceptance(e.target.value)}
             />
           </Field>
         </div>
-        <button disabled={mutation.busy || !text.trim()}>保存学习目标</button>
+        {!validCriteria && (
+          <p className="field-error">请填写 1 至 20 项验收标准，每项最多 500 字符。</p>
+        )}
+        <button disabled={mutation.busy || !text.trim() || !validCriteria}>保存学习目标</button>
       </form>
       <ErrorNotice
         error={mutation.error || goals.error}
@@ -202,10 +218,22 @@ function GoalsPanel() {
   );
 }
 function GoalEditor({ goal, onChange }: { goal: Goal; onChange: () => void }) {
-  const [editing, setEditing] = useState(false);
-  const [text, setText] = useState(goal.text);
-  const [acceptance, setAcceptance] = useState(goal.acceptance.join('\n'));
-  const [base, setBase] = useState(goal.revision);
+  const { session, workspace } = useWorkspace();
+  const prefix = `tf.goal-edit.${session.userId}.${workspace.id}.${goal.id}`;
+  const [editing, setEditing] = useSessionDraft(`${prefix}.editing`, false);
+  const [text, setText] = useSessionDraft(`${prefix}.text`, goal.text);
+  const [acceptance, setAcceptance] = useSessionDraft(
+    `${prefix}.acceptance`,
+    goal.acceptance.join('\n'),
+  );
+  const [base, setBase] = useSessionDraft(`${prefix}.base`, goal.revision);
+  const criteria = acceptance
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const validCriteria =
+    criteria.length > 0 && criteria.length <= 20 && criteria.every((line) => line.length <= 500);
+  useUnsavedChanges(editing && (text !== goal.text || acceptance !== goal.acceptance.join('\n')));
   const mutation = useMutation();
   const save = (status: Goal['status']) =>
     mutation.run(
@@ -235,14 +263,16 @@ function GoalEditor({ goal, onChange }: { goal: Goal; onChange: () => void }) {
           <Field label="修改目标">
             <textarea
               value={text}
+              disabled={mutation.busy}
               rows={3}
-              maxLength={2000}
+              maxLength={4000}
               onChange={(e) => setText(e.target.value)}
             />
           </Field>
           <Field label="修改验收标准">
             <textarea
               value={acceptance}
+              disabled={mutation.busy}
               rows={3}
               maxLength={4000}
               onChange={(e) => setAcceptance(e.target.value)}
@@ -255,18 +285,22 @@ function GoalEditor({ goal, onChange }: { goal: Goal; onChange: () => void }) {
           )}
           <div className="row wrap">
             <button
-              disabled={mutation.busy || goal.revision !== base}
+              disabled={mutation.busy || goal.revision !== base || !validCriteria || !text.trim()}
               onClick={() => void save('ACTIVE')}
             >
               保存目标新版本
             </button>
             <button
-              disabled={mutation.busy || goal.revision !== base}
+              disabled={mutation.busy || goal.revision !== base || !validCriteria || !text.trim()}
               onClick={() => void save('ARCHIVED')}
             >
               归档这个目标
             </button>
-            <button className="text-button" onClick={() => setEditing(false)}>
+            <button
+              disabled={mutation.busy}
+              className="text-button"
+              onClick={() => setEditing(false)}
+            >
               取消编辑
             </button>
           </div>
@@ -331,10 +365,35 @@ export function SettingsPage() {
   const { workspace, session, capabilities, can, tick, refresh } = useWorkspace();
   const preference = useResource<Preference>(can('USER_PREFERENCES') ? '/me/preferences' : null);
   const remoteWorkspace = useResource<Workspace>(`/workspaces/${workspace.id}`, tick);
-  const [draft, setDraft] = useState<Preference | null>(null);
-  const [dirty, setDirty] = useState(false);
-  const [title, setTitle] = useState(workspace.title);
-  const [mode, setMode] = useState(workspace.guidanceMode);
+  const [draft, setDraft] = useSessionDraft<Preference | null>(
+    `tf.preference-draft.${session.userId}`,
+    null,
+  );
+  const [dirty, setDirty] = useSessionDraft(`tf.preference-dirty.${session.userId}`, false);
+  const [spaceDraft, setSpaceDraft] = useSessionDraft(
+    `tf.workspace-draft.${session.userId}.${workspace.id}`,
+    {
+      title: workspace.title,
+      guidanceMode: workspace.guidanceMode,
+      revision: workspace.revision,
+    },
+  );
+  const [spaceDirty, setSpaceDirty] = useSessionDraft(
+    `tf.workspace-dirty.${session.userId}.${workspace.id}`,
+    false,
+  );
+  const [spaceSaved, setSpaceSaved] = useState(false);
+  const workspaceMutation = useMutation();
+  useEffect(() => {
+    if (remoteWorkspace.data && !spaceDirty && remoteWorkspace.data.revision > spaceDraft.revision)
+      setSpaceDraft({
+        title: remoteWorkspace.data.title,
+        guidanceMode: remoteWorkspace.data.guidanceMode,
+        revision: remoteWorkspace.data.revision,
+      });
+  }, [remoteWorkspace.data, spaceDirty, spaceDraft.revision]);
+  const workspaceConflict =
+    !!remoteWorkspace.data && spaceDirty && remoteWorkspace.data.revision !== spaceDraft.revision;
   const [saved, setSaved] = useState(false);
   const mutation = useMutation();
   useEffect(() => {
@@ -343,6 +402,7 @@ export function SettingsPage() {
       applyPreference(preference.data, session.userId);
     }
   }, [preference.data, dirty, draft, session.userId]);
+  useUnsavedChanges(dirty || spaceDirty);
   const edit = (patch: Partial<Preference>) => {
     if (draft && !mutation.busy) {
       setDraft({ ...draft, ...patch });
@@ -357,6 +417,7 @@ export function SettingsPage() {
         title="偏好与能力"
         description="可用能力来自服务端声明。尚未配置的能力保持明确关闭，不会用演示结果代替执行。"
       />
+      {can('ACCOUNT_LIFECYCLE') && <AccountPanel />}
       <div className="two-column">
         <section className="panel">
           <h2>
@@ -366,7 +427,7 @@ export function SettingsPage() {
           <ErrorNotice error={preference.error} retry={preference.reload} />
           {preference.loading ? (
             <Loading />
-          ) : draft ? (
+          ) : draft && can('USER_PREFERENCES') ? (
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -430,21 +491,56 @@ export function SettingsPage() {
           ) : (
             <Empty title="显示偏好服务尚未启用" />
           )}
-          <ErrorNotice error={mutation.error} />
+          <ErrorNotice error={mutation.error} retry={preference.reload} />
+          {draft && preference.data && dirty && draft.revision !== preference.data.revision && (
+            <div className="notice warning">
+              <div>
+                <strong>显示偏好已有新版本，当前选择已保留。</strong>
+                <div className="row wrap">
+                  <button
+                    onClick={() => {
+                      setDraft(preference.data!);
+                      setDirty(false);
+                      mutation.clearError();
+                      applyPreference(preference.data!, session.userId);
+                    }}
+                  >
+                    采用最新偏好
+                  </button>
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      setDraft({ ...draft, revision: preference.data!.revision });
+                      mutation.clearError();
+                    }}
+                  >
+                    保留我的选择，以最新版本为基线
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           <hr />
           <h2>工作空间设置</h2>
           <form
             onSubmit={(e) => {
               e.preventDefault();
               if (remoteWorkspace.data)
-                void mutation.run(
+                void workspaceMutation.run(
                   () =>
                     api.request<Workspace>(`/workspaces/${workspace.id}`, 'PATCH', {
-                      expectedRevision: remoteWorkspace.data!.revision,
-                      title,
-                      guidanceMode: mode,
+                      expectedRevision: spaceDraft.revision,
+                      title: spaceDraft.title,
+                      guidanceMode: spaceDraft.guidanceMode,
                     }),
-                  () => {
+                  (value) => {
+                    setSpaceDraft({
+                      title: value.title,
+                      guidanceMode: value.guidanceMode,
+                      revision: value.revision,
+                    });
+                    setSpaceDirty(false);
+                    setSpaceSaved(true);
                     refresh();
                   },
                 );
@@ -454,14 +550,27 @@ export function SettingsPage() {
               <input
                 maxLength={255}
                 required
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                value={spaceDraft.title}
+                disabled={workspaceMutation.busy}
+                onChange={(e) => {
+                  setSpaceDraft({ ...spaceDraft, title: e.target.value });
+                  setSpaceDirty(true);
+                  setSpaceSaved(false);
+                }}
               />
             </Field>
             <Field label="指导方式">
               <select
-                value={mode}
-                onChange={(e) => setMode(e.target.value as Workspace['guidanceMode'])}
+                value={spaceDraft.guidanceMode}
+                disabled={workspaceMutation.busy}
+                onChange={(e) => {
+                  setSpaceDraft({
+                    ...spaceDraft,
+                    guidanceMode: e.target.value as Workspace['guidanceMode'],
+                  });
+                  setSpaceDirty(true);
+                  setSpaceSaved(false);
+                }}
               >
                 <option value="ON_DEMAND">按需协助</option>
                 <option value="COLLABORATIVE">协作指导</option>
@@ -471,7 +580,51 @@ export function SettingsPage() {
             <p className="muted small">
               此偏好会保存到上下文。主动生成仍取决于实际启用的模型与任务能力。
             </p>
-            <button disabled={mutation.busy || !remoteWorkspace.data}>保存空间设置</button>
+            {workspaceConflict && (
+              <div className="notice warning">
+                <div>
+                  <strong>空间设置已被更新，当前输入已保留。</strong>
+                  <p>最新名称：{remoteWorkspace.data!.title}。请比较后再选择。</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSpaceDraft({
+                        title: remoteWorkspace.data!.title,
+                        guidanceMode: remoteWorkspace.data!.guidanceMode,
+                        revision: remoteWorkspace.data!.revision,
+                      });
+                      setSpaceDirty(false);
+                      workspaceMutation.clearError();
+                    }}
+                  >
+                    采用最新设置
+                  </button>
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => {
+                      setSpaceDraft({ ...spaceDraft, revision: remoteWorkspace.data!.revision });
+                      workspaceMutation.clearError();
+                    }}
+                  >
+                    保留我的输入，以最新版本为基线
+                  </button>
+                </div>
+              </div>
+            )}
+            <button
+              disabled={
+                workspaceMutation.busy ||
+                workspaceConflict ||
+                !spaceDirty ||
+                !spaceDraft.title.trim() ||
+                !remoteWorkspace.data
+              }
+            >
+              保存空间设置
+            </button>
+            <ErrorNotice error={workspaceMutation.error} retry={remoteWorkspace.reload} />
+            {spaceSaved && <Confirmed>工作空间设置已保存。</Confirmed>}
           </form>
           <ErrorNotice error={remoteWorkspace.error} retry={remoteWorkspace.reload} />
         </section>
@@ -496,8 +649,7 @@ export function SettingsPage() {
             ))}
           </ul>
           <p className="muted small">
-            图片、音频、视频、Office 二进制导出和任意 Java
-            编译器需对应适配器，不能从静态源稿推定为已接通。
+            这里反映当前运行环境的真实开关。外部服务未配置时，相应操作会保持关闭。
           </p>
         </section>
       </div>

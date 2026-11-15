@@ -4,5 +4,10 @@
   "V003__runtime_integrity.sql": "7270c47cb6d93910ce6d9e6da390fc9608454493296272676e7248bd9ef426fa",
   "V004__tutor_runtime.sql": "aa92680b4026632f4f3628e0599b79e6ff786b66d6fe496c235cea7fae2d51a9",
   "V005__content_workbench.sql": "5e9e23346b616a924c4b91d648c375e481eb1783d8d2a94310cea00e7fdd758d",
-  "V006__interactive_learning.sql": "c22d18f54238f15c2ab32d70110db7a283a51a021e6fa760a3815046e83cab5b"
+  "V006__interactive_learning.sql": "c22d18f54238f15c2ab32d70110db7a283a51a021e6fa760a3815046e83cab5b",
+  "V007__identity_operations.sql": "3c97837c0e1985d934255ab562f66759c9f465dd7131360666af527fa1e1a282",
+  "V008__compiler_learning.sql": "d5177b9fba09fca995f4b6f3eee1bc704c934e18c508a089123c63bb503a62cc",
+  "V009__artifact_files.sql": "0d3867dcf895c9b79f74833da2fc10f946211f8da11f6eaf6b76720b36584fa2",
+  "V010__study_workflow.sql": "879e3913a2c32137e08a7ebb3dc52054f5e5f9446c771db49cffb48a4d45e87a",
+  "V011__private_assets.sql": "1bf9c34c1471ac54913308966c7caba13ae920493adc5b3d7e8738a03a6a7d28"
 }

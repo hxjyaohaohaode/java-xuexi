@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "TypeForge integrated learning workbench API",
-    "version": "0.4.0",
-    "description": "x-status=implemented是本轮真实实现，planned为明确的后续接口；会话、已发布课程、检索、判分、工作空间、持久DAG、类型实验、真实错题动作、文本导出、编辑审核发布和持久导师请求分别标记。模型仅在显式服务器配置后可用；自主规划、用户代码沙箱、媒体生成与二进制文档导出仍未启用。JSON请求体最多262144字节、嵌套64层；revision为int32，公开epoch/sequence为JavaScript安全整数。"
+    "title": "TypeForge connected learning studio API",
+    "version": "0.5.0",
+    "description": "真实会话、课程与编辑审核发布、学习追踪、代码编译队列、学习任务图、可编辑作品、私有素材和DOCX/PPTX/PDF导出。执行能力由/api/v1/capabilities与显式配置共同决定：MODEL规划需要实际模型服务，编译需要独立worker；任意代码运行及生成图像/音频/视频未启用。所有私人资源以会话归属、固定版本、输入来源、预算与租约校验；JSON请求最多262144字节/64层，素材最大8MiB。"
   },
   "servers": [
     {
@@ -1588,19 +1588,9 @@
         "tags": [
           "M04"
         ],
-        "x-status": "planned",
-        "description": "设计契约；尚未实现。资源所有权必须由服务端会话判断。",
+        "x-status": "implemented",
+        "description": "持久隔离编译与固定版本学习联动；私有资源由会话鉴权。",
         "responses": {
-          "202": {
-            "description": "计划成功响应",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CompileJob"
-                }
-              }
-            }
-          },
           "400": {
             "description": "受控错误，详见 docs/04-api.md",
             "content": {
@@ -1687,6 +1677,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "实际响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompileJob"
                 }
               }
             }
@@ -1733,19 +1733,9 @@
         "tags": [
           "M04"
         ],
-        "x-status": "planned",
-        "description": "设计契约；尚未实现。资源所有权必须由服务端会话判断。",
+        "x-status": "implemented",
+        "description": "持久隔离编译与固定版本学习联动；私有资源由会话鉴权。",
         "responses": {
-          "200": {
-            "description": "计划成功响应",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CompileJob"
-                }
-              }
-            }
-          },
           "400": {
             "description": "受控错误，详见 docs/04-api.md",
             "content": {
@@ -1832,6 +1822,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "实际响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompileJob"
                 }
               }
             }
@@ -1857,19 +1857,9 @@
         "tags": [
           "M04"
         ],
-        "x-status": "planned",
-        "description": "设计契约；尚未实现。资源所有权必须由服务端会话判断。",
+        "x-status": "implemented",
+        "description": "持久隔离编译与固定版本学习联动；私有资源由会话鉴权。",
         "responses": {
-          "200": {
-            "description": "计划成功响应",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CompileJob"
-                }
-              }
-            }
-          },
           "400": {
             "description": "受控错误，详见 docs/04-api.md",
             "content": {
@@ -1956,6 +1946,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "实际响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompileJob"
                 }
               }
             }
@@ -5905,7 +5905,7 @@
           "M15"
         ],
         "x-status": "implemented",
-        "description": "持久化有界不可变上下文：最新目标、有效记忆、当前作品、真实提交。每次创建独立快照；不接受任意客户端引用。",
+        "description": "持久化有界不可变上下文：最新目标、有效记忆、当前作品、真实已判分提交。可选 body {attemptIds:[...]} 精确选择1至8个本人、同工作空间、同课程版本的已判分作答，替换默认最近8次并保持指定顺序；其余引用仍由服务器生成，总数最多64。无body调用向后兼容；不接受任意客户端引用、哈希、版本或归属。",
         "parameters": [
           {
             "name": "id",
@@ -5995,6 +5995,16 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContextSnapshotInput"
               }
             }
           }
@@ -6575,12 +6585,11 @@
     "/workspaces/{id}/agent-runs": {
       "post": {
         "operationId": "createAgentRun",
-        "summary": "createAgentRun",
+        "summary": "创建有来源的教学规划与作品任务",
         "tags": [
           "M13"
         ],
-        "x-status": "planned",
-        "description": "设计契约；先检查当前用户对整个 workspace/引用资源的所有权，再执行版本、能力、预算与DSL校验。",
+        "x-status": "implemented",
         "parameters": [
           {
             "name": "id",
@@ -6614,7 +6623,7 @@
         ],
         "responses": {
           "202": {
-            "description": "计划成功响应",
+            "description": "Actual persisted result",
             "content": {
               "application/json": {
                 "schema": {
@@ -6719,7 +6728,41 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AgentRunInput"
+                "$ref": "#/components/schemas/StudyRunInput"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listAgentRuns",
+        "summary": "读取当前空间的真实任务图",
+        "tags": [
+          "M13"
+        ],
+        "x-status": "implemented",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Actual persisted result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentRun"
+                  }
+                }
               }
             }
           }
@@ -8024,8 +8067,8 @@
         "tags": [
           "M14"
         ],
-        "x-status": "planned",
-        "description": "返回限定对象key/尺寸/类型/有效期的上传票据。上传后必须由后端回查hash与扫描，不能信任客户端声明。",
+        "x-status": "implemented",
+        "description": "直接接收multipart file；服务端按真实bytes确认格式、SHA256、8MiB上限和跨工作空间每账户100MiB限额。每账户1000个有效素材，滚动24小时最多500个新素材。SVG及任意URL拒绝；不宣称AV安全认证。",
         "parameters": [
           {
             "name": "id",
@@ -8037,6 +8080,15 @@
             }
           },
           {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.:-]{16,64}$"
+            }
+          },
+          {
             "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
@@ -8045,33 +8097,23 @@
               "minLength": 1,
               "maxLength": 256
             }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 16,
-              "maxLength": 64
-            }
           }
         ],
         "responses": {
           "201": {
-            "description": "计划成功响应",
+            "description": "真实结果",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AssetTicket"
+                  "$ref": "#/components/schemas/Asset"
                 }
               }
             }
           },
           "400": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8079,9 +8121,9 @@
             }
           },
           "401": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8089,9 +8131,9 @@
             }
           },
           "403": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8099,9 +8141,9 @@
             }
           },
           "404": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8109,29 +8151,29 @@
             }
           },
           "409": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
             }
           },
-          "412": {
-            "description": "受控失败；不返回假成功",
+          "410": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
             }
           },
-          "422": {
-            "description": "受控失败；不返回假成功",
+          "413": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8139,9 +8181,9 @@
             }
           },
           "429": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8149,9 +8191,9 @@
             }
           },
           "503": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8162,24 +8204,32 @@
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/AssetTicketInput"
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "additionalProperties": false
               }
             }
           }
         }
-      }
-    },
-    "/assets/{id}/complete": {
-      "post": {
-        "operationId": "completeAssetUpload",
-        "summary": "completeAssetUpload",
+      },
+      "get": {
+        "operationId": "listWorkspaceAssets",
+        "summary": "listWorkspaceAssets",
         "tags": [
           "M14"
         ],
-        "x-status": "planned",
-        "description": "设计契约；先检查当前用户对整个 workspace/引用资源的所有权，再执行版本、能力、预算与DSL校验。",
+        "x-status": "implemented",
+        "description": "本人空间有效素材按createdAt/id倒序分页，usage统计本人全部空间素材，不含导出文件。",
         "parameters": [
           {
             "name": "id",
@@ -8191,41 +8241,41 @@
             }
           },
           {
-            "name": "X-CSRF-TOKEN",
-            "in": "header",
-            "required": true,
+            "name": "cursor",
+            "in": "query",
+            "required": false,
             "schema": {
               "type": "string",
-              "minLength": 1,
-              "maxLength": 256
+              "format": "uuid"
             }
           },
           {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
+            "name": "limit",
+            "in": "query",
+            "required": false,
             "schema": {
-              "type": "string",
-              "minLength": 16,
-              "maxLength": 64
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
             }
           }
         ],
         "responses": {
-          "202": {
-            "description": "计划成功响应",
+          "200": {
+            "description": "真实结果",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Asset"
+                  "$ref": "#/components/schemas/AssetList"
                 }
               }
             }
           },
           "400": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8233,9 +8283,9 @@
             }
           },
           "401": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8243,9 +8293,9 @@
             }
           },
           "403": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8253,9 +8303,9 @@
             }
           },
           "404": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8263,29 +8313,29 @@
             }
           },
           "409": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
             }
           },
-          "412": {
-            "description": "受控失败；不返回假成功",
+          "410": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
             }
           },
-          "422": {
-            "description": "受控失败；不返回假成功",
+          "413": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8293,9 +8343,9 @@
             }
           },
           "429": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8303,9 +8353,9 @@
             }
           },
           "503": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8322,8 +8372,8 @@
         "tags": [
           "M14"
         ],
-        "x-status": "planned",
-        "description": "仅允许下载同用户空间且扫描CLEAN的素材；短期签名URL受限存储域，不接受用户外部URL。",
+        "x-status": "implemented",
+        "description": "同源私有字节下载；每次验证归属、来源状态和SHA256。支持单一HTTP Range（多Range拒绝416）；默认inline可预览，可attachment=true下载。",
         "parameters": [
           {
             "name": "id",
@@ -8333,23 +8383,102 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attachment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "计划成功响应",
-            "content": {
-              "application/json": {
+            "description": "真实完整文件",
+            "headers": {
+              "Content-Disposition": {
                 "schema": {
-                  "$ref": "#/components/schemas/AssetDownload"
+                  "type": "string"
+                }
+              },
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "audio/wav": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "audio/mpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "video/mp4": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }
           },
           "400": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8357,9 +8486,9 @@
             }
           },
           "401": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8367,9 +8496,9 @@
             }
           },
           "403": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8377,9 +8506,9 @@
             }
           },
           "404": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8387,29 +8516,29 @@
             }
           },
           "409": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
             }
           },
-          "412": {
-            "description": "受控失败；不返回假成功",
+          "410": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
             }
           },
-          "422": {
-            "description": "受控失败；不返回假成功",
+          "413": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8417,9 +8546,9 @@
             }
           },
           "429": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
@@ -8427,11 +8556,123 @@
             }
           },
           "503": {
-            "description": "受控失败；不返回假成功",
+            "description": "真实受控错误；不返回私人文件或伪成功。",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "请求的实际字节区间",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "audio/wav": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "audio/mpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "video/mp4": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "416": {
+            "description": "范围不满足或多范围未支持；Content-Range给出实际长度。",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string"
                 }
               }
             }
@@ -8446,8 +8687,8 @@
         "tags": [
           "M16"
         ],
-        "x-status": "planned",
-        "description": "验证所有原始作答属于本人且同release，生成目标、上下文和计划复用M13；不另起一套模型循环。",
+        "x-status": "implemented",
+        "description": "Explicit selected incorrect/assisted attempts must belong to this user, workspace and snapshot. Reuses the durable study workflow with a NOTEBOOK output; default EVIDENCE_ONLY never calls a model.",
         "parameters": [
           {
             "name": "id",
@@ -10912,6 +11153,1929 @@
           }
         }
       }
+    },
+    "/workspaces/{id}/compile-jobs": {
+      "get": {
+        "operationId": "listWorkspaceCompiles",
+        "summary": "listWorkspaceCompiles",
+        "tags": [
+          "M04"
+        ],
+        "x-status": "implemented",
+        "description": "持久隔离编译与固定版本学习联动；私有资源由会话鉴权。",
+        "responses": {
+          "400": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "实际响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "$ref": "#/components/schemas/CompileJob"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/exercises/{id}/hints": {
+      "post": {
+        "operationId": "requestExerciseHint",
+        "summary": "requestExerciseHint",
+        "tags": [
+          "M05"
+        ],
+        "x-status": "implemented",
+        "description": "持久隔离编译与固定版本学习联动；私有资源由会话鉴权。",
+        "responses": {
+          "400": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "实际响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExerciseHint"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExerciseHintInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/profile": {
+      "get": {
+        "operationId": "getAccountProfile",
+        "summary": "getAccountProfile",
+        "tags": [
+          "M01"
+        ],
+        "x-status": "implemented",
+        "description": "本人真实资料；昵称与不可变账户身份分离，返回ETag。",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "已执行的真实结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateAccountProfile",
+        "summary": "updateAccountProfile",
+        "tags": [
+          "M01"
+        ],
+        "x-status": "implemented",
+        "description": "If-Match须与正文revision匹配；CAS冲突412，不丢用户草稿。",
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]{0,9}\"$"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已执行的真实结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountProfileInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/password": {
+      "put": {
+        "operationId": "changeAccountPassword",
+        "summary": "changeAccountPassword",
+        "tags": [
+          "M01"
+        ],
+        "x-status": "implemented",
+        "description": "验证当前密码；成功撤销所有会话（包括当前）；400 CURRENT_PASSWORD_INVALID保留会话。",
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "已执行的真实结果"
+          },
+          "400": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChangeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/sessions": {
+      "get": {
+        "operationId": "listAccountSessions",
+        "summary": "listAccountSessions",
+        "tags": [
+          "M01"
+        ],
+        "x-status": "implemented",
+        "description": "最多10条本人有效会话；不返回cookie、令牌散列、IP或原始User-Agent。",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "已执行的真实结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSessionList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "revokeOtherAccountSessions",
+        "summary": "revokeOtherAccountSessions",
+        "tags": [
+          "M01"
+        ],
+        "x-status": "implemented",
+        "description": "撤销其余会话，保留发起操作的当前会话。",
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "已执行的真实结果"
+          },
+          "400": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/sessions/{id}": {
+      "delete": {
+        "operationId": "revokeAccountSession",
+        "summary": "revokeAccountSession",
+        "tags": [
+          "M01"
+        ],
+        "x-status": "implemented",
+        "description": "只能撤销本人会话；如果是当前会话则同时退出登录。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "已执行的真实结果"
+          },
+          "400": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/close-account": {
+      "post": {
+        "operationId": "closeAccount",
+        "summary": "closeAccount",
+        "tags": [
+          "M01"
+        ],
+        "x-status": "implemented",
+        "description": "验证当前密码和准确用户名；关闭账户、撤销会话/任务、归档空间、撤回上传素材文件，保留历史学习证据与发布审计。普通账户原用户名可新注册到全新 UUID；曾具有编辑或管理权限的用户名保持保留，防止旧 operator bootstrap 配置误授权。关闭不是全部数据物理擦除。",
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已执行的真实结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountClosure"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountClosureInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/analytics": {
+      "get": {
+        "operationId": "getLearningAnalytics",
+        "summary": "getLearningAnalytics",
+        "tags": [
+          "M06"
+        ],
+        "x-status": "implemented",
+        "description": "UTC真实本人统计和等长窗口对比；补齐零活动日期；不推测学习时长，不将辅助/重复正确率当掌握。",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 7,
+              "maximum": 90,
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已执行的真实结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningAnalytics"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/operations": {
+      "get": {
+        "operationId": "getOperationsStatus",
+        "summary": "getOperationsStatus",
+        "tags": [
+          "M12"
+        ],
+        "x-status": "implemented",
+        "description": "运行时再次检查DB实际ADMIN角色。固定大小本进程HTTP直方图与真实队列计数；分位数为桶上界，不是生产容量承诺。",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "已执行的真实结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationsStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{id}/readings": {
+      "get": {
+        "operationId": "listWorkspaceReadingProgress",
+        "summary": "listWorkspaceReadingProgress",
+        "tags": [
+          "M06"
+        ],
+        "x-status": "implemented",
+        "description": "工作空间归属验证；从真实阅读事实索引聚合完成状态，支持旧事实幂等回填；不增加掌握度。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已执行的真实结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingProgressList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-runs/{id}/study": {
+      "get": {
+        "operationId": "getStudyWorkflow",
+        "summary": "读取教学分工、实际导师任务与草稿作品",
+        "tags": [
+          "M13"
+        ],
+        "x-status": "implemented",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Actual persisted result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyWorkflowDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assets/{id}": {
+      "get": {
+        "operationId": "getAsset",
+        "summary": "getAsset",
+        "tags": [
+          "M14"
+        ],
+        "x-status": "implemented",
+        "description": "仅本人可读；已撤回素材保留元数据和REVOKED状态，downloadPath为null。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "真实结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Asset"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "revokeAsset",
+        "summary": "revokeAsset",
+        "tags": [
+          "M14"
+        ],
+        "x-status": "implemented",
+        "description": "同步标记直接及传递依赖作品STALE，删除实际content_bytes并释放配额。重复撤回为204，不能恢复已删除bytes。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "真实结果"
+          },
+          "400": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "真实受控错误；不返回私人文件或伪成功。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/labs/examples": {
+      "get": {
+        "operationId": "listCodeLabExamples",
+        "summary": "固定Java17教学正反例",
+        "tags": [
+          "M03"
+        ],
+        "x-status": "implemented",
+        "description": "六类原创固定教学源码及JLS来源；构建测试真实编译核验正反例，用户编译仍需独立worker。",
+        "responses": {
+          "400": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "实际响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "minItems": 6,
+                  "maxItems": 6,
+                  "items": {
+                    "$ref": "#/components/schemas/CodeLabExample"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
     }
   },
   "components": {
@@ -11522,7 +13686,7 @@
           "exerciseRevision",
           "answer"
         ],
-        "description": "当前仅CHOICE由服务器客观判分；CODE/TEXT仍可表达未来输入，但当前提交返回503且不创建成绩。"
+        "description": "CHOICE同步客观判分；CODE须有审核的正反向编译契约和独立worker，返回PENDING/GRADING后由持久事件完成评分；TEXT未配置客观判分仍503。"
       },
       "Attempt": {
         "type": "object",
@@ -11612,7 +13776,14 @@
             "format": "uuid"
           },
           "evidenceRef": {
-            "$ref": "#/components/schemas/ContextRef"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -11645,7 +13816,8 @@
           "source": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 32768
+            "maxLength": 32768,
+            "description": "最多32768 UTF-8字节，禁止空白/NUL；文件名为Main.java。"
           },
           "mode": {
             "type": "string",
@@ -11654,7 +13826,7 @@
               "COMPILE_AND_RUN"
             ]
           },
-          "attemptId": {
+          "workspaceId": {
             "type": "string",
             "format": "uuid"
           }
@@ -11662,8 +13834,10 @@
         "required": [
           "releaseId",
           "source",
-          "mode"
-        ]
+          "mode",
+          "workspaceId"
+        ],
+        "description": "COMPILE_AND_RUN保留契约枚举但当前503，只有COMPILE_ONLY可配置启用。"
       },
       "Diagnostic": {
         "type": "object",
@@ -11752,6 +13926,39 @@
           },
           "outputTruncated": {
             "type": "boolean"
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "releaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "attemptId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "errorCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           }
         },
         "required": [
@@ -11761,7 +13968,13 @@
           "jdkVersion",
           "diagnostics",
           "output",
-          "outputTruncated"
+          "outputTruncated",
+          "workspaceId",
+          "releaseId",
+          "attemptId",
+          "errorCode",
+          "createdAt",
+          "finishedAt"
         ]
       },
       "LabInput": {
@@ -11930,7 +14143,11 @@
             "enum": [
               "ALLOWED",
               "DENIED",
-              "UNSUPPORTED"
+              "UNSUPPORTED",
+              "QUEUED",
+              "RUNNING",
+              "UNAVAILABLE",
+              "CANCELLED"
             ]
           },
           "ruleCode": {
@@ -12456,7 +14673,13 @@
             "type": "string",
             "enum": [
               "SINGLE",
-              "MULTIPLE"
+              "MULTIPLE",
+              "COMPILE_PREDICTION",
+              "READING",
+              "DIAGNOSIS",
+              "FILL",
+              "SIGNATURE",
+              "REFACTOR"
             ]
           },
           "difficulty": {
@@ -12993,7 +15216,7 @@
           "revision",
           "contentHash"
         ],
-        "description": "当前可解析GOAL/MEMORY/ARTIFACT/ATTEMPT/KNOWLEDGE_CHUNK；CONCEPT/ASSET/CODE_SNAPSHOT保留未来协议，当前保存会拒绝。SNAPSHOT只作为运行输出，不允许作为作品输入绕过源引用撤回。"
+        "description": "当前可解析GOAL/MEMORY/ARTIFACT/ATTEMPT/KNOWLEDGE_CHUNK/ASSET。ASSET必须为本人同空间READY素材并固定revision与SHA256；撤回同步使所有依赖作品失效。CONCEPT/CODE_SNAPSHOT保留未来协议。SNAPSHOT不是可直接写入作品的来源。"
       },
       "ContextSnapshot": {
         "type": "object",
@@ -15254,36 +17477,98 @@
             "type": "string",
             "format": "uuid"
           },
+          "filename": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
           "mimeType": {
             "type": "string",
-            "minLength": 0,
-            "maxLength": 128
+            "enum": [
+              "image/png",
+              "image/jpeg",
+              "audio/wav",
+              "audio/mpeg",
+              "video/mp4"
+            ]
           },
           "byteSize": {
             "type": "integer",
-            "minimum": 0,
-            "maximum": 2147483647
+            "minimum": 1,
+            "maximum": 8388608
           },
           "contentHash": {
             "type": "string",
             "pattern": "^[a-f0-9]{64}$"
           },
-          "scanStatus": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
             "type": "string",
             "enum": [
-              "PENDING",
-              "CLEAN",
-              "REJECTED"
+              "READY",
+              "REVOKED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "width": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 8192
+          },
+          "height": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 8192
+          },
+          "durationMillis": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 600000
+          },
+          "downloadPath": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^/api/v1/assets/[a-f0-9-]{36}/download$"
+          },
+          "validation": {
+            "type": "string",
+            "enum": [
+              "STRUCTURE_VERIFIED_NO_ANTIVIRUS"
             ]
           }
         },
         "required": [
           "id",
           "workspaceId",
+          "filename",
           "mimeType",
           "byteSize",
           "contentHash",
-          "scanStatus"
+          "revision",
+          "status",
+          "createdAt",
+          "width",
+          "height",
+          "durationMillis",
+          "downloadPath",
+          "validation"
         ]
       },
       "AssetDownload": {
@@ -15320,7 +17605,7 @@
               "format": "uuid"
             },
             "minItems": 1,
-            "maxItems": 50,
+            "maxItems": 8,
             "uniqueItems": true
           },
           "goalId": {
@@ -15333,6 +17618,14 @@
           },
           "budget": {
             "$ref": "#/components/schemas/RunBudget"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "EVIDENCE_ONLY",
+              "MODEL"
+            ],
+            "default": "EVIDENCE_ONLY"
           }
         },
         "required": [
@@ -15378,6 +17671,12 @@
             "type": "string",
             "minLength": 0,
             "maxLength": 1000
+          },
+          "hintLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3,
+            "default": 1
           }
         },
         "required": [
@@ -15424,7 +17723,7 @@
           "message": {
             "type": "string",
             "minLength": 0,
-            "maxLength": 2000
+            "maxLength": 4000
           },
           "evidenceRefs": {
             "type": "array",
@@ -16225,7 +18524,7 @@
           "outputRefs": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/OutputReference"
+              "$ref": "#/components/schemas/RunOutputReference"
             },
             "minItems": 0,
             "maxItems": 64
@@ -16246,7 +18545,7 @@
         "additionalProperties": false,
         "properties": {
           "runtimeVersion": {
-            "const": "0.4"
+            "const": "0.5"
           },
           "businessReady": {
             "const": false
@@ -16259,7 +18558,7 @@
               "maxLength": 64
             },
             "minItems": 0,
-            "maxItems": 32
+            "maxItems": 64
           },
           "unavailable": {
             "type": "array",
@@ -16269,7 +18568,7 @@
               "maxLength": 64
             },
             "minItems": 0,
-            "maxItems": 32
+            "maxItems": 64
           },
           "learningEvidence": {
             "type": "string",
@@ -17052,7 +19351,7 @@
             "items": {
               "$ref": "#/components/schemas/EditorialChoiceOption"
             },
-            "minItems": 2,
+            "minItems": 0,
             "maxItems": 8
           },
           "optionIds": {
@@ -17061,7 +19360,7 @@
               "type": "string",
               "pattern": "^[A-Za-z0-9_-]{1,16}$"
             },
-            "minItems": 1,
+            "minItems": 0,
             "maxItems": 8
           },
           "explanation": {
@@ -17077,6 +19376,22 @@
             },
             "minItems": 0,
             "maxItems": 16
+          },
+          "compileChecks": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "$ref": "#/components/schemas/EditorialCompileCheck"
+            }
+          },
+          "hints": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            }
           }
         },
         "required": [
@@ -17084,7 +19399,8 @@
           "optionIds",
           "explanation",
           "misconceptions"
-        ]
+        ],
+        "description": "编辑专用；SINGLE/MULTIPLE等客观题需2..8选项。SIGNATURE/REFACTOR/FILL需空选项和2..8个正反向编译检查，具体语义由服务端校验。不暴露给学习者。"
       },
       "EditorialExercise": {
         "type": "object",
@@ -17107,7 +19423,13 @@
             "type": "string",
             "enum": [
               "SINGLE",
-              "MULTIPLE"
+              "MULTIPLE",
+              "COMPILE_PREDICTION",
+              "READING",
+              "DIAGNOSIS",
+              "FILL",
+              "SIGNATURE",
+              "REFACTOR"
             ]
           },
           "difficulty": {
@@ -17545,6 +19867,1005 @@
           "contentHash",
           "reviewStatus"
         ]
+      },
+      "ExerciseHintInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "releaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "exerciseRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          }
+        },
+        "required": [
+          "workspaceId",
+          "releaseId",
+          "exerciseRevision",
+          "level"
+        ]
+      },
+      "ExerciseHint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "exerciseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "exerciseRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "evidenceClass": {
+            "type": "string",
+            "enum": [
+              "ASSISTED_PRACTICE"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "exerciseId",
+          "exerciseRevision",
+          "level",
+          "text",
+          "evidenceClass"
+        ]
+      },
+      "EditorialCompileCheck": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8192,
+            "description": "Probe class体内声明；固定来源最多8192 UTF-8字节。"
+          },
+          "expectedCompiled": {
+            "type": "boolean"
+          },
+          "expectedDiagnosticCodes": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "type": "string",
+              "pattern": "^compiler\\.err\\.[a-z0-9_.]{1,100}$"
+            }
+          }
+        },
+        "required": [
+          "source",
+          "expectedCompiled",
+          "expectedDiagnosticCodes"
+        ]
+      },
+      "AccountProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 64
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "LEARNER",
+                "EDITOR",
+                "ADMIN"
+              ]
+            }
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "userId",
+          "username",
+          "displayName",
+          "roles",
+          "revision",
+          "createdAt"
+        ]
+      },
+      "AccountProfileInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483646
+          }
+        },
+        "required": [
+          "displayName",
+          "revision"
+        ]
+      },
+      "PasswordChangeInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 72
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 72,
+            "description": "服务端另以UTF-8字节限制最大72，改密成功后撤销全部会话。"
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
+      },
+      "AccountClosureInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 72
+          },
+          "confirmationUsername": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "currentPassword",
+          "confirmationUsername"
+        ]
+      },
+      "AccountClosure": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "CLOSED"
+            ]
+          },
+          "closedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dataRetention": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "closedAt",
+          "dataRetention"
+        ]
+      },
+      "AccountSession": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deviceLabel": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastSeenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "current": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "deviceLabel",
+          "createdAt",
+          "lastSeenAt",
+          "expiresAt",
+          "current"
+        ]
+      },
+      "AccountSessionList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountSession"
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ReadingProgress": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "conceptId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lastReadAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastCompletedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "readEvents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "conceptId",
+          "lastReadAt",
+          "lastCompletedAt",
+          "readEvents",
+          "completed"
+        ]
+      },
+      "ReadingProgressList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadingProgress"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AnalyticsTotals": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "workspaces": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "gradedAttempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correctAttempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "independentFamilies": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pendingReviews": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "artifacts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completedReadings": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "labExperiments": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pendingProjectionEvents": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "workspaces",
+          "gradedAttempts",
+          "correctAttempts",
+          "independentFamilies",
+          "pendingReviews",
+          "artifacts",
+          "completedReadings",
+          "labExperiments",
+          "pendingProjectionEvents"
+        ]
+      },
+      "AnalyticsDay": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "gradedAttempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correctAttempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completedReadings": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "labExperiments": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "activityEvents": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "date",
+          "gradedAttempts",
+          "correctAttempts",
+          "completedReadings",
+          "labExperiments",
+          "activityEvents"
+        ]
+      },
+      "AnalyticsPeriod": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "gradedAttempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correctAttempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correctRatePercent": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "activeDays": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "gradedAttempts",
+          "correctAttempts",
+          "correctRatePercent",
+          "activeDays"
+        ]
+      },
+      "AnalyticsComparison": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "current": {
+            "$ref": "#/components/schemas/AnalyticsPeriod"
+          },
+          "previous": {
+            "$ref": "#/components/schemas/AnalyticsPeriod"
+          },
+          "includesPartialToday": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "current",
+          "previous",
+          "includesPartialToday"
+        ]
+      },
+      "LearningAnalytics": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string",
+            "enum": [
+              "UTC"
+            ]
+          },
+          "days": {
+            "type": "integer",
+            "minimum": 7,
+            "maximum": 90
+          },
+          "evidenceNote": {
+            "type": "string"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/AnalyticsTotals"
+          },
+          "daily": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsDay"
+            },
+            "minItems": 7,
+            "maxItems": 90
+          },
+          "comparison": {
+            "$ref": "#/components/schemas/AnalyticsComparison"
+          }
+        },
+        "required": [
+          "generatedAt",
+          "timezone",
+          "days",
+          "evidenceNote",
+          "totals",
+          "daily",
+          "comparison"
+        ]
+      },
+      "RequestMetrics": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "since": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "inFlight": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "serverErrors": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rateLimited": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maximumMillis": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "p50UpperBoundMillis": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "p95UpperBoundMillis": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
+        },
+        "required": [
+          "since",
+          "completed",
+          "inFlight",
+          "serverErrors",
+          "rateLimited",
+          "maximumMillis",
+          "p50UpperBoundMillis",
+          "p95UpperBoundMillis"
+        ]
+      },
+      "OperationsQueues": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pendingEvents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "deadLetters": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pendingTutor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pendingExports": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pendingCompilation": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "pendingEvents",
+          "deadLetters",
+          "pendingTutor",
+          "pendingExports",
+          "pendingCompilation"
+        ]
+      },
+      "OperationsStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "requestMetrics": {
+            "$ref": "#/components/schemas/RequestMetrics"
+          },
+          "queues": {
+            "$ref": "#/components/schemas/OperationsQueues"
+          },
+          "measurementScope": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "generatedAt",
+          "requestMetrics",
+          "queues",
+          "measurementScope"
+        ]
+      },
+      "StudyTeachingPlan": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "strategy": {
+            "type": "string",
+            "enum": [
+              "concept-first",
+              "example-first",
+              "repair-first"
+            ]
+          },
+          "sections": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 3,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "CONCEPT",
+                    "EXAMPLE",
+                    "REPAIR"
+                  ]
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "focus": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                }
+              },
+              "required": [
+                "role",
+                "title",
+                "focus"
+              ]
+            }
+          }
+        },
+        "required": [
+          "strategy",
+          "sections"
+        ]
+      },
+      "StudyRunInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "goalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "snapshotId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestedOutputs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "DOCUMENT",
+                "SLIDES",
+                "NOTEBOOK"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 3,
+            "uniqueItems": true
+          },
+          "budget": {
+            "$ref": "#/components/schemas/RunBudget"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "EVIDENCE_ONLY",
+              "MODEL"
+            ]
+          },
+          "attemptIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 1,
+            "maxItems": 8,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "goalId",
+          "snapshotId",
+          "requestedOutputs",
+          "budget",
+          "mode"
+        ],
+        "description": "Bounded teaching workflow. Token and wall-time budgets are enforced. This adapter has no configured pricing: maxCostMicros is carried by the generic ledger but does not estimate or cap actual provider charges. NOTEBOOK preflight requires incorrect or assisted, graded attempts."
+      },
+      "StudyWorkflowDetails": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "runId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "EVIDENCE_ONLY",
+              "MODEL"
+            ]
+          },
+          "requestedOutputs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "teachingPlan": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StudyTeachingPlan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tutorRequestIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "artifactIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "runId",
+          "mode",
+          "requestedOutputs",
+          "teachingPlan",
+          "tutorRequestIds",
+          "artifactIds",
+          "limitations"
+        ]
+      },
+      "RunOutputReference": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ARTIFACT",
+              "DRAFT_ARTIFACT",
+              "KNOWLEDGE_CHUNK",
+              "ATTEMPT",
+              "SNAPSHOT"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "contentHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "revision",
+          "contentHash"
+        ]
+      },
+      "AssetUsage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "usedBytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limitBytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1073741824,
+            "description": "默认104857600（100MiB），可由部署配置降低。"
+          },
+          "maxFileBytes": {
+            "type": "integer",
+            "const": 8388608
+          },
+          "activeFiles": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxFiles": {
+            "type": "integer",
+            "const": 1000
+          }
+        },
+        "required": [
+          "usedBytes",
+          "limitBytes",
+          "maxFileBytes",
+          "activeFiles",
+          "maxFiles"
+        ]
+      },
+      "AssetList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/Asset"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/AssetUsage"
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor",
+          "usage"
+        ]
+      },
+      "CodeLabExample": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "labType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "enum": [
+              "BOUNDS",
+              "INFERENCE",
+              "CAPTURE",
+              "ERASURE",
+              "RAW_REFACTOR",
+              "API_DESIGN"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "positiveSource": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32768
+          },
+          "negativeSource": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32768
+          },
+          "observation": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "sourceUrl": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "format": "uri"
+          }
+        },
+        "required": [
+          "id",
+          "labType",
+          "title",
+          "description",
+          "positiveSource",
+          "negativeSource",
+          "observation",
+          "sourceUrl"
+        ]
+      },
+      "ContextSnapshotInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "attemptIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 1,
+            "maxItems": 8,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "attemptIds"
+        ],
+        "description": "Explicit graded attempts replace the default latest-eight selection. Every reference is derived server-side from an attempt owned by the current user, in this workspace and its fixed release. Caller order is preserved. Omit the request body to retain the latest-eight behavior."
       }
     }
   }

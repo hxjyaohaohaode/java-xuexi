@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.typeforge.compiler.CodeRubric;
 import io.typeforge.curriculum.CurriculumService;
 import io.typeforge.exercise.LearningService;
 import io.typeforge.identity.IdentityService;
@@ -191,8 +192,7 @@ class ContentWorkbenchIntegrationTest {
         return releases.publish(author.userId(),release.id(),new PublishInput(release.manifestHash(),release.activeRevision()),key());
     }
     private MockHttpSession login(IdentityService.Session identity) throws Exception {
-        var result=mvc.perform(post("/api/v1/auth/session").with(csrf()).contentType("application/json").content(json.write(Map.of("username",identity.username(),"password",PASSWORD)))).andExpect(status().isOk()).andReturn();
-        return (MockHttpSession)result.getRequest().getSession(false);
+        return io.typeforge.HttpSessionFixture.login(mvc,json,identity.username(),PASSWORD);
     }
     private JsonNode create(MockHttpSession session,String path,Object body) throws Exception {
         return json.tree(mvc.perform(post("/api/v1/admin"+path).session(session).with(csrf()).header("Idempotency-Key",key()).contentType("application/json").content(json.write(body))).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
@@ -236,6 +236,25 @@ class ContentWorkbenchIntegrationTest {
         mvc.perform(post("/api/v1/auth/register").with(csrf()).contentType("application/json").content(json.write(Map.of("username","forged-"+suffix(),"password",PASSWORD,"roles",List.of("ADMIN"))))).andExpect(status().isBadRequest());
         assertEquals(403,assertThrows(DomainException.class,()->ingestion.sources(learner.userId(),10)).status());
         mvc.perform(get("/api/v1/admin/sources")).andExpect(status().isUnauthorized());
+    }
+
+    @Test void codeRubricsRequireIndependentReviewAndNeverLeakFromPublicExercise() throws Exception {
+        var prepared=prepare(false);
+        var rules=List.of(new CodeRubric.Rule("static void verify(){ Integer x=Main.first(java.util.List.of(1)); }",true,List.of()),
+            new CodeRubric.Rule("static void verify(){ String x=Main.first(java.util.List.of(1)); }",false,List.of("compiler.err.prob.found.req")));
+        var answer=new ChoiceAnswer(List.of(),List.of(),"Type contract only; runtime behavior is outside this rubric.",List.of("TYPE_ARGUMENT_LINK"),rules,List.of("Check input/output type relationships."));
+        var input=new ExerciseInput(UUID.randomUUID(),1,0,UUID.randomUUID(),"SIGNATURE",2,"Write Main.first to retain the element type",List.of(prepared.concept().id()),answer,List.of(new ContentRef(prepared.chunk().id(),1)));
+        var editor=login(author);var created=create(editor,"/exercises",input);assertEquals(2,created.path("answerSpec").path("compileChecks").size());
+        var question=drafts.exercise(author.userId(),id(created),1);
+        assertEquals(403,assertThrows(DomainException.class,()->drafts.review(author.userId(),new ReviewInput("EXERCISE",question.id(),1,question.reviewHash(),"APPROVED","Cannot self-review code rules"),key())).status());
+        approve("EXERCISE",question.id(),1,question.reviewHash());
+        var release=publish(releases.create(author.userId(),new ReleaseInput("code-"+suffix(),List.of(new ContentRef(prepared.chunk().id(),1)),List.of(new ContentRef(question.id(),1))),key()));
+        var student=login(learner);
+        String exposed=mvc.perform(get("/api/v1/exercises/"+question.id()).session(student).param("releaseId",release.id().toString())).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        for(String secret:List.of("compileChecks","expectedCompiled","compiler.err","static void verify","Type contract only","Check input/output"))assertFalse(exposed.contains(secret));
+        assertTrue(json.tree(exposed).path("options").isEmpty());
+        var singleCheck=new ChoiceAnswer(List.of(),List.of(),"Invalid success-only grading",List.of(),List.of(rules.get(0)),List.of());
+        assertEquals(400,assertThrows(DomainException.class,()->drafts.createExercise(author.userId(),new ExerciseInput(UUID.randomUUID(),1,0,UUID.randomUUID(),"SIGNATURE",1,"Invalid rubric",List.of(prepared.concept().id()),singleCheck,List.of(new ContentRef(prepared.chunk().id(),1))),key())).status());
     }
 
     @Test void staleAuthenticatedEditorSessionCannotIgnoreRoleRevocation() throws Exception {

@@ -88,7 +88,7 @@
   {
     "id": "composeDocument",
     "effect": "JOB_OR_CANDIDATE_WRITE",
-    "status": "planned",
+    "status": "implemented",
     "admission": "session owner + workspace + role capability + run epoch + budget",
     "inputValidation": "strict JSON Schema; reject unknown properties",
     "concurrency": "parallel reads; writes require admitted scope and revision fence",
@@ -97,12 +97,13 @@
     "outputSchemaId": "ArtifactRevision",
     "timeoutMillis": 30000,
     "concurrencySafe": false,
-    "cancellation": "cooperative request + mandatory epoch/lease commit fence; worker hard deadline enforced separately"
+    "cancellation": "cooperative request + mandatory epoch/lease commit fence; worker hard deadline enforced separately",
+    "runtimeScope": "StudyWorkflowService creates source-linked DRAFT only; no arbitrary model tool execution and no claim of human factual verification."
   },
   {
     "id": "composeSlides",
     "effect": "JOB_OR_CANDIDATE_WRITE",
-    "status": "planned",
+    "status": "implemented",
     "admission": "session owner + workspace + role capability + run epoch + budget",
     "inputValidation": "strict JSON Schema; reject unknown properties",
     "concurrency": "parallel reads; writes require admitted scope and revision fence",
@@ -111,7 +112,8 @@
     "outputSchemaId": "ArtifactRevision",
     "timeoutMillis": 30000,
     "concurrencySafe": false,
-    "cancellation": "cooperative request + mandatory epoch/lease commit fence; worker hard deadline enforced separately"
+    "cancellation": "cooperative request + mandatory epoch/lease commit fence; worker hard deadline enforced separately",
+    "runtimeScope": "StudyWorkflowService creates source-linked DRAFT only; no arbitrary model tool execution and no claim of human factual verification."
   },
   {
     "id": "composeDiagram",
@@ -186,7 +188,7 @@
   {
     "id": "composeInteraction",
     "effect": "JOB_OR_CANDIDATE_WRITE",
-    "status": "planned",
+    "status": "implemented",
     "admission": "session owner + workspace + role capability + run epoch + budget",
     "inputValidation": "strict JSON Schema; reject unknown properties",
     "concurrency": "parallel reads; writes require admitted scope and revision fence",
@@ -195,7 +197,8 @@
     "outputSchemaId": "ArtifactRevision",
     "timeoutMillis": 30000,
     "concurrencySafe": false,
-    "cancellation": "cooperative request + mandatory epoch/lease commit fence; worker hard deadline enforced separately"
+    "cancellation": "cooperative request + mandatory epoch/lease commit fence; worker hard deadline enforced separately",
+    "runtimeScope": "StudyWorkflowService creates source-linked DRAFT only; no arbitrary model tool execution and no claim of human factual verification."
   },
   {
     "id": "previewArtifact",
@@ -224,5 +227,35 @@
     "timeoutMillis": 60000,
     "concurrencySafe": false,
     "cancellation": "cooperative request + mandatory epoch/lease commit fence; worker hard deadline enforced separately"
+  },
+  {
+    "id": "planLearning",
+    "effect": "JOB_OR_CANDIDATE_WRITE",
+    "status": "implemented",
+    "admission": "session owner + workspace + role capability + run epoch + budget",
+    "inputValidation": "strict JSON Schema; reject unknown properties",
+    "concurrency": "parallel reads; writes require admitted scope and revision fence",
+    "retry": "read retry bounded; external jobs reconcile executionKey/providerJobId before retry",
+    "inputSchemaId": "StudyRunInput",
+    "outputSchemaId": "StudyTeachingPlan",
+    "timeoutMillis": 120000,
+    "concurrencySafe": false,
+    "cancellation": "cooperative request + mandatory epoch/lease commit fence; worker hard deadline enforced separately",
+    "runtimeScope": "StudyWorkflowService only; durable TutorService quota, lease and source validation; EVIDENCE_ONLY and configured MODEL are explicit."
+  },
+  {
+    "id": "explainLearning",
+    "effect": "JOB_OR_CANDIDATE_WRITE",
+    "status": "implemented",
+    "admission": "session owner + workspace + role capability + run epoch + budget",
+    "inputValidation": "strict JSON Schema; reject unknown properties",
+    "concurrency": "parallel reads; writes require admitted scope and revision fence",
+    "retry": "read retry bounded; external jobs reconcile executionKey/providerJobId before retry",
+    "inputSchemaId": "TutorInput",
+    "outputSchemaId": "TutorResult",
+    "timeoutMillis": 120000,
+    "concurrencySafe": false,
+    "cancellation": "cooperative request + mandatory epoch/lease commit fence; worker hard deadline enforced separately",
+    "runtimeScope": "StudyWorkflowService only; durable TutorService quota, lease and source validation; EVIDENCE_ONLY and configured MODEL are explicit."
   }
 ]

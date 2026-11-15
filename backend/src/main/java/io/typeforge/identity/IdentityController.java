@@ -23,14 +23,19 @@ public class IdentityController {
     private final IdentityService users;
     private final AuthenticationManager authentication;
     private final CsrfTokenRepository csrf;
-    public IdentityController(IdentityService users,AuthenticationManager authentication,CsrfTokenRepository csrf) { this.users=users;this.authentication=authentication;this.csrf=csrf; }
+    private final AccountService accounts;
+    private final AuthenticationLimit limits;
+    public IdentityController(IdentityService users,AuthenticationManager authentication,CsrfTokenRepository csrf,AccountService accounts,AuthenticationLimit limits) { this.users=users;this.authentication=authentication;this.csrf=csrf;this.accounts=accounts;this.limits=limits; }
     @GetMapping("/csrf") public Map<String,String> csrf(CsrfToken token) { return Map.of("token",token.getToken(),"headerName",token.getHeaderName()); }
     @PostMapping("/register") @ResponseStatus(HttpStatus.CREATED)
-    public IdentityService.Session register(@Valid @RequestBody Credentials input) { return users.register(input.username(),input.password()); }
+    public IdentityService.Session register(@Valid @RequestBody Credentials input,HttpServletRequest request) { limits.register(request.getRemoteAddr());return users.register(input.username(),input.password()); }
     @PostMapping("/session")
     public IdentityService.Session login(@Valid @RequestBody Credentials input,HttpServletRequest request,HttpServletResponse response) {
+        limits.login(request.getRemoteAddr(),input.username());
         var result=authentication.authenticate(UsernamePasswordAuthenticationToken.unauthenticated(input.username(),input.password()));
+        if(request.getSession(false)!=null) accounts.revokeSessionId(request.getSession(false).getId());
         if (request.getSession(false)!=null) request.changeSessionId();
+        accounts.openSession((AccountPrincipal)result.getPrincipal(),request.getSession(true).getId(),request.getHeader("User-Agent"));
         var context=SecurityContextHolder.createEmptyContext(); context.setAuthentication(result);
         SecurityContextHolder.setContext(context);
         new HttpSessionSecurityContextRepository().saveContext(context,request,response);
@@ -40,6 +45,7 @@ public class IdentityController {
     @GetMapping("/session") public IdentityService.Session current(Principal principal) { return users.session(principal.getName()); }
     @DeleteMapping("/session") @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(HttpServletRequest request,HttpServletResponse response) {
+        if(request.getSession(false)!=null) accounts.revokeSessionId(request.getSession(false).getId());
         if(request.getSession(false)!=null) request.getSession(false).invalidate();
         SecurityContextHolder.clearContext(); csrf.saveToken(null,request,response);
     }

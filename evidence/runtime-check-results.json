@@ -1,13 +1,13 @@
 {
   "schemaVersion": "1.1",
   "result": "PASS",
-  "scope": "v0.4 implemented runtime/local verification; graphical browser is an independent remote CI gate; not final course acceptance",
-  "recordedAt": "2026-11-14T04:46:31.040831+00:00",
-  "baselineCommit": "01d465d9391f5f035f53c3a8b9e8a1f7762af1dc",
+  "scope": "v0.5 implemented runtime/local verification; graphical browser is an independent remote CI gate; not final course acceptance",
+  "recordedAt": "2026-11-15T17:29:53.510837+00:00",
+  "baselineCommit": "60f5a836f7afb64f908a367403ea2307d85a70d5",
   "environment": {
     "os": "Linux",
-    "maven": "3.9.9",
-    "jdk": "21.0.13.0.2",
+    "maven": "3.9.11",
+    "jdk": "17.0.21",
     "compilerRelease": 17,
     "springBoot": "3.5.16",
     "mysql": "MySQL 8.4.13",
@@ -17,86 +17,113 @@
   },
   "sourceSnapshot": {
     "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-    "digest": "66b8ff797d675d278e97de6d1f7645268262f384a779cc9d6746a3acd23c1d64",
+    "digest": "7de08c87b42047e439bcaf37dece0c97deeacc710104f324fecd06ac03b24a70",
     "excludedReports": [
       "evidence/runtime-check-results.json",
       "evidence/runtime-review.md"
     ],
-    "fileCount": 236,
+    "fileCount": 315,
     "files": {
       ".gitattributes": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c",
-      ".github/workflows/baseline.yml": "ca4de5f2d28f5c8d1686428b46c7391b5f7b2e79050fe1385313041350e82c6d",
+      ".github/workflows/baseline.yml": "ee38a76d8b1dfe7954c4bdaf73fa68f03c9c4b948083b0058cc46d5feab59ed4",
       ".gitignore": "d667d736976b016d4745c43271700e0ed6551610c8bddd5bca08cb407f12460b",
-      "AGENTS.md": "1853cafaf6e34f74a8bcb14f5f48f99a4e5d7520d65dd67f70b345146c7ac324",
-      "README.md": "57e9cabe0994dce47fafd3343301300198dd7ad0f92a9a1f2938d429921a8415",
-      "agent/README.md": "a309f400c60f01e5ef5d7353646292ddf67d19ef6e6f69d233fd034442736a23",
+      "AGENTS.md": "6fee43ff5b025b6aebd1ff5e9256d97ae5e04ba5e1df72440495fea2868ac1e5",
+      "README.md": "b78102bea4ca541f3139f454f04ba7e0b56a47ff8440df35b900c60c3c2ea6c2",
+      "agent/README.md": "135acdb095bfc86146d1630576a57731393e290af37b270703b7ab766387de7d",
       "agent/artifact-examples.json": "658422e9efa5fb481866785d90ca852f3fa7a394e62a208c82732c35996c71d9",
-      "agent/capability-matrix.json": "f2a5aaf030814c62bd3b4f2684f7727e6f3ae44b87d05fc259d71a820c18858b",
+      "agent/capability-matrix.json": "32c99259a7f3f7a498b48dd92297314b5e0b31d7de4b50dd00c8d28d9aa82250",
       "agent/cluster-evaluation-cases.json": "e88fa89c49fe37a0dd4255d45518ef705a895247eb7e4899a0cf1ee3f4b8f722",
       "agent/conductor-prompt.md": "582a906cf25543b49d65560bd915245be8441b9baeb63067753c9d5fdf077e0b",
       "agent/evaluation-cases.json": "9bce860769733b0b337f5b5ae06e73ed9fa6b7aa8fbd07d39478dcd484bfa543",
       "agent/example-plan.json": "af70c3ceb13dda099e6cc05633cf70fd78b2cad268e70058e41e03c45509adfc",
-      "agent/roles.json": "a45948be9ce2665b70ef472e8ef1d92051e72cdcadcb694ee184dc8006a0e9b5",
+      "agent/roles.json": "94ea94fc5c2d05c5b5a3adead7e42f89ead8cddadacb0bde054eda5e87975407",
       "agent/run-policy.json": "c00433c894ce85fdfdd563f915fb99277afc6c4235933d7b5b7c3c591f8228b6",
       "agent/system-prompt.md": "90ed866cd6be0054d3a75ccac28b0e87a6634b15ebe4f3bb045cb77e9816c87a",
-      "agent/tools.json": "48f9bb9b1e6f956bd8694533071966e2181f6262061798120e8db071748811c0",
-      "backend/README.md": "4bb7df2d35a519e6af037d95ed4c3b111cf888bba17f550e52d8622925f7ce03",
-      "backend/pom.xml": "cb93bd9be7a21d3d683d8aacfe9a1e31a5fc22c01f4a72ab9715cb3f020cb9b8",
+      "agent/tools.json": "13cd68bf1546aecac4bbe50095913a9f6b3571113267f131d3b8d6cb5516e067",
+      "backend/README.md": "e7dedc57b04987469a69ada65130ce179bb702b0aa08fbd4ff42df7cb089e383",
+      "backend/pom.xml": "ad1d1a361880bb8da9c28e7fba029eb57fc5c18f08033094a14be872fa59f427",
       "backend/src/main/java/io/typeforge/TypeForgeApplication.java": "3554363b1b9a6990b0bced041770fe934a2a858a24dd2c5ac501c3a966cdb890",
+      "backend/src/main/java/io/typeforge/artifacts/ArtifactAccountClosureParticipant.java": "2fcb1dea9ebc0b9411ba111cd98039b41e67b993dc7e63db37732fed6994212d",
       "backend/src/main/java/io/typeforge/artifacts/ArtifactController.java": "82bc65e208d2d5ee7312f9cf53493a0b98d6d605d21c0e802bdc006b85a235d2",
-      "backend/src/main/java/io/typeforge/artifacts/ArtifactExportController.java": "a4ce15649a0acf4afccf164d7a8a6bf865960f7987b310812d041061453652b8",
-      "backend/src/main/java/io/typeforge/artifacts/ArtifactExportService.java": "accf696dd9b27b2cb67d009b3754a7e3ff133bee64fc7951417ba968b6b25944",
+      "backend/src/main/java/io/typeforge/artifacts/ArtifactExportController.java": "c2641f03060cc2e5c72d2591a1d57eca355194acae6fd3c065a69ca8736328d9",
+      "backend/src/main/java/io/typeforge/artifacts/ArtifactExportService.java": "2ea29333f2d3005953b32a229b353a48c8467d8086cfdc9c087730afe808b77d",
+      "backend/src/main/java/io/typeforge/artifacts/ArtifactFileRenderer.java": "7b996d7e51215b622db12c152549b1e690c0ec90c35e43ceb667021ee6c43212",
       "backend/src/main/java/io/typeforge/artifacts/ArtifactInvalidation.java": "23854de035a8c3aac2c2271ba04ac50ac569818258105bd06672c01fb85c615c",
-      "backend/src/main/java/io/typeforge/artifacts/ArtifactService.java": "df4bba48b7326375ae22978d0063dfde7521c68959a34ff628b2494efb9953d4",
+      "backend/src/main/java/io/typeforge/artifacts/ArtifactService.java": "c9f75d1cb16bad3b94f45808daa123ed5e55b05674174e38b95ed6b49134096f",
       "backend/src/main/java/io/typeforge/artifacts/ArtifactStudio.java": "b99e6939292413e7fa32910f8c84cc7a6bdf30b7edac30caad0391da83bdc062",
-      "backend/src/main/java/io/typeforge/artifacts/TextArtifactRenderer.java": "3f5e5cf5f91ba9e472a274e9ebd217d7e42a0c0de39e66be3558384735bc765d",
+      "backend/src/main/java/io/typeforge/artifacts/AssetController.java": "29af5494fd12f5844bb4469630ccd12836d635fde285f719e45e59dfef64ce7d",
+      "backend/src/main/java/io/typeforge/artifacts/AssetService.java": "38d3d5fb329bd95e8e2cd15af07b05238f5c8e24fe2c42936ed90c0b6fb2a104",
+      "backend/src/main/java/io/typeforge/artifacts/MediaInspector.java": "417f7bd65b60af3d2b8beb69c5b7a43292c1b3b25d835b9515e6069bda367642",
+      "backend/src/main/java/io/typeforge/artifacts/TextArtifactRenderer.java": "343fd702bba13d009852a50d4e8ea49ec63ef7514bd2f864ce2300c8bf7b78ce",
       "backend/src/main/java/io/typeforge/artifacts/package-info.java": "3dd59ecf1d33471a40ecf32a3c14f749ce6c6e397582b296be34fc7e8e7a921c",
-      "backend/src/main/java/io/typeforge/compiler/CompilationGateway.java": "9b16b47349d4830ea640babb37005d8804c105b377741cdb0d19c51a93380f5e",
+      "backend/src/main/java/io/typeforge/compiler/CodeRubric.java": "36019925a2fec802f76d3eb2fd8362ae235ccdd4be043d2fb52688d4b6ca1453",
+      "backend/src/main/java/io/typeforge/compiler/CompilationGateway.java": "9f9dd371edf2f7a96c1b146de582dcd4291039bfff672c2c2f6e8a041e68a1f5",
+      "backend/src/main/java/io/typeforge/compiler/CompileController.java": "c35e09f6f0f6a2e2fb8c4f1cc91e33f83ef538aede7381d6bde0925d118660fc",
+      "backend/src/main/java/io/typeforge/compiler/CompileProtocol.java": "bea29ecb1a0676633ee6625ff46f931fc7f417a6ba3c0c4b1fbe66ab31dccceb",
+      "backend/src/main/java/io/typeforge/compiler/CompileService.java": "776b538cc340103f39cecc4c5fe5509692dfe2003f187bc760e530b974a0b1d6",
+      "backend/src/main/java/io/typeforge/compiler/CompileSettings.java": "dda5cdc87fae44441848506e88cd5d26e1f7fd541e6da347c2535d474a2990f9",
+      "backend/src/main/java/io/typeforge/compiler/CompileWorker.java": "9377a2796ec545c078ed280ad3160932e7a891bd0194bfa6dcbea23859aa1a4e",
+      "backend/src/main/java/io/typeforge/compiler/CompilerAccountClosureParticipant.java": "80d92cb43d794bd91d480aed2076c8a6b856f2763561b570d7d0c3f49b90d832",
+      "backend/src/main/java/io/typeforge/compiler/HttpCompileProvider.java": "7453d3946653feb9d36e68a2c225c692034910a3b08e8917ab214749b2554a6f",
       "backend/src/main/java/io/typeforge/compiler/package-info.java": "44161af9918ff1e41787ddca6a6a145bb61988a92d6e485e5439540a1ec335af",
       "backend/src/main/java/io/typeforge/curriculum/ConceptCatalog.java": "b6289eb3e16dfedd96720ded5bf2c413623b60e276247bd9393058b9454e419a",
       "backend/src/main/java/io/typeforge/curriculum/CurriculumService.java": "450a64969cf6c2ec207444ebd9f774c6ed512725b28306569c7504bb34d90174",
       "backend/src/main/java/io/typeforge/curriculum/KnowledgeController.java": "26547ce579c32d316c554618eff6da72dc7b26436ec5699c7f5cd36694a09569",
       "backend/src/main/java/io/typeforge/curriculum/package-info.java": "37c47c7ecdee2808d50fc01e31a2ec1afd06a3403fc718c17422f644366bc405",
       "backend/src/main/java/io/typeforge/evidence/package-info.java": "da8bb8ff603c42c623dd1341f9499cf6f0b375aeb323acadc83c1a3573905893",
+      "backend/src/main/java/io/typeforge/exercise/CodeGradeConsumer.java": "605be8ea706e25b8cc7c13073f3d4fd4f6b5f46692692b531784631a18c26f5c",
       "backend/src/main/java/io/typeforge/exercise/ExerciseGrader.java": "ba435899dba84f0c67a9bb3a218dd12791c97161bad325cdf46d38498da362ba",
-      "backend/src/main/java/io/typeforge/exercise/LearningController.java": "d3582e9dfcf3b3424613681fd3b0d51645f5bfaedaa68fd25593d2c1f9988af5",
-      "backend/src/main/java/io/typeforge/exercise/LearningService.java": "931e7beee65bb2b28fcf854babbce0c86a0f0ddda047bd4e8d63f9534a2071cc",
+      "backend/src/main/java/io/typeforge/exercise/LearningController.java": "20e0ce02ea3b0e62aeffc595d908d7ada9b0a6555ba68c6dc0611a4b2cd09ba3",
+      "backend/src/main/java/io/typeforge/exercise/LearningService.java": "d28ab97547c7e7e9ef0aa7ac1653371c9d57fa6771da94b19cf91d04acf7c3bc",
       "backend/src/main/java/io/typeforge/exercise/package-info.java": "62cc70c4ff65e53bdad14fb00d20c1312edebe5e790ca3845ef9de6186957ef9",
+      "backend/src/main/java/io/typeforge/identity/AccountClosureParticipant.java": "2ca4d2679ebeacaa82926c3a63df28bf79614586cd5bb320c84e283ac45f0962",
+      "backend/src/main/java/io/typeforge/identity/AccountClosureService.java": "acd4d86f0d76f747abc532513c8d3ee6b8f2881cfbed0dfd2304285805672c54",
+      "backend/src/main/java/io/typeforge/identity/AccountController.java": "06fd5fb9bc2705b6c8ef9fdd159b785a9eb1b55f8f3004b7bd46b82d8bcbae1f",
+      "backend/src/main/java/io/typeforge/identity/AccountPrincipal.java": "529251dc55ef6c1ae5bb6aba3e86ea87e6a43d10f9f178039e765d0b3ea6ccd5",
+      "backend/src/main/java/io/typeforge/identity/AccountService.java": "27a2c20f728270e6cb7bee52be8ad05a3137e63e8fa8f4466d2d77e81198a537",
       "backend/src/main/java/io/typeforge/identity/Actor.java": "2368f8d3e6117561ee9d379fb23983b94de9b84277e3cd1727df0428ceb84a7d",
+      "backend/src/main/java/io/typeforge/identity/AuthenticationLimit.java": "49c4fb9ca9ad0688aa7ced42248eec2e242874f7c6ce70c15811daba590c3a89",
       "backend/src/main/java/io/typeforge/identity/ContentAccess.java": "4ff6140f6ac7d04223eff8bfa42ea2be534173489a81f52b285bd30b6da5c104",
-      "backend/src/main/java/io/typeforge/identity/IdentityController.java": "244f87af028c8004757c0c2846e3f79e06e810c43456b6aaf376d55766bfbafa",
-      "backend/src/main/java/io/typeforge/identity/IdentityService.java": "5b3531ca3c4ab6dda50b78f26bfeec2fc3db1b4bcf3af9d790c7697752c99e4a",
-      "backend/src/main/java/io/typeforge/identity/OperatorRoleBootstrap.java": "44af4acff6e810ed660b6a5b01c21ac76be29a70e3331503e4e9f68426566623",
+      "backend/src/main/java/io/typeforge/identity/IdentityController.java": "14271125a742bf40f6d51a8b5cb397eee7aff454ef5e12b73ec7ad5c89959f97",
+      "backend/src/main/java/io/typeforge/identity/IdentityService.java": "2cffd57dc935680acc3edd58e741ebdd1b1e9de0fc25ee7f64b1e8c2eba10067",
+      "backend/src/main/java/io/typeforge/identity/OperatorRoleBootstrap.java": "fb4688d08299c731622a30b476b2972040a83e672362896f7d4c5b83006d6c04",
       "backend/src/main/java/io/typeforge/identity/PreferenceController.java": "e5af098826539e82ff053ee2c5cede8562b702fb9989c03806a86c118f11cab0",
       "backend/src/main/java/io/typeforge/identity/PreferenceService.java": "1032189ab054ffb58fd089f220e12413caf55bac214aea8028b6a6334083fdf8",
+      "backend/src/main/java/io/typeforge/identity/SessionValidityFilter.java": "7310c07e1100034a1d2f795372b32b1e2b4e63e8072541515acd996316b41499",
       "backend/src/main/java/io/typeforge/identity/package-info.java": "af8f6a02225db769e6cdc89a95b19e45f383d3caf8973243a7f0586978d623c5",
       "backend/src/main/java/io/typeforge/ingestion/IngestionController.java": "3afed4d858b73a87d1997889d3c5bc2c242066c76b4bf474e15a1f2a7dfc8df1",
       "backend/src/main/java/io/typeforge/ingestion/IngestionModels.java": "4e43dae816a3f30724389a1173ef59f0c3a25b75055ac7ae228fb1c4c1f2f1a8",
       "backend/src/main/java/io/typeforge/ingestion/KnowledgeIngestion.java": "f7ffdd62c5bfa0474b6527f43e0bc2d5497dbd3cfcc19892b10f3dfaa40d6bc8",
       "backend/src/main/java/io/typeforge/ingestion/ManualIngestionService.java": "8e3f484430311ec87b30ffdb5d01c9f4ee4ee9666fcb3380b532c814e0f6cef6",
       "backend/src/main/java/io/typeforge/ingestion/package-info.java": "7ec061e0fc24e00ceaeeb07b149c42e6ed4642d180973202cc42884e0d2eb12d",
+      "backend/src/main/java/io/typeforge/lab/CodeLabCatalog.java": "4bbaad7ee5872fd21896aa1ab228cc4484c77f48a9bacebdc477bd58bf8f7925",
       "backend/src/main/java/io/typeforge/lab/FiniteTypeEvaluator.java": "6a9703b1b353aaa03886db65befb0089018bcf5fd36115c45405700d619e8894",
-      "backend/src/main/java/io/typeforge/lab/LabController.java": "486182065717caa62c0e94db63080fc0d352a6e67a193af0d32aaecc3df19583",
-      "backend/src/main/java/io/typeforge/lab/LabService.java": "74156acb3503800000583350e30ba3b08a394428ff6c8a22393a416c8601f813",
+      "backend/src/main/java/io/typeforge/lab/LabController.java": "f0a73a5bb7756dd402a1f4a547e0aa255afa3d91ed3e847b74377788de3847b4",
+      "backend/src/main/java/io/typeforge/lab/LabService.java": "7f5deed545ad5010b96aff68c0b1a1e2795e73939d5ec9fa4f758ad1452f2a86",
       "backend/src/main/java/io/typeforge/lab/TypeRelationEvaluator.java": "0baf393102eeccaa7a44f6dbc089b7d5457862ae8d60c157f69603f7763c067a",
       "backend/src/main/java/io/typeforge/lab/package-info.java": "702f274e7b60cc70ac0ff6cc91efa3f16ea7c032afddb3a3665b985eab0b1c6a",
       "backend/src/main/java/io/typeforge/learning/LearningEvidenceProjection.java": "e0d76a9357a48fdcd41d8b0aaa4b76508ba5d1f5eac7e77f201d5004f7dade30",
       "backend/src/main/java/io/typeforge/learning/LearningProjection.java": "62ac5e2703f35129dd704a44210e936ce767f1b465f0008158769777b536a40d",
-      "backend/src/main/java/io/typeforge/learning/ReadingController.java": "e55295cd835c51b5d3e369270d3f197d6aac89158d5235edf6fe04c7c7dc030e",
-      "backend/src/main/java/io/typeforge/learning/ReadingService.java": "bc049665e1b6be02d6f2a36aef5281337603f039605103c39aa00c7575e4431d",
+      "backend/src/main/java/io/typeforge/learning/ReadingController.java": "51a6259ac0846dfcab12a5a0588c221e3b5cbeddddeb417a2a508ff8891ffe54",
+      "backend/src/main/java/io/typeforge/learning/ReadingIndexInitializer.java": "73d211b88f59afc88a406ae5578d5094bb8bb19da94239ceaa0af71944244156",
+      "backend/src/main/java/io/typeforge/learning/ReadingService.java": "f938349341776413c423a30e2751befa3e715e2e8c144a811a19c33ba486f696",
       "backend/src/main/java/io/typeforge/learning/package-info.java": "0236d4903e43ca69e833e0e4a27000a1131f8362564fa33d724d39abcb376b49",
-      "backend/src/main/java/io/typeforge/notebook/NotebookActions.java": "ef7ef70357f8ecbd4f688bd078e4c32aa0ba8b5c16af95be5467dc8f81865d9f",
+      "backend/src/main/java/io/typeforge/notebook/NotebookActions.java": "d48cad585eadee43249ccf43ad051bf7cff3678e83c5a73e41feb8516956fa60",
       "backend/src/main/java/io/typeforge/notebook/NotebookCompiler.java": "8a523d3467fab6c555e592725cc3ba175fbde47e16c748afdda3461a680841ad",
       "backend/src/main/java/io/typeforge/notebook/NotebookController.java": "4ec6c5a8f41cc99caa62926810a14b48962468d1d224b65cd5e1707c95755872",
-      "backend/src/main/java/io/typeforge/notebook/NotebookService.java": "9335441ccbae32788e52ba812d1f5ae90cbb1a263362d7a10b28750a6c208bad",
+      "backend/src/main/java/io/typeforge/notebook/NotebookService.java": "eb5555b9c78c4aded4e400c98a69d98ade375084129cac74826bb59083a0b8ca",
       "backend/src/main/java/io/typeforge/notebook/package-info.java": "59742096175a9225621d1c316b9ec58e8e869814924e27447dd058b10b510a4b",
       "backend/src/main/java/io/typeforge/operations/DemoContentInitializer.java": "d9191b33d00488f1a9cf232a6b7a8e64cf338ccf7d950faa2ada867ca1f6d19f",
-      "backend/src/main/java/io/typeforge/operations/FrameworkController.java": "4f4e4e9b739923e6ea12269c8e1a90d224c3f6368fcfc6220d1b07549a670ddc",
-      "backend/src/main/java/io/typeforge/operations/ProblemHandler.java": "36b4a2077d28c260dc84e2e514167c914f62afe968145112975932a7a55159bc",
+      "backend/src/main/java/io/typeforge/operations/FrameworkController.java": "a4f5706f18ad56f225d513f4f3c67933d4c44fc7f917fb8ab4fd7a5c70a3f22a",
+      "backend/src/main/java/io/typeforge/operations/LearningAnalyticsService.java": "ccc9af7397c38a3758b7f65463ad535cd1e429c3a311f87fd4e363417c5e4451",
+      "backend/src/main/java/io/typeforge/operations/OperationsController.java": "215a4c31d0195049d3293792027797b893fbb4df44ea455058e7de2d3adf7d77",
+      "backend/src/main/java/io/typeforge/operations/ProblemHandler.java": "9efc973f4161972a7bc8f542a4a52e259d7b346dc158e25d883330867c498815",
       "backend/src/main/java/io/typeforge/operations/RequestBodyLimit.java": "4a2dd6b8d860169ddac856212e3c492a454e553f1fdda80fbaa9f2fe264cae0d",
+      "backend/src/main/java/io/typeforge/operations/RequestMetrics.java": "4b5430e84fcf653ddf5aa9af3c77c3ef6a9d73896b2ecffaf2ae51e5b840745c",
+      "backend/src/main/java/io/typeforge/operations/RequestMetricsFilter.java": "e66e11d3474f92c4179bfa0e73a9041d9bcfc23ef36c197cdce8665399516d9a",
       "backend/src/main/java/io/typeforge/operations/RuntimeCapabilityProvider.java": "936dffb23fb60d5aa349094c0406d1a784d3eb994901ef5ac32c319eb6ebde42",
       "backend/src/main/java/io/typeforge/operations/RuntimeConfiguration.java": "71aebce3c7641cf3d044a35768a9336a2f5e2a34825ac47ec332ac471102b34d",
-      "backend/src/main/java/io/typeforge/operations/ScaffoldSecurity.java": "d1bdbb689a72ce7629c8e7bec13919b056472124504c4d649cae05118b71ad0c",
+      "backend/src/main/java/io/typeforge/operations/ScaffoldSecurity.java": "ed5611c1b19ab7201524c9602717dcddfe28a22c8cf89946d07dd235296f742c",
       "backend/src/main/java/io/typeforge/operations/events/ActivityProjection.java": "21d43292e627f51dfd8d8fe61e5b32619879919ee8bc6e4e9658cacb50175204",
       "backend/src/main/java/io/typeforge/operations/events/DomainEventConsumer.java": "d5adcf6fb24ecad15aa4d06dc8dc8db2a7a45d3d03843001d754fdfe43556195",
       "backend/src/main/java/io/typeforge/operations/events/EventJournal.java": "642261696b1821cee834bedd3495bb8b5f654942a4370e970dc8358414a5f9b5",
@@ -108,17 +135,23 @@
       "backend/src/main/java/io/typeforge/operations/migrations/h2/V004__tutor_runtime.java": "ad0fbb28d2ab613f30bf3ade0b2b7bbfed70012689ea2424ebafed733ffc927e",
       "backend/src/main/java/io/typeforge/operations/migrations/h2/V005__content_workbench.java": "db2ed67270617822278fdedbda25dfbbe156f6009fec42cf8dec8b646b4a31e0",
       "backend/src/main/java/io/typeforge/operations/migrations/h2/V006__interactive_learning.java": "9c43354f70b5916ffaee2e2c7276a90d72b8d1b649971faf2017576b184aac1a",
+      "backend/src/main/java/io/typeforge/operations/migrations/h2/V007__identity_operations.java": "c25b70ee76d6c36dd2cd43f7eb154f72e4e18963be4d8a7455d591211cd2a3d7",
+      "backend/src/main/java/io/typeforge/operations/migrations/h2/V008__compiler_learning.java": "64e0f73071de1919914ccff4bcbbc4f1f7b2b0b3e0f103e3ff0c584dde530f7c",
+      "backend/src/main/java/io/typeforge/operations/migrations/h2/V009__artifact_files.java": "162d8a755cde4a8b634eda0c76b0daf77954410224474b2cbd7abd97047a2cdc",
+      "backend/src/main/java/io/typeforge/operations/migrations/h2/V010__study_workflow.java": "4586f840064e04ce17bff8938fee4198258b39b2b4dd181e01b28c785801c8bb",
+      "backend/src/main/java/io/typeforge/operations/migrations/h2/V011__private_assets.java": "ef7dbc97ebecd51e1a121e74e957774fd007841daa6547b2e05a300d1d11efff",
       "backend/src/main/java/io/typeforge/operations/package-info.java": "7e02654fd773ff359f849571ca576269b892733d60f72583a7feced533c43243",
+      "backend/src/main/java/io/typeforge/orchestration/AgentAccountClosureParticipant.java": "a9b66060dfce8001299ef415e2f656182d6749e92766d93941a3169a0477b2c6",
       "backend/src/main/java/io/typeforge/orchestration/AgentTool.java": "858c103342bbe01412b81b8192e070318a6eb913166f40b19e6a4dc8441d727c",
-      "backend/src/main/java/io/typeforge/orchestration/DurableAgentRuntime.java": "69cae66ea594decc0ad4981ca4ac3c50d72a01c4d133bbed53e1ec1b0287ab92",
+      "backend/src/main/java/io/typeforge/orchestration/DurableAgentRuntime.java": "2d70ce204a566678c01e964bb1c7f0f4c73b6c22769fe0fdbff5f8d909fcb37a",
       "backend/src/main/java/io/typeforge/orchestration/OrchestrationConfiguration.java": "ca1facef2af2fa77be118903265d7d5ba474df3b86fc69ac81afe1e1a71f042b",
       "backend/src/main/java/io/typeforge/orchestration/PlanValidator.java": "3ddd6d2c979e45f8ac3a1b90a8115efa3f46d7399c181fffc7082a9c489f8004",
       "backend/src/main/java/io/typeforge/orchestration/TaskPlan.java": "8239ca8949037758482c87a5d928bb9712287c702c0cfe59bc3b2213edd900d4",
       "backend/src/main/java/io/typeforge/orchestration/package-info.java": "3c07be3ffa95bca12508efd061fc6b284009a348ce25c359539a0873567d9adf",
-      "backend/src/main/java/io/typeforge/publishing/ContentDraftService.java": "1c5ef95517a5245607260a7623661669067173305e17f54b6eba877f386ad389",
+      "backend/src/main/java/io/typeforge/publishing/ContentDraftService.java": "9f25f8857c14d1418f1adee40bb55c210dc6718313949376b6d52c386cccb3cf",
       "backend/src/main/java/io/typeforge/publishing/ContentPublisher.java": "806e76ccbcd33670144451360a86b7f17d9d746794278f7459da3b5fba3809b8",
       "backend/src/main/java/io/typeforge/publishing/ContentWorkbenchController.java": "b7c78522ebab46017121edbb4e573fa6d6c9a8e54c9171cdea5ef8e653caab30",
-      "backend/src/main/java/io/typeforge/publishing/ContentWorkbenchModels.java": "496c3cb0cdf571d2e3def2a479d7ee830977d6edc36f17fb481aef6f4dfb9bec",
+      "backend/src/main/java/io/typeforge/publishing/ContentWorkbenchModels.java": "fe282dcafc6f32e56c24c27dea8032acde952e0cb0db216cddaba3806d6605b2",
       "backend/src/main/java/io/typeforge/publishing/ReleaseWorkbenchService.java": "6b783c511e5a82688f486d96731d0abdaedf5ef49fe65da5e127914f1dedda65",
       "backend/src/main/java/io/typeforge/publishing/package-info.java": "83e1bd5858a78deeb7f1faf8f090b6b99c82de12aac0a8a20b511e477a3d0822",
       "backend/src/main/java/io/typeforge/retrieval/KnowledgeRetriever.java": "02c9470edc154c00c8b91d4035dc12493e8bf5fd6f390d8406fe41e8e1c62d92",
@@ -134,7 +167,10 @@
       "backend/src/main/java/io/typeforge/tutor/HttpTutorModelProvider.java": "65a887f58b7f849838fc6be692fb997818dcd494a397ef20119528c7d92e06f3",
       "backend/src/main/java/io/typeforge/tutor/LocalContextTool.java": "26dbf5e53a9a8d2a4f28e5353c05ed807ea40710f26b0a0ce2a94e8d92799ae8",
       "backend/src/main/java/io/typeforge/tutor/LocalSearchTool.java": "f5f8f9c2655938731fd94b4a944a52b27e3241e3b42c0a2f9d3c21c31009a881",
-      "backend/src/main/java/io/typeforge/tutor/RunController.java": "138ce5fbc8372a4f054c64f76963c0e9707202170b28d07f23efe0a8ac67a954",
+      "backend/src/main/java/io/typeforge/tutor/RunController.java": "841b1f8edc2d6d9ef5e6542aafe6c4703c5c9a00b90a80553407802f235b1359",
+      "backend/src/main/java/io/typeforge/tutor/StudyWorkflowController.java": "a7351e7e16cd2915c820a84bc3e72399bf4ac1448207d1a54004fcd5251d0d72",
+      "backend/src/main/java/io/typeforge/tutor/StudyWorkflowService.java": "b75456ba096ae34c07b55ed52b013ee0bea4c187b63e81c810342272bd448ab5",
+      "backend/src/main/java/io/typeforge/tutor/TutorAccountClosureParticipant.java": "b4dede40dab73f4cd71e11ca08cf53719b16440bf678f76bba39f1d4b6249a2d",
       "backend/src/main/java/io/typeforge/tutor/TutorAnswerProvider.java": "aa9c5fdea66b8181ff0c931182cc93566e85e9bd5b023e7dc84d9204791e0db8",
       "backend/src/main/java/io/typeforge/tutor/TutorController.java": "f4ab3e24ff05521f00a976b27ed185dfe5066e3918cbfbed0b2453072aaad4a1",
       "backend/src/main/java/io/typeforge/tutor/TutorDocumentService.java": "a10959675aa2264dfeb309adf1205a7b8e177124ef4b244fea7c47debf4e7df9",
@@ -143,107 +179,143 @@
       "backend/src/main/java/io/typeforge/tutor/TutorWorker.java": "f5993dd317b9bd3b1626446fb3e74d336ba5348de6ca9522634e09d72446d8e8",
       "backend/src/main/java/io/typeforge/tutor/package-info.java": "77de580412e25f6d589d345df2b00ce7f81a93917c4b7d8c0ad4df0ca52f2336",
       "backend/src/main/java/io/typeforge/workspace/ReferenceInvalidator.java": "dd84f4dea8c07e3a25fcc262d5528556be840bc321f29c32ba1ab47964ce910b",
-      "backend/src/main/java/io/typeforge/workspace/WorkspaceAccess.java": "56aa179d0c7a8f6e504509062b431a5d72b49f5615f04d8e5f9654e4c07d5d2d",
+      "backend/src/main/java/io/typeforge/workspace/WorkspaceAccess.java": "6bef9d00e743341c94907b1a768d936af2870e9d83669ef0e26b8e8d39827f59",
       "backend/src/main/java/io/typeforge/workspace/WorkspaceContextStore.java": "a3ce2ae25847f6c59f5cd63c5eea6b0d7aa91d56322285546f5487a10df1d5b1",
-      "backend/src/main/java/io/typeforge/workspace/WorkspaceController.java": "6fbcc0044f3cb7bd8a95eeefeda9f5d60962ede3bad659071255c1d8e04a0b9c",
-      "backend/src/main/java/io/typeforge/workspace/WorkspaceService.java": "f00a7b6efb13f120b8c0aa93f84da17de2b70f5a8eee8bbc975e30cb3cae29c3",
+      "backend/src/main/java/io/typeforge/workspace/WorkspaceController.java": "e56eec873f7a4838ca71935df3fb01090aaa723a03236b957d06a2ec71b6a6a0",
+      "backend/src/main/java/io/typeforge/workspace/WorkspaceService.java": "1b47eb9215edd52873aad1c68d11eecad85fc7c55e849de1a5c1785b67f759b4",
       "backend/src/main/java/io/typeforge/workspace/package-info.java": "0ffe1b4bec1ddca76b36bbea20556aecbeb6d701f7784335831f85a04292a5a1",
       "backend/src/main/resources/application-mysql.properties": "dd56728bcfd182ea09ee8af05ba25bfc9cdfd3d269d890374f7cc14dca6e5240",
-      "backend/src/main/resources/application-test.properties": "d823f9d1744cb8486cdb6113ab50464f6dde196db2f250fcd66e558452e88ad2",
-      "backend/src/main/resources/application.properties": "e316776fe18a16612a419f5f5d91bb2e6b99ca23c119754cfb168e1c89ad67bf",
+      "backend/src/main/resources/application-test.properties": "3026f13852fcd9aed864b38235b68ac14fe02c94f6b16ebcf6db0c4e05947c7a",
+      "backend/src/main/resources/application.properties": "15f3d0623940b6973c538c91007baf971708ac33593251b2a309cb073ff4d61d",
+      "backend/src/main/resources/fonts/OFL.txt": "babcfe66c8a098b2fa279bc724a3a342f8124f77ce18941fbcc1bbb39823cded",
+      "backend/src/main/resources/fonts/README.txt": "3d1d0152ec27330fc4e722be5a0638c4554383b722e58538ae04ff0162c642d5",
+      "backend/src/main/resources/fonts/TypeForgeCJK.ttf": "9afc508b09e2cd3448d8a345b87a3919c94cd4220818ddb8cc613f825557c420",
+      "backend/src/test/java/io/typeforge/AccountLifecycleIntegrationTest.java": "7e01aa16d66065c1a672d751bc351de167b8644fb3dd2e72069ea7f5d8326d0f",
       "backend/src/test/java/io/typeforge/AgentPlanTest.java": "30534f099cf7c2ec75ba351bfb7c029a452574a0c7daf2e6e0ca214284bba8b1",
+      "backend/src/test/java/io/typeforge/ArtifactFileExportTest.java": "25c844cdfa6c6690c8c499ba990da50b27584f9b1b1f9ad069e91b9f731d0ec0",
+      "backend/src/test/java/io/typeforge/CodeRubricSemanticsTest.java": "89b2b2e033350084406e82eb1f94b2c9ee310bc933190ad1b6ab0fb16e02759c",
+      "backend/src/test/java/io/typeforge/CompileHttpProtocolTest.java": "929bdb9841f915cdd01c70127b97d59fd74e2d932484bc205d7a7ece82201919",
+      "backend/src/test/java/io/typeforge/CompileQueueTest.java": "889812e859e0e68f1f1ab87d2d6d5426ca937f278189812c5bec4066ac760d43",
       "backend/src/test/java/io/typeforge/DurableAgentRuntimeTest.java": "1a968f4202069f03eea435a5412a463872f28b33a21cbb8b21d4048def1236f9",
       "backend/src/test/java/io/typeforge/EvidenceWorkflowRecoveryTest.java": "9e84547cddd76e647e7cfbec6c821b444a3d0c17f1270c7b09411f456306aebb",
       "backend/src/test/java/io/typeforge/FiniteTypeEvaluatorTest.java": "b20553f34e4685614cc30d97a2ddb19094c5a65711877ef29a0416f4e124b2e3",
       "backend/src/test/java/io/typeforge/FrameworkHttpTest.java": "b6c84823eaf69ad4f0a6ede7f60289b4d8babd1f028b763233f5fba25adedb19",
-      "backend/src/test/java/io/typeforge/FullLearningLoopIntegrationTest.java": "6a102e97b0971a3284121dd02b2ca06ea33c86cf71169ee57d2ba2f6bee97f65",
+      "backend/src/test/java/io/typeforge/FullLearningLoopIntegrationTest.java": "87ea02b44ef556fb833cbe23e7160fb624bdefe94e2603adf95cd297a5d833ca",
       "backend/src/test/java/io/typeforge/GenericEdgeCasesTest.java": "eedf58512e17ee23f13c78767b4d0d8db367c099664b5d6bdb7eaa30ad35018a",
       "backend/src/test/java/io/typeforge/GenericSemanticsTest.java": "edd96f9d51b39d9c5d314a515f06b137485c4f46d343ff518b3c561eb95dc18d",
-      "backend/src/test/java/io/typeforge/InteractiveLearningTest.java": "8453b09370523b95277884a2068ff7fc7051f24f61ff5b6436a90c258cf5c3b7",
+      "backend/src/test/java/io/typeforge/HttpSessionFixture.java": "1225c4505d6e21c36d4f120a324567df4f4df4915a51ba25e6cc25e293d74af3",
+      "backend/src/test/java/io/typeforge/InteractiveLearningTest.java": "3fad757c98f5893145cba1ce21aa1131be58d0ff924ccf4717f4bb1afe1c0505",
       "backend/src/test/java/io/typeforge/KnowledgeRuntimeTest.java": "dfb15e3ba693115a189cd951f3797308ea96dd1e2be269d281fa6af5b882aecf",
       "backend/src/test/java/io/typeforge/LocalLearningToolsTest.java": "44a30e9ae5c384fda9bb3c7a5b4a935b6fcb9f56a6cc999d5b6e4685a9547edc",
+      "backend/src/test/java/io/typeforge/PrivateAssetsIntegrationTest.java": "df76bf5c5c2aa02d01269da08fa18a1453b4c0488b20185608a828a175ed62a8",
+      "backend/src/test/java/io/typeforge/PrivateModuleDatabaseFixture.java": "81251db6917007a29da7339705bb03bf2e0bc476b3085db264cf740042d2ad25",
       "backend/src/test/java/io/typeforge/RootArchitectureInvariantsTest.java": "88950ad57c42812eb1ff126ab3f37d706dfa38193be75e8592eeeca25be8ee35",
+      "backend/src/test/java/io/typeforge/StudyModelWorkflowTest.java": "a7d21847ce250434b0cc96fd89d792c29ce170e523a5018d4d6a4344b2acdcac",
+      "backend/src/test/java/io/typeforge/StudyWorkflowIntegrationTest.java": "6b518bddbf7fc6a4a178fbb38c2cc105c0db361bc67b4624dff532629b83f81e",
       "backend/src/test/java/io/typeforge/TransactionIsolationTest.java": "b0b4385f5032b645138d9d27c88aa2555edf204db792682e26b8a5cb60f1f003",
-      "backend/src/test/java/io/typeforge/TutorHttpBoundaryTest.java": "d841a449ce95b44c130c735aa7f84a1c84cede0ca2b7f2ec7c4df664264d89c3",
+      "backend/src/test/java/io/typeforge/TutorHttpBoundaryTest.java": "9874a27842181456f20750f272e89ee241cd7b325dc2a132bbc56eb0b9bc62ab",
       "backend/src/test/java/io/typeforge/TutorHttpProviderTest.java": "4b16d5391ecb5a6edc6d75e2a03f751a5d53d7d5b70063851be823c4d530a9f6",
-      "backend/src/test/java/io/typeforge/TutorRuntimeTest.java": "21f54701c6c7ccfcc4fb0b96b513ca9f620914b025229445f1cb6a8fa35f52e4",
+      "backend/src/test/java/io/typeforge/TutorRuntimeTest.java": "83cdfb61be34ca7a6017b361f133ae15127d26bf44375bea917ba1786641975d",
       "backend/src/test/java/io/typeforge/WorkspaceArtifactReferenceTest.java": "8f88075f588fccc7cb95a4cce89765316919596c397a36b801900522170c66c1",
-      "backend/src/test/java/io/typeforge/publishing/ContentWorkbenchIntegrationTest.java": "885c845d82efd22ed49d28ed292b2c941bb1a5847cc8c7a73db6b5cfb0140df9",
+      "backend/src/test/java/io/typeforge/WorkspaceContextSelectionTest.java": "7bd13061d6d5d48a5b47f64ce7427a8ad8ff8903ff07043e8274b0a6b34e61a3",
+      "backend/src/test/java/io/typeforge/publishing/ContentWorkbenchIntegrationTest.java": "a602c7ca924bab0d1f57afbb52e3f4d33ce7a36ac1a76e70141b67736120cf9a",
+      "backend/src/test/resources/media/README.md": "94de1d18b9fd6c0cc44fb7b66db27d855def01d4d36d78d9cde9290198dc7f5e",
+      "backend/src/test/resources/media/clip.mp4": "65775ccadb76fb8a20ee01adeefe1678dc94a671c6a461e5f4311087ee5079f9",
+      "backend/src/test/resources/media/tone.mp3": "639197b10c6ae9e98b9337c1f8ec9083f38bada45fe0cee3c58487d610be3421",
       "backend/src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker": "8eca853a5a457f17e0479b71dfbe95f2a13aff9eeff250261ecdc8ca9b847a6a",
-      "contracts/README.md": "0b5ca2b880c97b7cf5394ab797542b14e13a22e01c1eb5a64c7b01902f1c5bf6",
-      "contracts/modules.json": "d61ccac581b11d64e1164457c6b34426b495001a3ebe9a234fe4d9ffc7b53f56",
-      "contracts/openapi.json": "4a14150ab56a985885d548980e7699292174b52c8afbcf542331d519f2fba101",
-      "database/README.md": "3073f1cdd15479ed9b74516d20591976a24406e28961e6da492aa7cc9176cee7",
+      "contracts/README.md": "14ea4f18e3ad25cc403a2ee5d1392330ded4145826bcdf0cbd4b38af4cd8ca68",
+      "contracts/modules.json": "ef3ecfc82904d16417de9068d33bf1562c5655939a74f77782e83262bd59ffe0",
+      "contracts/openapi.json": "4cba051af079704175949f1145760f93d226a12366ba5c33a579da000809bef3",
+      "database/README.md": "ac98beefe7fdc22c951a614fc4657d2cf97442d5f1e8804326876c55a4ddfc10",
       "database/V001__baseline.sql": "e1a1cbb328f092f3b7788cfd57d846d526e0cd8a3de3fefde42cf11879b47896",
       "database/V002__agent_workspace.sql": "1c13efbb02105da2daa8b38898fba87185bb5751c2992fe00c7c501b13abe730",
       "database/V003__runtime_integrity.sql": "7270c47cb6d93910ce6d9e6da390fc9608454493296272676e7248bd9ef426fa",
       "database/V004__tutor_runtime.sql": "aa92680b4026632f4f3628e0599b79e6ff786b66d6fe496c235cea7fae2d51a9",
       "database/V005__content_workbench.sql": "5e9e23346b616a924c4b91d648c375e481eb1783d8d2a94310cea00e7fdd758d",
       "database/V006__interactive_learning.sql": "c22d18f54238f15c2ab32d70110db7a283a51a021e6fa760a3815046e83cab5b",
-      "database/data-dictionary.md": "56970832cc2bbac4f41cd59a051a91704a7b715220497c377ac6232ec45e5265",
-      "database/migrations.lock.json": "10079858c0f7e20d80bf422e5864e4c268ec371b1eca4bbd15ec58a5a0496793",
+      "database/V007__identity_operations.sql": "3c97837c0e1985d934255ab562f66759c9f465dd7131360666af527fa1e1a282",
+      "database/V008__compiler_learning.sql": "d5177b9fba09fca995f4b6f3eee1bc704c934e18c508a089123c63bb503a62cc",
+      "database/V009__artifact_files.sql": "0d3867dcf895c9b79f74833da2fc10f946211f8da11f6eaf6b76720b36584fa2",
+      "database/V010__study_workflow.sql": "879e3913a2c32137e08a7ebb3dc52054f5e5f9446c771db49cffb48a4d45e87a",
+      "database/V011__private_assets.sql": "1bf9c34c1471ac54913308966c7caba13ae920493adc5b3d7e8738a03a6a7d28",
+      "database/data-dictionary.md": "3d4bbb7555ef442013f651f2395288adabdf9c30e4fbb9a76501483dc3b225b3",
+      "database/migrations.lock.json": "120800c917515acab87b555ca00cc46a8891e4e2bc635a43b943301b24129732",
       "database/seed-demo.sql": "640dd344bbaabcc81491e720c5e2a6e47ba1687f9cdef31c7c6ed71fdf52953f",
-      "docs/00-blueprint.md": "01f2e29bc1faf35da3aea1b91d32f9bb31611b3fadb83ec2b15387489e5c94d7",
-      "docs/01-architecture.md": "0d4ffb84fc0fdb3d104efd2c75d4029a90da59d517fe4b6518b4058507b7d032",
-      "docs/02-modules.md": "40e0dcdf4db1ef8a494a566c606584ab33c4c681cd6cceb9a031089a8007faf0",
-      "docs/03-data.md": "a12a8fc131bbec96f91121584698169973b3b556c9f4be871c8e32a0fe69b8d8",
-      "docs/04-api.md": "60a76076571ecce97c226377b99bc79b80dacf8e8fde48b571542fe3d36569dd",
-      "docs/05-knowledge.md": "a10cd017dd6c2563bb22a556799f43aeb88d9fbd9707f9ceb41ed6f9d181072b",
-      "docs/06-agent.md": "3aebc9925e79c8d220039815cbadd776563b660c58f966697e68ea333f805aba",
-      "docs/07-frontend.md": "3908033a638a207922b779b5d1fe26e99e58a6fc3e6acea66c753ccce0297a79",
-      "docs/08-quality.md": "94f4bc30d1b159b1a65f2f1bde0bd822e4ea69af74e37fa19cc42c8a0982e01d",
-      "docs/09-team-plan.md": "30fcdac6bb3ef3f0cfc2231534ef651bfd726f5c55383475d9c405a920c31023",
-      "docs/10-agent-cluster.md": "f284f5a8dd823dab1a65e9d99802440966eb1aa58fa0f33f452cdc75338fd4e2",
-      "docs/11-learning-artifacts.md": "4955690d1a12c9afcd7eb609917b847653e5e59d1abd3a68d01215eb281d4866",
-      "docs/13-architecture-upgrade.md": "daf884f76241ea5b90a0334bd26b61208cffdceac2e43ce801183bf9d72075da",
-      "docs/14-research-decisions.md": "06dbed926ce4b6b4f77023be7c67afe936e78772faffa26008ab27cab984dd34",
-      "docs/15-frontend-state-network.md": "a962058a3538f6e8f242f0f8200cddc5f161337abd6ed239111c094ba2b79019",
+      "docs/00-blueprint.md": "f37079b840d4c65b552e07ad964c1a62eda743e8ef9b9661373704f79c975f3e",
+      "docs/01-architecture.md": "161842635325963d1b6bc80c1e956856aafb44643122aad57c7ca12d27714419",
+      "docs/02-modules.md": "56d8707fa8e558bb7d0be17beca3bbf071bcd04ef5449575aa8dd47bd8d060af",
+      "docs/03-data.md": "1ef390cc374d9a4d284ee29881cef58378b2450eb8d01802c61f6e77c0799eff",
+      "docs/04-api.md": "d3de7027d0ceb4316c54d4ba8b2cff8cbf1c9a00958d42e88a3f7fa877f61d70",
+      "docs/05-knowledge.md": "a54c8f90ad7307e97f6ed880e266c207bfcf714e69ad5eb3702c95e6a8a57694",
+      "docs/06-agent.md": "fd4de8a2ca5d4c1e446486f59b4a8b04c2c154ff36ff9517e8a8d514d4f2ae9f",
+      "docs/07-frontend.md": "24132be877b37d024affa7c946e20457e0643e9ce2165d153308d3e6fc2d665f",
+      "docs/08-quality.md": "0f18941c5ef06aa0a3d48abb3ac301134279161e153c232084188a269b674e67",
+      "docs/09-team-plan.md": "a4e2bfc44e852ae17671d44c1c11731e91f31db1e8292ea95269b5c520b8d706",
+      "docs/10-agent-cluster.md": "27c4438a5debd69e0ad734f992a195b58bab7e3738aea56c7ff081f942747cc3",
+      "docs/11-learning-artifacts.md": "b97c9f964e4c714ccec3f43c561685197a4fde1f0b56aefde40e0b5740ac30ca",
+      "docs/13-architecture-upgrade.md": "6eaa92b26c1562f285e2942e594c76500fd25134ddf88fae9610ae51a684c9cf",
+      "docs/14-research-decisions.md": "3dae82c886ce1e732275270530e96d7f221e0d20c27f24df08b89094bf8ae8df",
+      "docs/15-frontend-state-network.md": "d31120cff3baa7f87802b5f53cc6bd8eda6521af9e550183a54d56127344e52b",
       "docs/16-course-delivery.md": "32c54461bf6a06b164315a3502556ac618720de358dc2ad42eee957c227f811c",
-      "evidence/ai-context.md": "3690823637a7cba3bdd21fec724d37508c945ce6b5eb1723a42384ee306bcd91",
-      "evidence/course-acceptance-matrix.csv": "7e35fdeb757621f8656ca3e18f524525654cfd17c08a9f5b68718d60152c155c",
+      "docs/22-account-assets-operations.md": "fffbbf4e6dc212070c6ff390430e6f273442a8081615b3ddd64f51c06920dd15",
+      "docs/23-study-and-exports.md": "e77cef75c8c9632c64191f82a22a8013ae8b4c08b75582f30f3fc3c7add51998",
+      "evidence/ai-context.md": "f90768a364793759fe994f5f5f9f9e33c157d4ae4351b5c47fe33d5555b58e01",
+      "evidence/course-acceptance-matrix.csv": "e814ab7719b5cf61ac70438d04d0b362c84c4ef7312dae38bbb2f0fdff8ea233",
+      "evidence/development-review-v05.md": "a596f2bceda417160cd4f9d2a02663d4632425ee9ca8712599803f1c9f5a726b",
       "evidence/inputs.md": "20c063334e5fc20674442a7f3ecd3193e6b36e4058c0c471c36d13cdec62ac0b",
-      "evidence/traceability.csv": "2ce9ad569f3bb8f92c698281c33150302d43bc48a610185d518e5ff141ca7a57",
+      "evidence/traceability.csv": "642c76f09b24df17bceff7d154e4ffa025e587a948bdc751c5227c434714e824",
       "frontend/.gitignore": "63fa8234cc9d77ae1d515140848ec1abc485a8f99c34a0c9281d52574bed2226",
       "frontend/.prettierignore": "a82980327d097840983733fad3a308da13b28d62fdab3415ebcd0efe49e39e7f",
       "frontend/.prettierrc.json": "d7fa1c1dee12b930b45e1f8c465b07da95fa519cfd9e3e503c76dc762617b1fb",
-      "frontend/README.md": "636cacd81c66dc2bc96930b055b76a645a9158df810012c01d8d06ca1f0280e9",
+      "frontend/README.md": "054c875caf69cc576dd3b41f707ed05cef98952530d24e28889c90864256c9a6",
       "frontend/design-tokens.json": "cd74ee3904a10200313e81fb15be9828c5dcc87f837466691b6233686e563468",
       "frontend/index.html": "3917c24c66a4a30f1f7a18fe4f2726d6656b7d1a1f3a8d3132374cab82dc5c38",
-      "frontend/interaction-implementation.md": "0158635a52f18d6527accecda6e0839d9f3d7527013ac6cdb2ed0b9d33bfc9ce",
-      "frontend/package-lock.json": "75d3244a1a98c10d05cfa45d8a75ce025f8978a71f2d6aef0bcaca1791a726d9",
-      "frontend/package.json": "961d49deb7d3a70eb3be8860ae8d3be7ac97d0d807870a481601cb5cc133c00a",
+      "frontend/interaction-implementation.md": "0db87b4482031f3e622977e3876875b74ddcd3376b3ce29aa14c7e90956eda5f",
+      "frontend/package-lock.json": "734629fd6046151eb5bfa1dad02870d298de9a57aa8bfb78948f192f7abd9dce",
+      "frontend/package.json": "1c7b464582b57fed2938a49a0fbccf042418c47e746902592e79a8e4923aaa7b",
       "frontend/public/favicon.svg": "17a3c0a9906ea2d9a9cc3c63e176900582188df917bdd158ecc5f1bebccbd78a",
       "frontend/reference-ledger.csv": "0b7d54a915a30c71dd1036f9f84634290ce60b7f5670e3bd6bed98b81f825afd",
-      "frontend/src/App.tsx": "bcf7d9d4ee9cbc49b120143ca78934a428e9f55d17d201bb5a8917ec4105a6ad",
-      "frontend/src/api.test.ts": "95d830be7765263c2f8da68d1d32776e6b8238c0e1e307b14888b8b1b529ed07",
-      "frontend/src/api.ts": "e06242c0b4eb130c0e825f28eb903c40d71d32d0c4153d769442b36fa5e08384",
+      "frontend/src/App.tsx": "f033883700b8a36374cf29d900d5092c6e082ca7641ff73209c95849e3992c8a",
+      "frontend/src/api.test.ts": "cf4525ec2e4a3460a96aa9dca53a4b3e76adc57be22416b7371706620d1ae9b6",
+      "frontend/src/api.ts": "d501a946bcd36368ef0b510126cf64920540fdced01842de6be195303f997ae7",
+      "frontend/src/components/Assets.tsx": "12728847e0073492b55f56a07a6002dab2b86c52cf2fdb3edd0b727a2beefe11",
+      "frontend/src/components/Compiler.tsx": "9fdcb27fd72f93d8f4250201877300577290d93a354a5984d88156040562db26",
       "frontend/src/components/ErrorBoundary.tsx": "bfa25d2e8639f581911e59d162ae172d632622dde8707b7b8e7fd876231ddd89",
-      "frontend/src/components/SourcePreview.test.tsx": "4077980fad5ef0ebb8494f3b4a623acd6aa4e5af049d370966cb9bea9949824a",
-      "frontend/src/components/SourcePreview.tsx": "8ca3111ac10621c207ee23196d33eeee0226ad03d9fa6741f8ba17c0c1dcbd41",
-      "frontend/src/components/ui.tsx": "06a2ff89e24a1459d749ae7b01971160c28003c0711468bbc401c79289e2042f",
-      "frontend/src/context.tsx": "c88143155e8e000a5cfc80a118a99f5d27e3b6cb5688ccbc7884b76d06892c82",
-      "frontend/src/hooks.test.tsx": "9f8392e5b5c4a6be4e252ee9a44c6bf313ded5c737df0c471664350d2bb9d51c",
-      "frontend/src/hooks.ts": "3d1542d3f89de426e3b62cc8d9c68e0e76bb83c60b8b3a17190845414e6f53ae",
-      "frontend/src/main.tsx": "c141aafe3b4ac5e5c1b2875161a043741ad575b7f55af4e2f255a6c19f4d609f",
-      "frontend/src/pages/Auth.tsx": "56ad2970c5096428b88166c906489296fa1ebef069b3569854e31ae1827601a4",
-      "frontend/src/pages/Lab.tsx": "533b8ecadd76ffcbb54974555c8e0f577d0ec448ea1ea59c1dbd4d195a3539bc",
-      "frontend/src/pages/Learning.tsx": "02a1d73518d5488435a23055416312880a74ae2de9fd739cf94d8200e3d9f2e3",
-      "frontend/src/pages/Personal.test.tsx": "0c76688d90c94f57752399a5916f28aec636362f101d16cec2bbc4deebc98bc6",
-      "frontend/src/pages/Personal.tsx": "abc3b71a748cfbd178a12236974d9603238ab7c269c714c1549fb8e7b4085108",
-      "frontend/src/pages/Practice.test.tsx": "d292cd9cf16ccfc3a06a671edc81c7f5738eb397799d63ed5c2101b790ef72b4",
-      "frontend/src/pages/Practice.tsx": "b38da49ed64638e6564b4ff5c217c585123d33c0942d72029b847b2e7f14bd0d",
-      "frontend/src/pages/Progress.tsx": "ab961ee77a30895b2be7ffa59b2bcccf9a6c220fe89b9b46722d86781657ffee",
+      "frontend/src/components/LearningAnalytics.tsx": "0276d106364d4ed36b6c50ad8329fcf8af419bd66b9a9e14d2970a912d7436f1",
+      "frontend/src/components/SlideEditor.test.tsx": "68a5d90ff75785f5e2c2fb634fd7174d78aafbb7aaff6a3731debc3ce4cbbc12",
+      "frontend/src/components/SlideEditor.tsx": "e0eab30b2f4da742eecedb254ed63966403862c5ee90b95d282902cea0113888",
+      "frontend/src/components/SourcePreview.test.tsx": "c2d3cbeed77e605ff96682deff7df2142df0cc1957d47b9887485b5aee6d68fb",
+      "frontend/src/components/SourcePreview.tsx": "722abf048d45e5308df489def7cc52e3af8c24f6ea02c0d6d1a358a158b3f7aa",
+      "frontend/src/components/ui.tsx": "9ce9ccf729738c53d26d0791941ece39deedd342f68789de0f01f65ca33220a7",
+      "frontend/src/context.tsx": "971f16fc6f78b61e3cbe6b699230f1401c24538ab405586b737cc28b182e34fb",
+      "frontend/src/experience.css": "f674d7316ea929ab7c9a825b77282089a2e9ab0d5fd4017f405bffe96056b152",
+      "frontend/src/hooks.test.tsx": "a943a541d6d5e0b60d5f8850335f1656664cffb584f1e3cd5ff93572819da4f1",
+      "frontend/src/hooks.ts": "ecfd4fdac158bb17baee2dd3ed26a3971bdf7013e83a870b45bf1c90de92c352",
+      "frontend/src/main.tsx": "887fd00dea562611c598cc2ec5b5ef55193401b05cb481c3baed3f35a966a20c",
+      "frontend/src/pages/Account.test.tsx": "1daad25beb9b6596d8f6b568f17fa983563e930313bf3f937ccb57ee38975c09",
+      "frontend/src/pages/Account.tsx": "336038b04df8e72238c1fc63767c6b229895067a084abffc032ae9fb3ca70ed8",
+      "frontend/src/pages/Agents.tsx": "48731e2f257cd7dd120c29246022d98c998bff29841d8ced4dd7542249c495ef",
+      "frontend/src/pages/Auth.tsx": "4eb340ad5fa253e0f624f045bd36162996cc1b35159739c61d524c62927c5ec5",
+      "frontend/src/pages/Content.test.tsx": "858648ab942422043703ef10a61c041e5664dddc2a4ef7b7164609bd2e35e03d",
+      "frontend/src/pages/Content.tsx": "bd6b900736a16a4f98791d06b262504fc2cd6b89531ab148a435c207ca483f7b",
+      "frontend/src/pages/Lab.tsx": "0af58e4383023d2683fa78fc030b07774cff31023f8a7415d9a073eface403e2",
+      "frontend/src/pages/Learning.tsx": "ebc8fdac92c7255d6be3953521b5447124828963b4cbb87bfa7ce109ad93bfc1",
+      "frontend/src/pages/Personal.test.tsx": "7eed684728f813f04ca3a68c50f23e6b3209f2e475da8549a76eaf25841f7552",
+      "frontend/src/pages/Personal.tsx": "a26e2dff1cd91bec20c7e36a90e67a057b2185957deaf581b95389a81788067f",
+      "frontend/src/pages/Practice.test.tsx": "86251d583c6bcbf739a64238d6df7c5bae95d83d32bb40deee900e6289bcb399",
+      "frontend/src/pages/Practice.tsx": "91d1903c258d462a62320dff25608f9faabc1d3a86e700ec14cb100e53e9343b",
+      "frontend/src/pages/Progress.tsx": "73d15de45e62226ee308e462ee0898d2308edd0ffb8433965639b4d3ae7730be",
       "frontend/src/pages/Studio.test.tsx": "0206d5cd0c14a7d8933a7aaaf8fb673a95172872284fe9ec40e10ee799e7276d",
-      "frontend/src/pages/Studio.tsx": "0c92dacc93737ea3fca2bf56e9e27cc08cde3dd7c23b586e47724f760d70dd27",
-      "frontend/src/pages/Tutor.tsx": "2b894f33bf9f369c0b93dc8542f3eff96d983b251fe3bc67c297461570e2b941",
+      "frontend/src/pages/Studio.tsx": "8b09202051e7f896f95b4b9d49255051afd7e967b1236b8be56b6042ed34c494",
+      "frontend/src/pages/Tutor.tsx": "2506b1edd4d593041f36d080bcc5a576fedc9af4dc9f83bf68d4d8ac3a5f5364",
       "frontend/src/state.test.ts": "14e92c7485bea17fd152e5e89630f2fb1e7c20d6449dc4a900054de8279ebabc",
-      "frontend/src/state.ts": "a8d576c1570a762d23ddb7a17df5c0ca814b5ad692578f4609d6ccfd63cb31c3",
+      "frontend/src/state.ts": "58c66e1b9421e60ef9ff8913bbf7e0ff6142c6c27e02cfc965ebde200633e354",
       "frontend/src/styles.css": "9aaac68b852a747828e8f6624ee15d1407626362b246ba665a713c5b8ea919f4",
       "frontend/src/test/setup.ts": "7c35a2e906e7da3a429c42158474e37bb5fab80a4c727907a3779884de4c83a6",
-      "frontend/src/types.ts": "90dac9ab8fda6483da8ebe5fbc976efc836593d5feabff7ab8fd8520b391ace2",
-      "frontend/state-contract.json": "691bc6099f0e851f9105c0c453c434d4a1778347edc05a32b53a33925eeb618b",
-      "frontend/tests/browser.mjs": "73248f41cfaac174da09f2901582f6db957903427ee5de3848ca116ba7638106",
-      "frontend/tests/live-dom.test.tsx": "02b871a3be1f98e68fd1475c82cb28526e2e22e928dac293d631cfe02ebe14f1",
+      "frontend/src/types.ts": "9fd5c47745f96c12717343d3c2b5d43e4e246235b1209c35765f1a72088e2200",
+      "frontend/state-contract.json": "b406aba79bc6aaae3dbf850b5731a91516a71bb99d169084c4768de8d3c44a6e",
+      "frontend/tests/browser.mjs": "799806053d7f8c86e44c3d45d28db3168ffb13e5f0d39ebebe1faaff45e061bf",
+      "frontend/tests/live-dom.test.tsx": "06a413f77898549e7794ed0c9a708c0987cb44763d56816262114a4668fdef92",
       "frontend/tsconfig.json": "47561f3f27d357589d429c1b6304e006b097f8483fa6ad54e3def0b7bce4f385",
       "frontend/vite.config.ts": "e30502cb1e7cf251dd9c728b8f2ba89436c1cf70c1b233a881c216e31448465b",
       "frontend/vite.live.config.ts": "b2237f57d62900888f03bad006d0dec9fa56c0d793f04c3c74eb399e7e61cc34",
@@ -251,33 +323,64 @@
       "knowledge/runtime-lessons.json": "c54679c7cf3417b7025551fa0f0790dc56f66580f99dde9b3eaa79b53a2dea9b",
       "knowledge/sources.json": "9dd3d387d1870a4b9cc2f817d9fba87765da3d65b04b080553992a15885ff355",
       "requirements-dev.txt": "f05b125ce5fe722d3b07c7d39216074421794588c88c31b8d21c11275b84d960",
-      "scripts/browser_runtime.py": "8e7bef30066e4a3fe57bb75d0fcd80908a0aba5360cd04e4fcd5d899aea1f00a",
+      "scripts/browser_runtime.py": "5fd4b4933770c079a7e8c32568594dcbf94f5a0d4d05d67ecd6150088a9cb5d8",
       "scripts/prepare_ci_mysql.py": "0b33d95b72966d47003c794ed663f0c5fdafa821b3e9ab88f8e7568791fedc0d",
-      "scripts/record_verification.py": "7d0edf30b24d22ef00d95c4518efc760a200c1cbb44e7836b7f46fc27f6f4569",
-      "scripts/smoke_runtime.py": "07ba0361ecf30fe754799299fd7e14b3605b0ad7ccb9f645e74af4936341c2e4",
+      "scripts/record_verification.py": "70ee5d3c5e9f977a3366ec3152820c5a848ed1ea81d439bd7b525fcfc217e87f",
+      "scripts/smoke_runtime.py": "dbd298aa37591552003b565208976bfd1ed6564a77b264247ff26edc84008da5",
       "scripts/sync_contract_index.py": "88ea5b03862ef1fd153edccb16640d4a393a3554fc9002066c6525551ce3578d",
-      "scripts/verify.py": "9282480d7fb383669abcf6502c13ba2d94b56e717b28b40294579b17ef1d8281",
+      "scripts/verify.py": "a64a2f579f3a564b8c0963813670fa05edc1f4a3e015e89e781126603d862417",
       "scripts/verify_content_mysql.py": "d536f2f00ba69a8abdc3414edff70f4c827b96596de1a76988c25dc053cef4cf",
       "scripts/verify_mysql.py": "7e6b6ad2dc37b924ed1718f74bc2d6d25e99ced72a98fce0251e2170c75cd3ce",
-      "scripts/verify_transaction_isolation.py": "7bb6409f45f8983746bfe6b478a8e897144360cde078661710fbdb8fa09c6f8b"
+      "scripts/verify_private_modules_mysql.py": "b0632c875f5b597f140142c12c15dd5c3a9d6dc83a1803015feaef2d60820297",
+      "scripts/verify_transaction_isolation.py": "7bb6409f45f8983746bfe6b478a8e897144360cde078661710fbdb8fa09c6f8b",
+      "workers/compiler/Dockerfile": "6017d5e00563641bd3172407282a93e417cb0b5cdd89144ebd3b7e5ba9b800a6",
+      "workers/compiler/README.md": "a6871f837abfc2f9a17c1e389852beeabed947fd158b79409b823b98218e3504",
+      "workers/compiler/server.py": "5e0127153551f040b2778f5074c38b8027e0d3476623834b4cdaffaa56a556ae",
+      "workers/compiler/test_verifier.py": "84a5e18880dcbafc2ed0fecaaf8bccd7a910bdba537328fe1dce9f93ba8f938b",
+      "workers/compiler/test_worker.py": "a4514ecf15b82d994edf688e13676e0e06081cb4003d7084238270b0869025c3",
+      "workers/compiler/verify_docker.py": "95e211c39d72fb40013f2a54a7b9ac3436e8976c0e93dd5085103365b5cd8043"
     }
   },
   "java": {
-    "command": "mvn -B -ntp -f backend/pom.xml clean verify; package refreshed after verified frontend-only fixes",
+    "command": "mvn -B -ntp -f backend/pom.xml clean verify",
     "result": "PASS",
-    "tests": 275,
+    "tests": 356,
     "failures": 0,
     "errors": 0,
     "skipped": 0,
-    "jarSha256": "2679fef7cd70e54ec1482cef732133c8c38a9e4c437b8340e1e667ac0160a6b1",
+    "jarSha256": "f573b50dd6aa44ef5346e2057fc00d24e91f0c5c067bc8aea1eb3341cefae453",
     "suites": [
+      {
+        "name": "io.typeforge.AccountLifecycleIntegrationTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 13.851,
+        "testCases": [
+          "accountClosureIsAtomicOnWrongConfirmationAndDoesNotEraseConcurrentPasswordChange",
+          "sessionsArePrivateRevocableAndNeverExposeCookieOrAddress",
+          "admittedRequestIdentityCannotBecomeAReRegisteredNamesakeOrSurvivePasswordEpochChange",
+          "logoutPersistsRevocationAndNoForgedMockPrincipalCanAccessPrivateApi",
+          "aPreviouslyPrivilegedLoginNameCannotBeReRegisteredAndInheritBootstrapRoles",
+          "authenticationLimitsAreAtomicAcrossConcurrentAdmission",
+          "readingsPersistPerWorkspaceBackfillRealFactsAndNeverManufactureMastery",
+          "analyticsKeepsUtcDayBoundariesWhenJdbcRunsInAnotherLocalTimezone",
+          "passwordLengthCountsUnicodeCharactersAndPreservesTheBcryptByteBoundary",
+          "analyticsUseAuthoritativeOwnerFactsAndZeroFillEmptyDays",
+          "changingPasswordRevokesEverySessionAndInFlightOldAuthentication",
+          "closingAccountKeepsHistoricalFactsAndCannotTransferThemThroughReRegistration",
+          "operationsRequireCurrentAdministratorRoleAndExposeOnlyAggregateMetrics",
+          "profileCompareAndSwapKeepsLoginIdentitySeparateAndRejectsUnexpectedFields"
+        ]
+      },
       {
         "name": "io.typeforge.AgentPlanTest",
         "tests": 25,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.141,
+        "seconds": 0.034,
         "testCases": [
           "rejectsDuplicateDependency",
           "writerWaitsForActiveReader",
@@ -307,12 +410,88 @@
         ]
       },
       {
+        "name": "io.typeforge.ArtifactFileExportTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 1.794,
+        "testCases": [
+          "identicalExportsReuseBytesAndObsoleteCacheIsReclaimed",
+          "docxRoundTripKeepsEditableChineseTextAndSourceMetadata",
+          "repeatedEmbeddedImagesAreRejectedBeforeUnboundedHtmlAllocation",
+          "editedDocumentTitleAppearsInActualNativeFile",
+          "editedSourceDuringRenderingRejectsLateOutput",
+          "pptxAndPdfAndHtmlActuallyEmbedAdmittedImages",
+          "cancelWhileRendererIsRunningWinsWithoutHoldingTheWorkspaceLock",
+          "pdfRoundTripIsSearchableWithEmbeddedChineseFont",
+          "abandonedRenderLeaseFailsDurablyWithoutInventingFile",
+          "revokedImageInvalidatesExistingExportAndCannotBeReattached"
+        ]
+      },
+      {
+        "name": "io.typeforge.CodeRubricSemanticsTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 3.291,
+        "testCases": [
+          "everyPublishedCodeLabExampleHasVerifiedPositiveAndNegativeFixedSource",
+          "emptyCompilableAndRawUnsafeProgramsDoNotPassTheTypeContract",
+          "unrelatedNegativeErrorsMissingChecksAndDuplicateResultsCannotPass",
+          "fixedGenericSignaturePassesPositiveAndFailsOnlyTheExpectedNegativeCheck"
+        ]
+      },
+      {
+        "name": "io.typeforge.CompileHttpProtocolTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 1.545,
+        "testCases": [
+          "mismatchedHashLeaseAndIsolationPolicyFailClosed",
+          "oversizedResponseIsStoppedAtTheTransportBoundary",
+          "timeoutDoesNotRetryTheCompileRequest",
+          "sendsOnlyFixedProtocolAndReturnsAuthoritativeStructuredOutcome",
+          "durableCancellationInterruptsWaitingAndTargetsTheSameLease",
+          "endpointCredentialsAndLimitsComeOnlyFromServerConfiguration",
+          "escapedCredentialInADiagnosticNeverReachesTheLearner",
+          "partialCheckResultsCannotBeAcceptedAsSuccessfulCompilation"
+        ]
+      },
+      {
+        "name": "io.typeforge.CompileQueueTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 6.826,
+        "testCases": [
+          "cancellingAnActiveJobRejectsLateLeaseAndDoesNotInventAnAttempt",
+          "expiredLeaseAndQueueDeadlineArePersistedAsInfrastructureFailures",
+          "codeLabsExposeActualQueueStateWithoutCreatingMastery",
+          "boundedQueueReplaysExactlyAndIsPrivate",
+          "concurrentPendingAnswersReserveIndependentFamilyOnce",
+          "actualAuthenticatedHttpRejectsCsrfForgeryAndPrivateAttemptLinkage",
+          "unsupportedExecutionOversizedUtf8AndCrossReleaseNeverEnterQueue",
+          "compilingAProgramDoesNotPassAnExerciseWithFailingPositiveChecks",
+          "closingAccountFencesPendingCompilationAndRetainsCompletedHistory",
+          "hintsAreDurableIdempotentAndCannotFarmIndependentMastery",
+          "genericSuccessOnlyRubricIsRejectedWithoutPersistingAnAttempt",
+          "codeAttemptWaitsForAllChecksAndOnlyThenProducesLearningEvidence",
+          "cancellationAndResourceFailureNeverCountAsWrongAnswers",
+          "largeCodeCorrectionNotebookPreservesSourceAndRoutesHintAndCompileToRealServices"
+        ]
+      },
+      {
         "name": "io.typeforge.DurableAgentRuntimeTest",
         "tests": 26,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 2.082,
+        "seconds": 0.511,
         "testCases": [
           "stableExecutionKeysAndSettlementPreventDuplicateCharges",
           "unknownExternalEffectRetainsReservationAcrossCrashAndCannotBeBlindlyRetried",
@@ -348,7 +527,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.72,
+        "seconds": 0.381,
         "testCases": [
           "aReconstructedWorkerResumesAnExpiredClaimWithoutRepeatingCommittedSteps",
           "aFullBatchOfRevokedSnapshotsCannotPermanentlyStarveAHealthyWorkspace"
@@ -360,7 +539,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 2.525,
+        "seconds": 2.63,
         "testCases": [
           "assignmentSubsetAgreesWithRealJavac(String, String)[1]",
           "assignmentSubsetAgreesWithRealJavac(String, String)[2]",
@@ -412,7 +591,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.313,
+        "seconds": 0.382,
         "testCases": [
           "healthActuallyQueriesDatabaseWithoutClaimingProviderReadiness",
           "noBusinessOrAdminRouteIsAccidentallyPublic",
@@ -425,17 +604,17 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 7.21,
+        "seconds": 5.227,
         "testCases": [
           "jsonSizeAndIntegerBoundsApplyBeforeNarrowingOrObjectMaterialization",
           "pauseResumeCancelUseEpochFencingAndSteeringRequiresAnActualPlanner",
-          "unsupportedCodeGradingCreatesNoLearningFactOrOutboxEvent",
           "absentEvidenceCannotBecomeAFabricatedAnswerOrCompletedRun",
           "actualSpringMappingsMatchImplementedContractExactly",
           "persistedEventsReplayBySequenceAndRevisionConflictsDoNotLoseTheDraft",
           "ownershipCsrfAndServerFactsAreEnforcedAtHttpBoundary",
           "bodyLimitAlsoRejectsUnknownLengthStreamingRequests",
-          "realLearningJourneyKeepsGradesEvidenceArtifactsAndRunsConnected"
+          "realLearningJourneyKeepsGradesEvidenceArtifactsAndRunsConnected",
+          "codeAnswerForASelectionExerciseCreatesNoLearningFactOrOutboxEvent"
         ]
       },
       {
@@ -444,7 +623,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.408,
+        "seconds": 1.424,
         "testCases": [
           "anInterfaceCanBeTheLeftmostErasureBound",
           "arraysAreCovariantButValidateTheirActualComponentTypeAtRuntime",
@@ -478,7 +657,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 4.241,
+        "seconds": 1.767,
         "testCases": [
           "validatesWithRealJavac(String, String, boolean, boolean)[1]",
           "validatesWithRealJavac(String, String, boolean, boolean)[2]",
@@ -522,7 +701,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 23.156,
+        "seconds": 7.055,
         "testCases": [
           "readingReceiptIsServerTimedAndNotMasteryEvidence",
           "oldRendererAndTamperedSourceFailWithoutRenderingUnderFalseIdentity",
@@ -546,7 +725,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.037,
+        "seconds": 0.355,
         "testCases": [
           "tamperedPublishedBodyFailsIntegrityInsteadOfReturningStaleHashEvidence",
           "reinitializationDoesNotDuplicateOrOverwritePublishedFixtures",
@@ -567,7 +746,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.632,
+        "seconds": 0.576,
         "testCases": [
           "workflowPersistsHashesOfTheRealSchemaInputsForBothTypedTools",
           "contextToolReturnsTheExistingValidatedSnapshotWithoutCreatingState",
@@ -580,12 +759,30 @@
         ]
       },
       {
+        "name": "io.typeforge.PrivateAssetsIntegrationTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 3.995,
+        "testCases": [
+          "quotaUsesStoredBytesAndRevocationFreesActualPayload",
+          "assetRevocationInvalidatesDirectAndTransitiveSourceRevisions",
+          "decodesImagesAndParsesActualGeneratedAudioVideoFixtures",
+          "paginationAndIntegrityChecksRetainNoRevokedDownloadPath",
+          "browserUploadDownloadsRangesWithSafeHeadersAndCannotBypassCsrf",
+          "closingAccountRemovesItsUploadedBytesIncludingArchivedSpacesAndPreservesOtherUsers",
+          "privateUploadsReplayExactBytesAndRejectKeyReuseOrForeignScopes",
+          "rejectsScriptImagesTruncatedFilesAndFalseMimeBeforeAnyPersistentWrite"
+        ]
+      },
+      {
         "name": "io.typeforge.RootArchitectureInvariantsTest",
         "tests": 24,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 11.784,
+        "seconds": 10.094,
         "testCases": [
           "embeddedArtifactAndReviewLinksCannotBypassTheTypedInputManifest",
           "timestampTiesAndReverseUuidOrderCannotStarveTheWorkspaceHead",
@@ -614,12 +811,51 @@
         ]
       },
       {
+        "name": "io.typeforge.StudyModelWorkflowTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 1.382,
+        "testCases": [
+          "unknownModelUsageCommitsItsHoldAndNeverAutomaticallyRetries",
+          "insufficientRemainingBudgetStopsBeforeTheNextModelDispatch",
+          "realModelProtocolTraversesPlannerSpecialistsReviewAndEditableOutputs",
+          "editedPlannerAtDurableCheckpointCannotBeSilentlyReplannedOrOverwritten",
+          "invalidTeachingPlanSettlesKnownProviderUsageWithoutCreatingExperts(String)[1]",
+          "invalidTeachingPlanSettlesKnownProviderUsageWithoutCreatingExperts(String)[2]",
+          "invalidTeachingPlanSettlesKnownProviderUsageWithoutCreatingExperts(String)[3]",
+          "pauseDuringActualHttpFencesLateContentButSettlesUsageBeforeResuming"
+        ]
+      },
+      {
+        "name": "io.typeforge.StudyWorkflowIntegrationTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 2.263,
+        "testCases": [
+          "modelModeDoesNotPretendToWorkWithoutConfiguredProvider",
+          "localWorkflowReallyPlansReviewsAndExportsEditableArtifacts",
+          "cancellationCannotCreateLateArtifacts",
+          "retryKeyReusesRunAndChangedOutputsConflict",
+          "notebookRejectsForeignUnselectedCorrectAndDuplicateAttemptsBeforeCreatingAnyRun",
+          "manualExpertEditDuringReviewInvalidatesOldResultsWithoutOverwrite",
+          "notebookNeedsRealGradedAttempt",
+          "notebookSelectionIsPersistedExactlyAndCannotExpandOnIdempotentReplay",
+          "wrongOwnerAndChangedGoalCannotAdmitOldWork",
+          "expiredWorkerLeaseCanBeAccountedThenExplicitlyResumed",
+          "pauseCancelResumeFencesQueuedRequestAndKeepsAuditHistory"
+        ]
+      },
+      {
         "name": "io.typeforge.TransactionIsolationTest",
         "tests": 2,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.398,
+        "seconds": 0.318,
         "testCases": [
           "transactionTemplateUsesReadCommittedJdbcConnection",
           "readAfterOwnerLockSeesCommittedWorkspaceChange"
@@ -631,7 +867,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.654,
+        "seconds": 2.757,
         "testCases": [
           "completeHttpJourneyIncludesConversationRequestEvidenceAndDraftDocument",
           "cancelUsesExpectedEpochAndForeignRequestIdsRemainPrivate",
@@ -644,7 +880,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.602,
+        "seconds": 0.926,
         "testCases": [
           "timeoutKeepsUnknownReservationAndDoesNotBlindlyReplay",
           "redirectsNeverForwardTheCredentialAndOversizedResponsesAreBounded",
@@ -671,7 +907,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.834,
+        "seconds": 0.541,
         "testCases": [
           "expiredUndispatchedLeaseCanRecoverButOriginalEpochCannotOverwrite",
           "expiredDeadlineAndLeaseAreDistinguishedFromChangedContext",
@@ -697,18 +933,31 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.127,
+        "seconds": 0.656,
         "testCases": [
           "oldArtifactOnlyContextCannotBypassNaturallyExpiredTransitiveMemory"
         ]
       },
       {
-        "name": "io.typeforge.publishing.ContentWorkbenchIntegrationTest",
-        "tests": 14,
+        "name": "io.typeforge.WorkspaceContextSelectionTest",
+        "tests": 3,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 19.767,
+        "seconds": 1.91,
+        "testCases": [
+          "explicitSelectionIncludesOlderGradedAttemptsInExactCallerOrder",
+          "privateWrongWorkspaceUnfinishedAndInvalidSelectionsNeverPersistASnapshot",
+          "authenticatedHttpAcceptsOptionalSelectionAndKeepsSchemaAndCsrfStrict"
+        ]
+      },
+      {
+        "name": "io.typeforge.publishing.ContentWorkbenchIntegrationTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 30.932,
         "testCases": [
           "editingPublishedKnowledgeAppendsAndDoesNotChangeAnExistingCourse",
           "reviewPinsTitleAndPrivateAnswerInsteadOfOnlyTheKnowledgeBody",
@@ -718,6 +967,7 @@
           "actualSessionsPublishAndLearnersReadSearchAndGradeWithoutAnswerLeak",
           "malformedStoredAnswerFailsAsAControlledEditorialConflict",
           "authorCannotApproveOwnExerciseAndRejectedRevisionRequiresNewVersion",
+          "codeRubricsRequireIndependentReviewAndNeverLeakFromPublicExercise",
           "demoReviewedFlagsDoNotSatisfyFormalIndependentReview",
           "concurrentPublishersWithSameActiveRevisionHaveExactlyOneWinner",
           "manualCaptureComputesHashesPreservesCodeIndentationAndDeduplicates",
@@ -729,18 +979,18 @@
     ]
   },
   "frontend": {
-    "numTotalTestSuites": 11,
-    "numPassedTestSuites": 11,
+    "numTotalTestSuites": 14,
+    "numPassedTestSuites": 14,
     "numFailedTestSuites": 0,
-    "numTotalTests": 27,
-    "numPassedTests": 27,
+    "numTotalTests": 41,
+    "numPassedTests": 41,
     "numFailedTests": 0,
     "numPendingTests": 0,
     "success": true,
     "integration": {
       "driver": "jsdom with real HTTP; not a graphical browser",
       "status": "PASS",
-      "jarSha256": "2679fef7cd70e54ec1482cef732133c8c38a9e4c437b8340e1e667ac0160a6b1",
+      "jarSha256": "f573b50dd6aa44ef5346e2057fc00d24e91f0c5c067bc8aea1eb3341cefae453",
       "steps": [
         {
           "name": "register/login/CSRF and workspace creation",
@@ -771,6 +1021,22 @@
           "status": "PASS"
         },
         {
+          "name": "account profile CAS and actual analytics totals",
+          "status": "PASS"
+        },
+        {
+          "name": "private image upload links an actual asset reference to editable slides and office export bytes",
+          "status": "PASS"
+        },
+        {
+          "name": "document office and PDF exports are actual downloadable files",
+          "status": "PASS"
+        },
+        {
+          "name": "evidence-only study workflow produces source-linked editable artifacts through visible controls",
+          "status": "PASS"
+        },
+        {
           "name": "second workspace isolates persisted attempts and source drafts",
           "status": "PASS"
         },
@@ -781,7 +1047,7 @@
       ],
       "limits": [
         "Does not verify layout, screenshots, native downloads or real keyboard/touch rendering.",
-        "Cookie storage is a transport adapter for Node fetch; no server response is mocked."
+        "Cookie and multipart encoding adapt DOM requests to Node fetch; no server response is mocked."
       ]
     },
     "graphicalBrowser": {
@@ -792,23 +1058,23 @@
   },
   "contractsAndArchitecture": {
     "result": "PASS",
-    "checksPassed": 583,
+    "checksPassed": 668,
     "errors": [],
-    "operations": 92,
-    "implementedOperations": 84,
-    "plannedOperations": 8,
-    "schemas": 153,
+    "operations": 109,
+    "implementedOperations": 109,
+    "plannedOperations": 0,
+    "schemas": 181,
     "conceptSeeds": 16,
     "frontendReferences": 209,
-    "sqlTables": 69,
+    "sqlTables": 79,
     "expertRoles": 14,
-    "toolCapabilities": 16
+    "toolCapabilities": 18
   },
   "mysqlSchema": {
     "result": "PASS",
     "engine": "MySQL 8.4.13",
     "mode": "external-isolated-server",
-    "tables": 69,
+    "tables": 79,
     "checks": [
       {
         "check": "query actual database engine version",
@@ -816,10 +1082,6 @@
       },
       {
         "check": "inspect isolated verification schema",
-        "result": "PASS"
-      },
-      {
-        "check": "reset explicitly marked task-owned verification schema only",
         "result": "PASS"
       },
       {
@@ -844,6 +1106,26 @@
       },
       {
         "check": "V006__interactive_learning.sql applies on MySQL 8.4.13",
+        "result": "PASS"
+      },
+      {
+        "check": "V007__identity_operations.sql applies on MySQL 8.4.13",
+        "result": "PASS"
+      },
+      {
+        "check": "V008__compiler_learning.sql applies on MySQL 8.4.13",
+        "result": "PASS"
+      },
+      {
+        "check": "V009__artifact_files.sql applies on MySQL 8.4.13",
+        "result": "PASS"
+      },
+      {
+        "check": "V010__study_workflow.sql applies on MySQL 8.4.13",
+        "result": "PASS"
+      },
+      {
+        "check": "V011__private_assets.sql applies on MySQL 8.4.13",
         "result": "PASS"
       },
       {
@@ -1293,7 +1575,12 @@
       "V003__runtime_integrity.sql": "7270c47cb6d93910ce6d9e6da390fc9608454493296272676e7248bd9ef426fa",
       "V004__tutor_runtime.sql": "aa92680b4026632f4f3628e0599b79e6ff786b66d6fe496c235cea7fae2d51a9",
       "V005__content_workbench.sql": "5e9e23346b616a924c4b91d648c375e481eb1783d8d2a94310cea00e7fdd758d",
-      "V006__interactive_learning.sql": "c22d18f54238f15c2ab32d70110db7a283a51a021e6fa760a3815046e83cab5b"
+      "V006__interactive_learning.sql": "c22d18f54238f15c2ab32d70110db7a283a51a021e6fa760a3815046e83cab5b",
+      "V007__identity_operations.sql": "3c97837c0e1985d934255ab562f66759c9f465dd7131360666af527fa1e1a282",
+      "V008__compiler_learning.sql": "d5177b9fba09fca995f4b6f3eee1bc704c934e18c508a089123c63bb503a62cc",
+      "V009__artifact_files.sql": "0d3867dcf895c9b79f74833da2fc10f946211f8da11f6eaf6b76720b36584fa2",
+      "V010__study_workflow.sql": "879e3913a2c32137e08a7ebb3dc52054f5e5f9446c771db49cffb48a4d45e87a",
+      "V011__private_assets.sql": "1bf9c34c1471ac54913308966c7caba13ae920493adc5b3d7e8738a03a6a7d28"
     },
     "seedSha256": "640dd344bbaabcc81491e720c5e2a6e47ba1687f9cdef31c7c6ed71fdf52953f",
     "scope": "All current forward migrations and schema integrity on real MySQL; application HTTP and transaction smoke tests run separately"
@@ -1322,14 +1609,14 @@
       "repeatableReadControl": "before",
       "writerCommitted": true
     },
-    "durationSeconds": 26.51
+    "durationSeconds": 20.518
   },
   "mysqlEditorial": {
     "result": "PASS",
     "execution": "targeted-real-mysql",
     "testClass": "io.typeforge.publishing.ContentWorkbenchIntegrationTest",
     "engine": "MySQL",
-    "tests": 14,
+    "tests": 15,
     "mavenExitCode": 0,
     "failures": 0,
     "errors": 0,
@@ -1343,6 +1630,7 @@
       "actualSessionsPublishAndLearnersReadSearchAndGradeWithoutAnswerLeak",
       "malformedStoredAnswerFailsAsAControlledEditorialConflict",
       "authorCannotApproveOwnExerciseAndRejectedRevisionRequiresNewVersion",
+      "codeRubricsRequireIndependentReviewAndNeverLeakFromPublicExercise",
       "demoReviewedFlagsDoNotSatisfyFormalIndependentReview",
       "concurrentPublishersWithSameActiveRevisionHaveExactlyOneWinner",
       "manualCaptureComputesHashesPreservesCodeIndentationAndDeduplicates",
@@ -1351,7 +1639,80 @@
       "publicationCasHistoryAndRetryPreserveExistingPersonalReleasePins"
     ],
     "engineVersion": "8.4.13",
-    "durationSeconds": 48.439
+    "durationSeconds": 41.709
+  },
+  "mysqlAccountsAndAssets": {
+    "result": "PASS",
+    "generatedAt": "2026-11-15T17:21:28.562721+00:00",
+    "scope": "Explicit real-MySQL account lifecycle and private asset HTTP/SQL regression; no external media or model provider claim",
+    "mavenExitCode": 0,
+    "tests": 22,
+    "suites": [
+      {
+        "suite": "AccountLifecycleIntegrationTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "engineProof": [
+          {
+            "database": "typeforge_runtime",
+            "engine": "MySQL",
+            "suite": "AccountLifecycleIntegrationTest",
+            "version": "8.4.13"
+          }
+        ],
+        "caseNames": [
+          "accountClosureIsAtomicOnWrongConfirmationAndDoesNotEraseConcurrentPasswordChange",
+          "sessionsArePrivateRevocableAndNeverExposeCookieOrAddress",
+          "admittedRequestIdentityCannotBecomeAReRegisteredNamesakeOrSurvivePasswordEpochChange",
+          "logoutPersistsRevocationAndNoForgedMockPrincipalCanAccessPrivateApi",
+          "aPreviouslyPrivilegedLoginNameCannotBeReRegisteredAndInheritBootstrapRoles",
+          "authenticationLimitsAreAtomicAcrossConcurrentAdmission",
+          "readingsPersistPerWorkspaceBackfillRealFactsAndNeverManufactureMastery",
+          "analyticsKeepsUtcDayBoundariesWhenJdbcRunsInAnotherLocalTimezone",
+          "passwordLengthCountsUnicodeCharactersAndPreservesTheBcryptByteBoundary",
+          "analyticsUseAuthoritativeOwnerFactsAndZeroFillEmptyDays",
+          "changingPasswordRevokesEverySessionAndInFlightOldAuthentication",
+          "closingAccountKeepsHistoricalFactsAndCannotTransferThemThroughReRegistration",
+          "operationsRequireCurrentAdministratorRoleAndExposeOnlyAggregateMetrics",
+          "profileCompareAndSwapKeepsLoginIdentitySeparateAndRejectsUnexpectedFields"
+        ]
+      },
+      {
+        "suite": "PrivateAssetsIntegrationTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "engineProof": [
+          {
+            "database": "typeforge_runtime",
+            "engine": "MySQL",
+            "suite": "PrivateAssetsIntegrationTest",
+            "version": "8.4.13"
+          }
+        ],
+        "caseNames": [
+          "quotaUsesStoredBytesAndRevocationFreesActualPayload",
+          "assetRevocationInvalidatesDirectAndTransitiveSourceRevisions",
+          "decodesImagesAndParsesActualGeneratedAudioVideoFixtures",
+          "paginationAndIntegrityChecksRetainNoRevokedDownloadPath",
+          "browserUploadDownloadsRangesWithSafeHeadersAndCannotBypassCsrf",
+          "closingAccountRemovesItsUploadedBytesIncludingArchivedSpacesAndPreservesOtherUsers",
+          "privateUploadsReplayExactBytesAndRejectKeyReuseOrForeignScopes",
+          "rejectsScriptImagesTruncatedFilesAndFalseMimeBeforeAnyPersistentWrite"
+        ]
+      }
+    ]
+  },
+  "compilerPython": {
+    "result": "PASS",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "scope": "Offline compiler broker/verifier behavior; no real container execution claim"
   },
   "httpAndRestart": {
     "h2": {
@@ -1490,7 +1851,7 @@
         },
         {
           "phase": "before-restart",
-          "check": "untrusted code is refused without a compiler worker",
+          "check": "code answers cannot be submitted to a selection exercise",
           "result": "PASS"
         },
         {
@@ -1536,6 +1897,36 @@
         {
           "phase": "before-restart",
           "check": "successful export exposes an authenticated file whose bytes match the stored hash",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "actual study workflow completes planning, specialist, review and outputs",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "study workflow persists a completed revised DAG without inventing model usage",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "DOCX file is actually rendered",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "DOCX exposes valid Office ZIP bytes with matching SHA-256",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "PPTX file is actually rendered",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "PPTX exposes valid Office ZIP bytes with matching SHA-256",
           "result": "PASS"
         },
         {
@@ -1655,6 +2046,21 @@
         },
         {
           "phase": "after-restart",
+          "check": "study DAG and output references survive restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "DOCX bytes survive process restart",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "PPTX bytes survive process restart",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
           "check": "memory revocation hides dependent tutor answer and prevents old download",
           "result": "PASS"
         },
@@ -1674,13 +2080,13 @@
           "result": "PASS"
         }
       ],
-      "startedAt": "2026-11-14T04:45:34.767101+00:00",
-      "jarSha256": "2679fef7cd70e54ec1482cef732133c8c38a9e4c437b8340e1e667ac0160a6b1",
+      "startedAt": "2026-11-15T17:24:30.800303+00:00",
+      "jarSha256": "f573b50dd6aa44ef5346e2057fc00d24e91f0c5c067bc8aea1eb3341cefae453",
       "engine": "H2 persistent file (not MySQL)",
       "unexpectedLogErrors": [],
-      "finishedAt": "2026-11-14T04:45:59.859103+00:00",
+      "finishedAt": "2026-11-15T17:24:56.471732+00:00",
       "scope": "Real HTTP authentication, learning/artifact/evidence linkage and process-restart persistence; no model/media/compiler adapters are simulated",
-      "httpRequests": 95,
+      "httpRequests": 129,
       "shutdown": "graceful process termination and restart against the same database"
     },
     "mysql": {
@@ -1824,7 +2230,7 @@
         },
         {
           "phase": "before-restart",
-          "check": "untrusted code is refused without a compiler worker",
+          "check": "code answers cannot be submitted to a selection exercise",
           "result": "PASS"
         },
         {
@@ -1870,6 +2276,36 @@
         {
           "phase": "before-restart",
           "check": "successful export exposes an authenticated file whose bytes match the stored hash",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "actual study workflow completes planning, specialist, review and outputs",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "study workflow persists a completed revised DAG without inventing model usage",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "DOCX file is actually rendered",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "DOCX exposes valid Office ZIP bytes with matching SHA-256",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "PPTX file is actually rendered",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "PPTX exposes valid Office ZIP bytes with matching SHA-256",
           "result": "PASS"
         },
         {
@@ -2039,6 +2475,21 @@
         },
         {
           "phase": "after-restart",
+          "check": "study DAG and output references survive restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "DOCX bytes survive process restart",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "PPTX bytes survive process restart",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
           "check": "memory revocation hides dependent tutor answer and prevents old download",
           "result": "PASS"
         },
@@ -2058,26 +2509,26 @@
           "result": "PASS"
         }
       ],
-      "startedAt": "2026-11-14T04:45:36.904461+00:00",
-      "jarSha256": "2679fef7cd70e54ec1482cef732133c8c38a9e4c437b8340e1e667ac0160a6b1",
+      "startedAt": "2026-11-15T17:24:31.933737+00:00",
+      "jarSha256": "f573b50dd6aa44ef5346e2057fc00d24e91f0c5c067bc8aea1eb3341cefae453",
       "engine": "MySQL 8.4.13",
       "unexpectedLogErrors": [],
-      "finishedAt": "2026-11-14T04:46:03.221542+00:00",
+      "finishedAt": "2026-11-15T17:24:58.198166+00:00",
       "scope": "Real HTTP authentication, learning/artifact/evidence linkage and process-restart persistence; no model/media/compiler adapters are simulated",
-      "httpRequests": 95,
+      "httpRequests": 133,
       "shutdown": "graceful process termination and restart against the same database"
     }
   },
   "remoteCi": {
     "status": "VERIFY_EXACT_COMMIT_IN_GITHUB_ACTIONS",
     "workflow": ".github/workflows/baseline.yml",
-    "note": "This report records local gates. The published commit Actions run independently verifies Java 17, Docker MySQL and real Chromium."
+    "note": "This report records local gates. The published commit Actions run independently verifies Java 17, Docker MySQL, the actual isolated javac worker and real Chromium."
   },
   "notVerified": [
     "real supplier model teaching quality or billing invoices",
-    "autonomous multi-agent planner and full expert tool roster",
+    "unrestricted autonomous planner and full expert/media tool roster",
     "untrusted user-code execution sandbox",
-    "image/audio/video generation or binary document export",
+    "generative image/audio/video services and real container-isolation deployment",
     "formal human review of the complete course corpus",
     "production load/SLO/backup restore",
     "hard-kill recovery of paid external effects with a real provider",

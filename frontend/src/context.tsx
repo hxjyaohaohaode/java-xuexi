@@ -1,7 +1,16 @@
 import { createContext, useContext } from 'react';
 import type { Capabilities, Session, Workspace, WorkspaceEvent } from './types';
 export type Route =
-  'learn' | 'practice' | 'progress' | 'lab' | 'studio' | 'tutor' | 'memory' | 'settings';
+  | 'learn'
+  | 'practice'
+  | 'progress'
+  | 'lab'
+  | 'studio'
+  | 'tutor'
+  | 'memory'
+  | 'settings'
+  | 'content'
+  | 'agents';
 export interface WorkspaceState {
   workspace: Workspace;
   session: Session;
@@ -12,6 +21,7 @@ export interface WorkspaceState {
   navigate: (route: Route, selection?: string) => void;
   selection: string;
   can: (capability: string) => boolean;
+  endSession?: (notice?: string) => void;
 }
 export const WorkspaceContext = createContext<WorkspaceState | null>(null);
 export function useWorkspace() {

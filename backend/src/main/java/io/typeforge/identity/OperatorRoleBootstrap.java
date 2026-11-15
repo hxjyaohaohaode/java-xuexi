@@ -4,6 +4,7 @@ import io.typeforge.shared.JsonCodec;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.UUID;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -37,9 +38,15 @@ public class OperatorRoleBootstrap implements ApplicationRunner {
         for(String entry:configured.split(",",-1)) {
             String username=entry.strip();
             if(!username.matches("[a-z0-9][a-z0-9_.-]{2,63}")) throw new IllegalStateException("Invalid operator bootstrap account configuration");
-            var rows=jdbc.queryForList("SELECT id,roles FROM app_user WHERE username=? AND status='ACTIVE' FOR UPDATE",username);
+            var rows=jdbc.queryForList("SELECT id,roles,status,closed_at FROM app_user WHERE username=? FOR UPDATE",username);
             if(rows.size()!=1) throw new IllegalStateException("Operator role bootstrap requires already registered ACTIVE accounts; no account was created");
-            var account=rows.get(0);var roles=new TreeSet<String>();
+            var account=rows.get(0);
+            if("DISABLED".equals(account.get("status")) && account.get("closed_at")!=null) {
+                LoggerFactory.getLogger(OperatorRoleBootstrap.class).warn("A closed account remains in operator bootstrap configuration; its name is reserved and no role was granted");
+                continue;
+            }
+            if(!"ACTIVE".equals(account.get("status"))) throw new IllegalStateException("Operator role bootstrap requires already registered ACTIVE accounts; no account was created");
+            var roles=new TreeSet<String>();
             json.tree(account.get("roles")).forEach(n->roles.add(n.asText()));
             if(!java.util.Set.of("LEARNER","EDITOR","ADMIN").containsAll(roles)) throw new IllegalStateException("Account has invalid role data");
             if(roles.add(role)) {

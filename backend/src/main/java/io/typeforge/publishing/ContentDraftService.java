@@ -5,6 +5,7 @@ import static io.typeforge.publishing.ContentWorkbenchModels.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.typeforge.compiler.CodeRubric;
 import io.typeforge.ingestion.ManualIngestionService;
 import io.typeforge.ingestion.IngestionModels.SourceInput;
 import io.typeforge.ingestion.IngestionModels.SourceReference;
@@ -135,8 +136,8 @@ public final class ContentDraftService {
             var supported=new HashSet<UUID>();
             for(var ref:input.knowledgeRefs()) supported.add(chunk(actor,ref.id(),ref.revision()).conceptId());
             if(!supported.containsAll(input.conceptIds())) throw DomainException.invalid("Every exercise concept needs an exact supporting knowledge revision");
-            jdbc.update("INSERT INTO exercise(id,revision,family_id,kind,difficulty,prompt,answer_spec,rubric_version,status,author_id) VALUES(?,?,?,?,?,?,?,'choice-v1','DRAFT',?)",
-                input.id().toString(),input.revision(),input.familyId().toString(),input.kind(),input.difficulty(),input.prompt(),json.write(input.answerSpec()),actor.toString());
+            jdbc.update("INSERT INTO exercise(id,revision,family_id,kind,difficulty,prompt,answer_spec,rubric_version,status,author_id) VALUES(?,?,?,?,?,?,?,?,'DRAFT',?)",
+                input.id().toString(),input.revision(),input.familyId().toString(),input.kind(),input.difficulty(),input.prompt(),json.write(input.answerSpec()),input.answerSpec().compileChecks().isEmpty()?"choice-v1":CodeRubric.VERSION,actor.toString());
             List<UUID> concepts=input.conceptIds().stream().sorted().toList();
             BigDecimal share=BigDecimal.ONE.divide(BigDecimal.valueOf(concepts.size()),4,RoundingMode.DOWN);
             for(int i=0;i<concepts.size();i++) {
@@ -265,7 +266,18 @@ public final class ContentDraftService {
         if(values==null || values.size()<minimum || values.size()>maximum || values.stream().anyMatch(Objects::isNull) || new HashSet<>(values).size()!=values.size()) throw DomainException.invalid("Supply a bounded list of distinct identities");
     }
     public static void validateAnswer(String kind,ChoiceAnswer answer) {
-        if(!Set.of("SINGLE","MULTIPLE").contains(Objects.toString(kind,""))) throw new DomainException("CAPABILITY_UNAVAILABLE",503,"Only validated objective SINGLE and MULTIPLE exercises can be published by this workbench");
+        if(answer==null) throw DomainException.invalid("A reviewed answer specification is required");
+        text(answer.explanation(),12000);
+        if(answer.misconceptions()==null || answer.misconceptions().size()>16) throw DomainException.invalid("Supply at most 16 misconception codes");
+        for(String code:answer.misconceptions()) if(code==null || !code.matches("[A-Za-z0-9_.:-]{1,64}")) throw DomainException.invalid("Invalid misconception code");
+        if(answer.hints().size()>3) throw DomainException.invalid("At most three progressive hints are supported");
+        for(String hint:answer.hints()) text(hint,4000);
+        if(Set.of("SIGNATURE","REFACTOR","FILL").contains(Objects.toString(kind,""))) {
+            if(answer.options()==null || !answer.options().isEmpty() || answer.optionIds()==null || !answer.optionIds().isEmpty()) throw DomainException.invalid("Code exercises cannot contain choice answers");
+            CodeRubric.validateRules(answer.compileChecks());return;
+        }
+        if(!Set.of("SINGLE","MULTIPLE","COMPILE_PREDICTION","READING","DIAGNOSIS").contains(Objects.toString(kind,""))) throw new DomainException("CAPABILITY_UNAVAILABLE",503,"This exercise kind does not have an objective grader");
+        if(!answer.compileChecks().isEmpty()) throw DomainException.invalid("Choice exercises cannot contain compile checks");
         if(answer==null || answer.options()==null || answer.options().size()<2 || answer.options().size()>8 || answer.optionIds()==null || answer.optionIds().isEmpty() || answer.optionIds().size()>8) throw DomainException.invalid("Choice answer requires 2..8 options and valid expected option ids");
         var offered=new HashSet<String>();
         for(var option:answer.options()) {
@@ -273,8 +285,5 @@ public final class ContentDraftService {
             text(option.text(),2000);
         }
         if(new HashSet<>(answer.optionIds()).size()!=answer.optionIds().size() || !offered.containsAll(answer.optionIds()) || kind.equals("SINGLE") && answer.optionIds().size()!=1) throw DomainException.invalid("Expected choices must belong to offered options and match the question kind");
-        text(answer.explanation(),12000);
-        if(answer.misconceptions()==null || answer.misconceptions().size()>16) throw DomainException.invalid("Supply at most 16 misconception codes");
-        for(String code:answer.misconceptions()) if(code==null || !code.matches("[A-Za-z0-9_.:-]{1,64}")) throw DomainException.invalid("Invalid misconception code");
     }
 }

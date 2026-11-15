@@ -9,7 +9,8 @@ import java.util.UUID;
 import java.util.Set;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -29,7 +30,7 @@ public class IdentityService implements UserDetailsService {
     }
     public Session register(String username,String password) {
         String canonical=normalize(username);
-        if (password==null || password.length()<12 || password.getBytes(StandardCharsets.UTF_8).length>72) throw DomainException.invalid("Password must have at least 12 characters and at most 72 UTF-8 bytes");
+        if (password==null || password.codePointCount(0,password.length())<12 || password.getBytes(StandardCharsets.UTF_8).length>72) throw DomainException.invalid("Password must have at least 12 characters and at most 72 UTF-8 bytes");
         String encoded=passwords.encode(password);
         try {
             return tx.execute(status -> {
@@ -41,7 +42,14 @@ public class IdentityService implements UserDetailsService {
         } catch (DuplicateKeyException e) { throw DomainException.conflict("Username is unavailable"); }
     }
     public Session session(String username) {
-        var rows=jdbc.query("SELECT id,username,roles FROM app_user WHERE username=? AND status='ACTIVE'",(rs,n)->new Session(UUID.fromString(rs.getString("id")),rs.getString("username"),roles(rs.getString("roles"))),normalize(username));
+        String canonical=normalize(username);
+        var authentication=SecurityContextHolder.getContext().getAuthentication();
+        AccountPrincipal bound=authentication!=null && authentication.isAuthenticated() && authentication.getPrincipal() instanceof AccountPrincipal principal && principal.getUsername().equals(canonical)?principal:null;
+        // Controllers pass the authenticated login name. Bind it to the original immutable identity as well:
+        // a request paused after the session filter must never adopt a newly registered namesake after closure.
+        String condition=bound==null?"":" AND id=? AND auth_epoch=?";
+        Object[] arguments=bound==null?new Object[]{canonical}:new Object[]{canonical,bound.userId().toString(),bound.authEpoch()};
+        var rows=jdbc.query("SELECT id,username,roles FROM app_user WHERE username=? AND status='ACTIVE'"+condition,(rs,n)->new Session(UUID.fromString(rs.getString("id")),rs.getString("username"),roles(rs.getString("roles"))),arguments);
         if (rows.isEmpty()) throw new DomainException("UNAUTHENTICATED",401,"Sign in again");
         return rows.get(0);
     }
@@ -49,7 +57,7 @@ public class IdentityService implements UserDetailsService {
         String canonical;
         try { canonical=normalize(username); }
         catch (DomainException e) { throw new UsernameNotFoundException("Invalid credentials"); }
-        var rows=jdbc.query("SELECT username,password_hash,status,roles FROM app_user WHERE username=?",(rs,n)->User.withUsername(rs.getString("username")).password(rs.getString("password_hash")).roles(roles(rs.getString("roles")).toArray(String[]::new)).disabled(!rs.getString("status").equals("ACTIVE")).build(),canonical);
+        var rows=jdbc.query("SELECT id,username,password_hash,status,roles,auth_epoch FROM app_user WHERE username=?",(rs,n)->new AccountPrincipal(UUID.fromString(rs.getString("id")),rs.getString("username"),rs.getString("password_hash"),rs.getString("status").equals("ACTIVE"),rs.getLong("auth_epoch"),roles(rs.getString("roles")).stream().map(role->new SimpleGrantedAuthority("ROLE_"+role)).toList()),canonical);
         if (rows.isEmpty()) throw new UsernameNotFoundException("Invalid credentials");
         return rows.get(0);
     }

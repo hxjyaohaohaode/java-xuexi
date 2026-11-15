@@ -43,6 +43,7 @@ public class NotebookService implements NotebookCompiler {
             for(UUID attemptId:attemptIds) {
                 var attempt=learning.get(owner,attemptId);
                 if(!attempt.workspaceId().equals(workspace) || !attempt.releaseId().equals(scope.releaseId())) throw DomainException.missing();
+                if(!"GRADED".equals(attempt.status()) || attempt.score()==null || attempt.maximum()==null || attempt.evidenceRef()==null) throw DomainException.conflict("Only completed, objectively graded attempts can become correction evidence");
                 if(attempt.score().compareTo(attempt.maximum())==0 && attempt.hintLevel()==0) throw DomainException.invalid("A correction notebook requires incorrect or assisted attempts");
                 inputs.put("ATTEMPT:"+attemptId,attempt.evidenceRef());
                 List<String> concepts=jdbc.queryForList("SELECT concept_id FROM exercise_concept WHERE exercise_id=? AND exercise_revision=? ORDER BY weight DESC,concept_id",String.class,attempt.exerciseId().toString(),attempt.exerciseRevision());
@@ -59,9 +60,10 @@ public class NotebookService implements NotebookCompiler {
                 block.put("id",blockId);block.put("kind","ERROR_CONTEXT");block.put("revision",1);
                 block.put("prompt",prompt);block.put("conceptIds",concepts);
                 block.put("exerciseRef",Map.of("id",attempt.exerciseId(),"revision",attempt.exerciseRevision()));
-                block.put("attemptId",attemptId);block.put("allowedActions",List.of("predict","submitAnswer","openEvidence"));
+                block.put("attemptId",attemptId);block.put("allowedActions",source.isBlank()?List.of("predict","submitAnswer","requestHint","openEvidence"):List.of("predict","submitAnswer","requestCompile","requestHint","openEvidence"));
                 block.put("evidenceRefs",citations);
-                block.put("config",Map.of("studentReason","学习者尚未记录自己的理由。已提交答案："+json.write(attempt.answer()),"originalSource",source,"sourceHash",json.sha256(source),"diagnosticIds",List.of()));
+                String reason=source.isBlank()?"学习者尚未记录自己的理由。已提交答案："+json.write(attempt.answer()):"学习者尚未记录自己的理由。原始代码已固定在代码区，后续复练会创建新作答，不覆盖原始成绩。";
+                block.put("config",Map.of("studentReason",reason,"originalSource",source,"sourceHash",json.sha256(source),"diagnosticIds",List.of()));
                 blocks.add(block);
                 entries.add(Map.of("attempt",attemptId,"concept",concepts.get(0),"key",blockId,"content",block));
             }

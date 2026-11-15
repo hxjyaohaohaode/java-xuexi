@@ -25,7 +25,7 @@
     "package": "compiler",
     "name": "编译诊断与沙箱",
     "owner": "B",
-    "status": "planned"
+    "status": "partial"
   },
   {
     "id": "M05",

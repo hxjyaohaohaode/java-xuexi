@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { ArrowRight, Check, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowLeft, ArrowRight, Check, Search } from 'lucide-react';
 import { api } from '../api';
 import { useWorkspace } from '../context';
-import { useMutation, useResource } from '../hooks';
+import { useMutation, useResource, useSessionDraft } from '../hooks';
 import {
   Badge,
   Confirmed,
@@ -15,14 +15,33 @@ import {
 import type { Concept, Evidence } from '../types';
 
 export function Learning() {
-  const { workspace, navigate, selection, can } = useWorkspace();
+  const { workspace, session, tick, events, navigate, selection, can } = useWorkspace();
   const concepts = useResource<{ releaseId: string; items: Concept[] }>(
     `/concepts?releaseId=${workspace.releaseId}`,
   );
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useSessionDraft(`tf.search.${session.userId}.${workspace.id}`, '');
   const [submitted, setSubmitted] = useState('');
-  const [read, setRead] = useState<string[]>([]);
+  const [read, setRead] = useSessionDraft<string[]>(
+    `tf.read.${session.userId}.${workspace.id}`,
+    [],
+  );
+  useEffect(() => {
+    const confirmed = events
+      .filter((e) => e.type === 'READ_COMPLETED' && typeof e.data.conceptId === 'string')
+      .map((e) => String(e.data.conceptId));
+    if (confirmed.some((id) => !read.includes(id)))
+      setRead((previous) => [...new Set([...previous, ...confirmed])]);
+  }, [events, read]);
   const mutation = useMutation();
+  const readings = useResource<{
+    items: { conceptId: string; completed: boolean; lastCompletedAt: string | null }[];
+  }>(can('READING_HISTORY') ? `/workspaces/${workspace.id}/readings` : null, tick);
+  useEffect(() => {
+    const confirmed =
+      readings.data?.items.filter((item) => item.completed).map((item) => item.conceptId) || [];
+    if (confirmed.some((id) => !read.includes(id)))
+      setRead((previous) => [...new Set([...previous, ...confirmed])]);
+  }, [readings.data, read]);
   const search = useResource<{
     items: Evidence[];
     insufficientEvidence: boolean;
@@ -48,7 +67,7 @@ export function Learning() {
           },
           { idempotent: true },
         ),
-      () => setRead((p) => [...p, chosen.id]),
+      () => setRead((p) => [...new Set([...p, chosen.id])]),
     );
   return (
     <>
@@ -73,7 +92,9 @@ export function Learning() {
           onChange={(e) => setQuery(e.target.value)}
           maxLength={500}
         />
-        <button type="submit">检索</button>
+        <button type="submit" disabled={!query.trim() || search.loading}>
+          检索
+        </button>
         {submitted && (
           <button
             type="button"
@@ -88,6 +109,7 @@ export function Learning() {
         )}
       </form>
       <ErrorNotice error={concepts.error} retry={concepts.reload} />
+      <ErrorNotice error={readings.error} retry={readings.reload} />
       {submitted ? (
         <section className="search-results">
           <div className="row spread">
@@ -118,6 +140,7 @@ export function Learning() {
               <button
                 key={c.id}
                 className={c.id === chosen.id ? 'selected' : ''}
+                aria-current={c.id === chosen.id ? 'true' : undefined}
                 onClick={() => navigate('learn', c.id)}
               >
                 <span className="concept-code">{c.code}</span>
@@ -166,6 +189,35 @@ export function Learning() {
             </div>
             <ErrorNotice error={mutation.error} />
             {read.includes(chosen.id) && <Confirmed>服务端已记录本次阅读。</Confirmed>}
+            <nav className="reading-pagination" aria-label="相邻概念">
+              <button
+                className="text-button"
+                disabled={concepts.data!.items.indexOf(chosen) === 0}
+                onClick={() =>
+                  navigate(
+                    'learn',
+                    concepts.data!.items[concepts.data!.items.indexOf(chosen) - 1].id,
+                  )
+                }
+              >
+                <ArrowLeft size={16} /> 上一个概念
+              </button>
+              <span className="muted small">
+                {concepts.data!.items.indexOf(chosen) + 1} / {concepts.data!.items.length}
+              </span>
+              <button
+                className="text-button"
+                disabled={concepts.data!.items.indexOf(chosen) === concepts.data!.items.length - 1}
+                onClick={() =>
+                  navigate(
+                    'learn',
+                    concepts.data!.items[concepts.data!.items.indexOf(chosen) + 1].id,
+                  )
+                }
+              >
+                下一个概念 <ArrowRight size={16} />
+              </button>
+            </nav>
           </article>
         </div>
       ) : (

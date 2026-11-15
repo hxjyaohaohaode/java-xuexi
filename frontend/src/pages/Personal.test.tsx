@@ -50,7 +50,7 @@ const context: WorkspaceState = {
   events: [],
   navigate: vi.fn(),
   selection: '',
-  can: () => true,
+  can: (capability) => capability === 'USER_PREFERENCES',
 };
 
 it('preserves two saved preference revisions despite the stale initial query', async () => {

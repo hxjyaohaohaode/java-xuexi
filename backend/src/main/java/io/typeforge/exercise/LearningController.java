@@ -26,6 +26,11 @@ public class LearningController {
     @GetMapping("/workspaces/{id}/attempts") public List<LearningService.Attempt> list(Principal principal,@PathVariable UUID id) {return learning.list(owner(principal),id);}
     @GetMapping("/me/progress") public LearningService.Progress progress(Principal principal) { return learning.progress(owner(principal)); }
     @GetMapping("/me/reviews") public List<LearningService.Review> reviews(Principal principal) { return learning.reviews(owner(principal)); }
+    @PostMapping("/exercises/{id}/hints")
+    public LearningService.Hint hint(Principal principal,@PathVariable UUID id,@RequestBody JsonNode input,@RequestHeader("Idempotency-Key") String key) {
+        schemas.validate("ExerciseHintInput",input);
+        return learning.hint(owner(principal),UUID.fromString(input.path("workspaceId").asText()),UUID.fromString(input.path("releaseId").asText()),id,input.path("exerciseRevision").asInt(),input.path("level").asInt(),key);
+    }
     @PatchMapping("/me/reviews/{id}") @ResponseStatus(HttpStatus.NO_CONTENT)
     public void dismiss(Principal principal,@PathVariable UUID id,@RequestBody JsonNode input) {
         schemas.validate("ReviewDismissInput",input);

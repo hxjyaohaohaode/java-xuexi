@@ -28,7 +28,7 @@ export interface Goal {
   status: 'ACTIVE' | 'ARCHIVED';
 }
 export interface Reference {
-  kind: 'GOAL' | 'MEMORY' | 'ARTIFACT' | 'ATTEMPT' | 'KNOWLEDGE_CHUNK';
+  kind: 'GOAL' | 'MEMORY' | 'ARTIFACT' | 'ATTEMPT' | 'KNOWLEDGE_CHUNK' | 'ASSET';
   id: string;
   revision: number;
   contentHash: string;
@@ -95,7 +95,8 @@ export interface Attempt {
   createdAt: string;
   graderVersion: string;
   misconceptionCodes: string[];
-  evidenceRef: Reference;
+  evidenceRef: Reference | null;
+  jobId?: string | null;
 }
 export interface ProgressItem {
   conceptId: string;
@@ -247,11 +248,63 @@ export interface Preference {
 export interface LabResult {
   id: string;
   releaseId: string;
-  verdict: 'ALLOWED' | 'DENIED' | 'UNSUPPORTED';
+  verdict:
+    'ALLOWED' | 'DENIED' | 'UNSUPPORTED' | 'QUEUED' | 'RUNNING' | 'UNAVAILABLE' | 'CANCELLED';
   ruleCode: string;
   explanation: string;
   rulesVersion: string;
   jobId: string | null;
+  predictionCorrect?: boolean | null;
+}
+
+export interface CompileJob {
+  id: string;
+  workspaceId: string;
+  releaseId: string;
+  attemptId: string | null;
+  status: string;
+  sourceHash: string;
+  jdkVersion: string | null;
+  diagnostics: {
+    code: string;
+    severity: string;
+    line: number | null;
+    column: number | null;
+    message: string;
+  }[];
+  output: string;
+  outputTruncated: boolean;
+  errorCode: string | null;
+  createdAt: string;
+  finishedAt: string | null;
+}
+
+export interface Asset {
+  id: string;
+  workspaceId: string;
+  filename: string;
+  mimeType: string;
+  byteSize: number;
+  contentHash: string;
+  revision: number;
+  status: 'READY' | 'REVOKED';
+  createdAt: string;
+  width: number | null;
+  height: number | null;
+  durationMillis: number | null;
+  downloadPath: string | null;
+  validation: string;
+}
+export interface AssetPage {
+  items: Asset[];
+  nextCursor: string | null;
+  usage: {
+    usedBytes: number;
+    limitBytes: number;
+    maxFileBytes: number;
+    activeFiles: number;
+    maxFiles: number;
+  };
 }
 export interface ExportJob {
   id: string;

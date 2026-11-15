@@ -8,6 +8,7 @@ import io.typeforge.shared.SchemaCatalog;
 import io.typeforge.workspace.WorkspaceService;
 import java.security.Principal;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,8 @@ public class RunController {
     private final WorkspaceService workspaces;
     private final IdentityService users;
     private final SchemaCatalog schemas;
-    public RunController(DurableAgentRuntime runtime,EvidenceWorkflow workflow,WorkspaceService workspaces,IdentityService users,SchemaCatalog schemas) { this.runtime=runtime;this.workflow=workflow;this.workspaces=workspaces;this.users=users;this.schemas=schemas; }
+    private final StudyWorkflowService studies;
+    public RunController(DurableAgentRuntime runtime,EvidenceWorkflow workflow,WorkspaceService workspaces,IdentityService users,SchemaCatalog schemas,StudyWorkflowService studies) { this.runtime=runtime;this.workflow=workflow;this.workspaces=workspaces;this.users=users;this.schemas=schemas;this.studies=studies; }
     private UUID owner(Principal principal) { return users.session(principal.getName()).userId(); }
     @PostMapping("/workspaces/{id}/evidence-runs") @ResponseStatus(HttpStatus.ACCEPTED)
     public DurableAgentRuntime.RunView evidence(Principal principal,@PathVariable UUID id,@RequestBody JsonNode input,@RequestHeader("Idempotency-Key") String key) {
@@ -40,6 +42,8 @@ public class RunController {
         if(input.path("kind").asText().equals("STEER")) throw new DomainException("CAPABILITY_UNAVAILABLE",503,"A configured planning adapter is required for natural-language steering");
         var run=runtime.get(owner,workspace,id);
         if(run.planRevision()!=input.path("expectedPlanRevision").asInt()) throw DomainException.conflict("Plan changed before command submission");
-        return runtime.command(owner,workspace,id,input.path("expectedRunEpoch").asLong(),DurableAgentRuntime.Command.valueOf(input.path("kind").asText()));
+        var result=runtime.command(owner,workspace,id,input.path("expectedRunEpoch").asLong(),DurableAgentRuntime.Command.valueOf(input.path("kind").asText()));
+        if(Set.of("PAUSE","CANCEL").contains(input.path("kind").asText())) studies.cancelAssociated(owner,id);
+        return result;
     }
 }

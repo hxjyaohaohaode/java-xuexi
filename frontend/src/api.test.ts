@@ -143,4 +143,143 @@ describe('real request boundary', () => {
     expect(fetcher).toHaveBeenCalledOnce();
     expect(sessionStorage.length).toBe(0);
   });
+  it('keeps the idempotency key after a truncated successful response', async () => {
+    vi.stubGlobal('crypto', webcrypto);
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(response({ token: 't', headerName: 'X-CSRF-TOKEN' }))
+      .mockResolvedValueOnce(new Response('{"id":', { status: 201 }))
+      .mockResolvedValueOnce(response({ id: 'confirmed' }));
+    const client = new ApiClient(fetcher, sessionStorage);
+    client.scope = 'owner';
+    await expect(
+      client.request(
+        '/workspaces/x/artifacts',
+        'POST',
+        { title: 'saved once' },
+        { idempotent: true },
+      ),
+    ).rejects.toMatchObject({ code: 'NETWORK_UNCERTAIN' });
+    expect(sessionStorage.length).toBe(1);
+    await client.request(
+      '/workspaces/x/artifacts',
+      'POST',
+      { title: 'saved once' },
+      { idempotent: true },
+    );
+    expect((fetcher.mock.calls[1][1]?.headers as Record<string, string>)['Idempotency-Key']).toBe(
+      (fetcher.mock.calls[2][1]?.headers as Record<string, string>)['Idempotency-Key'],
+    );
+    expect(sessionStorage.length).toBe(0);
+    vi.unstubAllGlobals();
+  });
+  it('ignores a late successful private read after the account changed', async () => {
+    let finish!: (value: Response) => void;
+    const client = new ApiClient(
+      vi.fn<typeof fetch>().mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      ),
+      sessionStorage,
+    );
+    client.scope = 'old-owner';
+    const pending = client.get('/me/profile');
+    client.clearPrivateState();
+    client.scope = 'new-owner';
+    finish(response({ displayName: 'old private profile' }));
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+  });
+  it('keeps retry keys in memory when browser storage is blocked and still allows logout', async () => {
+    vi.stubGlobal('crypto', webcrypto);
+    const blocked = {
+      getItem: () => {
+        throw new Error('blocked');
+      },
+      setItem: () => {
+        throw new Error('blocked');
+      },
+      removeItem: () => {
+        throw new Error('blocked');
+      },
+      get length() {
+        throw new Error('blocked');
+      },
+    } as unknown as Storage;
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(response({ token: 't', headerName: 'X-CSRF-TOKEN' }))
+      .mockRejectedValueOnce(new TypeError('connection reset'))
+      .mockResolvedValueOnce(response({ id: 'confirmed' }));
+    const client = new ApiClient(fetcher, blocked);
+    await expect(client.request('/writes', 'POST', {}, { idempotent: true })).rejects.toMatchObject(
+      { code: 'NETWORK_UNCERTAIN' },
+    );
+    await client.request('/writes', 'POST', {}, { idempotent: true });
+    expect((fetcher.mock.calls[1][1]?.headers as Record<string, string>)['Idempotency-Key']).toBe(
+      (fetcher.mock.calls[2][1]?.headers as Record<string, string>)['Idempotency-Key'],
+    );
+    expect(() => client.clearPrivateState()).not.toThrow();
+    vi.unstubAllGlobals();
+  });
+  it('bounds a waiting request without automatically repeating a write', async () => {
+    vi.useFakeTimers();
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(response({ token: 't', headerName: 'X-CSRF-TOKEN' }))
+      .mockImplementationOnce(
+        (_input, init) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () =>
+              reject(new DOMException('stopped', 'AbortError')),
+            );
+          }),
+      );
+    const client = new ApiClient(fetcher, sessionStorage);
+    await client.warmCsrf();
+    const result = client
+      .request('/writes', 'POST', {}, { timeoutMs: 100 })
+      .catch((error: unknown) => error);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(await result).toMatchObject({ code: 'NETWORK_UNCERTAIN' });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+  it('sends multipart bytes unchanged and distinguishes same-named files by their actual content', async () => {
+    vi.stubGlobal('crypto', webcrypto);
+    const form = (bytes: string) => {
+      const file = new File([bytes], 'same.png', { type: 'image/png' });
+      Object.defineProperty(file, 'arrayBuffer', {
+        value: async () => new TextEncoder().encode(bytes).buffer,
+      });
+      const value = new FormData();
+      value.append('file', file);
+      return value;
+    };
+    const first = form('one'),
+      second = form('two');
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(response({ token: 't', headerName: 'X-CSRF-TOKEN' }))
+      .mockRejectedValueOnce(new TypeError('reset'))
+      .mockResolvedValueOnce(response({ id: 'first' }))
+      .mockResolvedValueOnce(response({ id: 'second' }));
+    const client = new ApiClient(fetcher, sessionStorage);
+    await expect(
+      client.request('/assets', 'POST', first, { idempotent: true }),
+    ).rejects.toMatchObject({ code: 'NETWORK_UNCERTAIN' });
+    await client.request('/assets', 'POST', first, { idempotent: true });
+    await client.request('/assets', 'POST', second, { idempotent: true });
+    const firstHeaders = fetcher.mock.calls[1][1]?.headers as Record<string, string>;
+    expect(firstHeaders['Content-Type']).toBeUndefined();
+    expect(fetcher.mock.calls[1][1]?.body).toBe(first);
+    expect(firstHeaders['Idempotency-Key']).toBe(
+      (fetcher.mock.calls[2][1]?.headers as Record<string, string>)['Idempotency-Key'],
+    );
+    expect(firstHeaders['Idempotency-Key']).not.toBe(
+      (fetcher.mock.calls[3][1]?.headers as Record<string, string>)['Idempotency-Key'],
+    );
+    vi.unstubAllGlobals();
+  });
 });

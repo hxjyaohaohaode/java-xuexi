@@ -1,6 +1,6 @@
 # 架构、交互与一致性
 
-本章连接当前运行机制和完整目标。v0.4 已落地真实学习前端、SQL/HTTP、导师队列、静态导出及双人内容审核发布；自主模型规划、隔离编译 worker、媒体生成等图中扩展仍属后续设计。准确范围见 [模块接手指南](02-modules.md)、[后端说明](../backend/README.md)与[本轮记录](../evidence/runtime-review.md)。
+本章连接当前运行机制和完整目标。v0.5 已落地真实学习前端、SQL/HTTP、导师与受限专家工作流、独立编译 worker、私有素材、Office/PDF 导出及双人内容审核发布；通用自治、程序执行、媒体生成等扩展仍属后续设计。准确范围见 [模块接手指南](02-modules.md)、[后端说明](../backend/README.md)与[本轮记录](../evidence/runtime-review.md)。
 
 ## 1. 技术基线与决策
 
@@ -12,7 +12,7 @@
 | 前端 | React、TypeScript、Vite、原生 CSS | 已实现学习工作台并锁定 package-lock；参考交互逐项映射，研究台账不等于全部演示已运行 |
 | 检索 | 发布/概念过滤 + 本地词项 BM25 | 当前中文二元词、英文标识符分词，直接读取已发布 SQL 卡片；词典、持久索引和向量增强仍待实施 |
 | 模型 | `TutorAnswerProvider` + Java HTTP 客户端 | 非流式 Chat Completions 协议；结构、引用与计量校验；缺配置时 MODEL 不可用 |
-| 作业 | 数据库任务表 + 受控适配器 | 固定证据 DAG、导师队列与静态导出已接通；三者分别控制租约/终态，编译及媒体 worker 尚未接入 |
+| 作业 | 数据库任务表 + 受控适配器 | 证据/学习 DAG、导师、编译与文件导出分别控制租约/终态；HTTP/渲染不占数据库长事务；媒体 worker 尚未接入 |
 | 通信 | REST；长任务轮询；Agent 后续可选 SSE | 首版先实现可恢复轮询，再添加流式显示；中途断开不等于成功 |
 
 Spring Boot 兼容性依据：[官方系统要求](https://docs.spring.io/spring-boot/3.5/system-requirements.html)。版本更新先做依赖漏洞检查与回归，不能盲追最新。
@@ -33,14 +33,14 @@ flowchart TB
   AI --> MODEL[外部模型 API]
   JOB --> QUEUE[(compile_job)]
   QUEUE --> WORKER[隔离 Worker]
-  WORKER --> JVM[单次受限 javac / 可选运行]
-  WORKER --> DB
+  WORKER --> JVM[单次受限 javac]
+  WORKER --> JOB
   APP --> OBS[审计 / 指标 / traceId]
 ```
 
-目标分层要求领域规则不依赖 Controller、HTTP 或供应商 SDK，Controller 只调用应用服务。v0.4 采用显式 JDBC 应用服务落实事务与归属，尚未把所有 SQL 拆成独立 repository adapter；后续按业务稳定程度拆分，不能把目录形式当作已完成解耦。共享模块只放通用 ID、分页、错误、JSON/Schema 与版本边界，不承接全部业务逻辑。
+目标分层要求领域规则不依赖 Controller、HTTP 或供应商 SDK，Controller 只调用应用服务。v0.5 采用显式 JDBC 应用服务落实事务与归属，尚未把所有 SQL 拆成独立 repository adapter；后续按业务稳定程度拆分，不能把目录形式当作已完成解耦。共享模块只放通用 ID、分页、错误、JSON/Schema 与版本边界，不承接全部业务逻辑。闭户通过 `AccountClosureParticipant` 端口回调各模块，避免 identity 反向依赖业务形成环。
 
-API JVM 永不直接运行用户代码，编译也属于不可信任务。现有测试只编译仓库内人工审阅的固定案例，不能拿它充当线上沙箱。
+API JVM 永不编译或运行用户代码。`CompileWorker` 通过固定 HTTP 协议调用独立 broker，后者以无网络、非 root、只读根文件系统、资源/时间上限和 `-proc:none` 容器进行编译，不执行产物。API 内的 JavaCompiler 测试只编译仓库固定案例；真实 Docker 隔离检查是独立 CI 门禁，不能以协议测试代替。
 
 ## 3. 核心身份与版本
 

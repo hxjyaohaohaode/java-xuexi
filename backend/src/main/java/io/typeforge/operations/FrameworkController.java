@@ -32,15 +32,17 @@ public class FrameworkController {
     }
     @GetMapping("/api/v1/framework")
     public Framework framework() {
-        return new Framework("integrated-learning-workbench", false, modules);
+        return new Framework("connected-learning-studio", false, modules);
     }
     @GetMapping("/api/v1/capabilities")
     public Map<String,Object> capabilities() {
-        var enabled=new ArrayList<>(List.of("SESSION_AUTH","PUBLISHED_COURSE_READ","BM25_RETRIEVAL","CHOICE_GRADING","ORDERED_EVENTS","OUTBOX_PROJECTIONS","CONTEXT_AND_REVOCATION","ARTIFACT_DSL_VERSIONING","NOTEBOOK_SOURCE","LOCAL_EVIDENCE_WORKFLOW","DURABLE_DAG_CONTROL","USER_PREFERENCES","READING_EVENTS","FINITE_TYPE_LAB","NOTEBOOK_ACTIONS","STATIC_EXPORT","TUTOR_EVIDENCE_ONLY","EDITORIAL_PUBLISHING","MANUAL_INGESTION"));
-        var unavailable=new ArrayList<>(List.of("LLM_PLANNING","UNTRUSTED_CODE_EXECUTION","MEDIA_GENERATION","BINARY_EXPORT","AUTOMATIC_ASSET_UPLOAD"));
-        if(adapters.stream().anyMatch(adapter->adapter.enabledCapabilities().contains("TUTOR_MODEL"))) enabled.add("TUTOR_MODEL");else unavailable.add("LLM_TUTOR");
+        var enabled=new ArrayList<>(List.of("SESSION_AUTH","PUBLISHED_COURSE_READ","BM25_RETRIEVAL","CHOICE_GRADING","ORDERED_EVENTS","OUTBOX_PROJECTIONS","CONTEXT_AND_REVOCATION","ARTIFACT_DSL_VERSIONING","NOTEBOOK_SOURCE","LOCAL_EVIDENCE_WORKFLOW","DURABLE_DAG_CONTROL","USER_PREFERENCES","READING_EVENTS","FINITE_TYPE_LAB","NOTEBOOK_ACTIONS","STATIC_EXPORT","TUTOR_EVIDENCE_ONLY","EDITORIAL_PUBLISHING","MANUAL_INGESTION","OFFICE_PDF_EXPORT","ACCOUNT_LIFECYCLE","LEARNING_ANALYTICS","READING_HISTORY","OPERATIONS_METRICS"));
+        var unavailable=new ArrayList<>(List.of("UNTRUSTED_CODE_EXECUTION","MEDIA_GENERATION"));
+        adapters.stream().flatMap(adapter->adapter.enabledCapabilities().stream()).sorted().distinct().filter(capability->!enabled.contains(capability)).forEach(enabled::add);
+        for(String capability:List.of("TUTOR_MODEL","LLM_PLANNING","COMPILE_ONLY","CODE_GRADING","PRIVATE_ASSETS")) if(!enabled.contains(capability)) unavailable.add(capability);
+        if(!enabled.contains("TUTOR_MODEL")) unavailable.add("LLM_TUTOR");
         if(new ClassPathResource("static/index.html").exists()) enabled.add("FRONTEND");else unavailable.add("FRONTEND");
-        return Map.of("runtimeVersion","0.4","businessReady",false,
+        return Map.of("runtimeVersion","0.5","businessReady",false,
             "enabled",List.copyOf(enabled),"unavailable",List.copyOf(unavailable),
             "learningEvidence","Only server-graded first attempts from distinct families contribute independent samples",
             "localWorkflow","Evidence workflow is deterministic. Tutor EVIDENCE_ONLY and configured MODEL are separate request modes.");

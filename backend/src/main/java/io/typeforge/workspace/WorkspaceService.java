@@ -156,6 +156,13 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
         return events.read(workspace,after,limit);
     }
     public Context createContext(UUID owner,UUID workspace) {
+        return createContext(owner,workspace,null);
+    }
+    /** Explicit selection replaces the recent-attempt window; the server derives every immutable reference. */
+    public Context createContext(UUID owner,UUID workspace,List<UUID> attemptIds) {
+        if(attemptIds!=null && (attemptIds.isEmpty() || attemptIds.size()>8 || attemptIds.stream().anyMatch(java.util.Objects::isNull)
+            || new HashSet<>(attemptIds).size()!=attemptIds.size()))throw DomainException.invalid("Select 1..8 distinct graded attempts for this context");
+        List<UUID> selected=attemptIds==null?null:List.copyOf(attemptIds);
         return tx.execute(status -> {
             var current=lockOwned(owner,workspace);
             var refs=new ArrayList<Reference>();
@@ -168,15 +175,27 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
             jdbc.query("SELECT a.id,r.revision,r.content_hash FROM learning_artifact a JOIN artifact_revision r ON r.artifact_id=a.id AND r.revision=a.current_revision WHERE a.workspace_id=? AND r.review_status<>'STALE' ORDER BY a.created_at DESC,a.id LIMIT 16",rs -> {
                 refs.add(new Reference("ARTIFACT",UUID.fromString(rs.getString("id")),rs.getInt("revision"),rs.getString("content_hash")));
             },workspace.toString());
-            jdbc.query("SELECT a.id,a.answer,a.feedback,a.score FROM exercise_attempt a JOIN workspace_attempt wa ON wa.attempt_id=a.id WHERE wa.workspace_id=? AND a.user_id=? AND a.status='GRADED' ORDER BY a.created_at DESC,a.id LIMIT 8",rs -> {
-                String hash=json.hash(Map.of("answer",json.tree(rs.getString("answer")),"feedback",json.tree(rs.getString("feedback")),"score",rs.getBigDecimal("score")));
-                refs.add(new Reference("ATTEMPT",UUID.fromString(rs.getString("id")),1,hash));
-            },workspace.toString(),owner.toString());
+            String attemptQuery="SELECT a.id,a.answer,a.feedback,a.score FROM exercise_attempt a JOIN workspace_attempt wa ON wa.attempt_id=a.id WHERE wa.workspace_id=? AND a.user_id=? AND a.release_id=? AND a.status='GRADED' AND a.score IS NOT NULL AND a.maximum IS NOT NULL AND a.feedback IS NOT NULL";
+            if(selected==null) {
+                refs.addAll(jdbc.query(attemptQuery+" ORDER BY a.created_at DESC,a.id LIMIT 8",(rs,n)->contextAttempt(rs),workspace.toString(),owner.toString(),current.releaseId().toString()));
+            } else {
+                var arguments=new ArrayList<Object>(List.of(workspace.toString(),owner.toString(),current.releaseId().toString()));
+                selected.forEach(id->arguments.add(id.toString()));
+                List<Reference> matches=jdbc.query(attemptQuery+" AND a.id IN ("+String.join(",",java.util.Collections.nCopies(selected.size(),"?"))+")",(rs,n)->contextAttempt(rs),arguments.toArray());
+                var byId=new HashMap<UUID,Reference>();matches.forEach(ref->byId.put(ref.id(),ref));
+                if(byId.size()!=selected.size())throw DomainException.missing();
+                selected.forEach(id->refs.add(byId.get(id)));
+            }
+            if(refs.size()>64)throw DomainException.invalid("A context cannot exceed 64 immutable references");
             UUID id=UUID.randomUUID();
             String hash=json.hash(Map.of("workspaceId",workspace,"revision",current.revision(),"sequence",current.eventSequence(),"references",refs));
             jdbc.update("INSERT INTO context_snapshot(id,workspace_id,workspace_revision,event_sequence,references_json,content_hash) VALUES(?,?,?,?,?,?)",id.toString(),workspace.toString(),current.revision(),current.eventSequence(),json.write(refs),hash);
             return new Context(id,workspace,current.revision(),current.eventSequence(),List.copyOf(refs),hash);
         });
+    }
+    private Reference contextAttempt(ResultSet rs) throws SQLException {
+        String hash=json.hash(Map.of("answer",json.tree(rs.getString("answer")),"feedback",json.tree(rs.getString("feedback")),"score",rs.getBigDecimal("score")));
+        return new Reference("ATTEMPT",UUID.fromString(rs.getString("id")),1,hash);
     }
     @Override public Snapshot snapshotOwn(UUID owner,UUID workspace) {
         Context context=createContext(owner,workspace);
@@ -197,6 +216,9 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
     @Override public void validateSnapshot(UUID owner,UUID workspace,UUID snapshotId) {
         readContext(owner,workspace,snapshotId);
     }
+    @Override public void validateArtifactOutput(UUID owner,UUID workspace,UUID artifact,int revision,String hash) {
+        validateReferences(owner,workspace,List.of(new Reference("ARTIFACT",artifact,revision,hash)));
+    }
     public void validateReferences(UUID owner,UUID workspace,List<Reference> refs) {
         var scope=requireOwned(owner,workspace);
         if (refs==null || refs.size()>64) throw DomainException.invalid("At most 64 context references are allowed");
@@ -213,6 +235,11 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
         UUID workspace=scope.id();
         String hash;
         switch (ref.kind()) {
+                case "ASSET" -> {
+                    var rows=jdbc.queryForList("SELECT a.content_hash FROM asset_object a JOIN asset_payload p ON p.asset_id=a.id WHERE a.id=? AND a.workspace_id=? AND p.revision=? AND p.status='READY' AND a.scan_status='CLEAN' AND p.content_bytes IS NOT NULL",ref.id().toString(),workspace.toString(),ref.revision());
+                    if(rows.isEmpty()) throw DomainException.conflict("Private asset was revoked or is outside this workspace");
+                    hash=rows.get(0).get("content_hash").toString();
+                }
                 case "GOAL" -> {
                     Goal goal=goal(owner,workspace,ref.id());
                     if (goal.revision()!=ref.revision() || !goal.status().equals("ACTIVE")) throw DomainException.conflict("Goal reference changed");

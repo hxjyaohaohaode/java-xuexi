@@ -1,6 +1,6 @@
 # 当前接口规范与前后端约束
 
-本章说明 v0.4 的实际调用规则。完整字段、状态码、必填 header 与当前操作状态以 [OpenAPI](../contracts/openapi.json) 为准，按模块和路径检索见 [自动生成的接口索引](../contracts/README.md)。[开发接手指南](02-modules.md)区分后端、页面与后续目标；登录后的 `/api/v1/capabilities` 反映这次部署实际启用的能力。
+本章说明 v0.5 的实际调用规则。完整字段、状态码、必填 header 与当前操作状态以 [OpenAPI](../contracts/openapi.json) 为准，按模块和路径检索见 [自动生成的接口索引](../contracts/README.md)。[开发接手指南](02-modules.md)区分后端、页面与后续目标；登录后的 `/api/v1/capabilities` 反映这次部署实际启用的能力。
 
 ## 1. 传输、身份与输入边界
 
@@ -8,7 +8,7 @@ API 前缀为 `/api/v1`，JSON 字段使用 camelCase。登录态为服务端会
 
 请求使用 Bean Validation、严格 JSON Schema 和业务校验三层检查。Java 泛型、TypeScript 类型与前端禁用按钮均不能替代后端准入。未知字段、非法枚举、集合过大和缺少必要 header 会被拒绝。API 写请求 JSON 正文统一限制为 262144 字节；已知长度和分块传输都在解析前限制。Jackson 限制嵌套深度 64，字符串和数值还受各字段约束。
 
-UUID 是资源标识，不是权限令牌。revision 使用 int32 范围；epoch、事件 sequence 不超过 JavaScript 安全整数范围。时间由服务器以 UTC 记录，学习事件不能用客户端时间伪造发生顺序。二进制素材上传、用户源码编译执行没有因为新的文本导出而被开放。
+UUID 是资源标识，不是权限令牌。revision 使用 int32 范围；epoch、事件 sequence 不超过 JavaScript 安全整数范围。时间由服务器以 UTC 记录，学习事件不能用客户端时间伪造发生顺序。私有素材上传走独立有界 multipart 接口，默认单文件 8 MiB；源码编译仅在配置独立 worker 后开放，用户程序执行仍不可用。
 
 ## 2. 幂等、并发和响应丢失
 
@@ -17,6 +17,7 @@ UUID 是资源标识，不是权限令牌。revision 使用 int32 范围；epoch
 | 资源 | 当前写入约束 | 冲突后的正确动作 |
 |---|---|---|
 | 用户偏好 | `If-Match: "revision"` 与请求体 revision 必须一致 | 412 后刷新当前偏好，再明确合并 |
+| 账户显示资料 | `If-Match: "revision"` 与请求体 revision 必须一致 | 保留显示名草稿，读取当前资料再合并 |
 | 工作空间和学习目标 | expectedRevision | 409 后保留本地内容、显示远端版本 |
 | 作品源版本 | baseRevision；新版本严格为 base+1 | 409 不覆盖已保存内容；前端保留草稿 |
 | Agent 运行命令 | expectedPlanRevision + expectedRunEpoch | 重新读取运行；旧 epoch 不能提交 |
@@ -37,22 +38,25 @@ UUID 是资源标识，不是权限令牌。revision 使用 int32 范围；epoch
 | 回答转作品 | 完成且来源有效的导师请求 → `/tutor/requests/{id}/document` | 返回 DRAFT 的 artifactId/revision，保存完整引用血缘 |
 | 下载 | 保存作品 → `/artifacts/{id}/exports` → export job → download | 固定 revision/renderer/hash 的真实字节；下载再次验证归属和来源 |
 | 内容发布 | 来源 → 人工录入 → 卡/题版本 → 第二人审核 → 发布清单 → 发布/激活 | 审核证据和版本不可变；旧工作空间保持原 release |
+| 编译与代码题 | 代码样例/本人代码 → `/compile-jobs` 或 CODE 作答 → 独立 worker → 终态/判分 | 固定源码 hash、JDK/flags 与隐藏正反例；编译通过不等于答题正确 |
+| 学习作品任务 | 目标/所选作答 → context → `/agent-runs` → 规划/专家/复核 → 草稿 | 来源完整的 DRAFT，实际步骤与用量；MODEL 配置缺失不会伪造回答 |
+| 私有素材 | 上传 → `/assets` → 作品 ASSET 引用 → 预览/导出 → 撤回 | 实际字节、hash、MIME、配额与完整失效传播 |
 
-题目详情必须绑定 releaseId 和 revision；客户端不能访问 answer_spec。CHOICE 的 answer 使用 `{ "kind": "CHOICE", "optionIds": ["选项ID"] }`。CODE/TEXT 合约分支是未来判分扩展，并不代表对应 grader 已启用。读答案、错题再练和导师提示不能重置同题家族为“首次独立作答”。
+题目详情必须绑定 releaseId 和 revision；客户端不能访问 answer_spec。CHOICE 的 answer 使用 `{ "kind": "CHOICE", "optionIds": ["选项ID"] }`。CODE 仅用于匹配的代码题种类，并按服务器隐藏编译 rubric 判分；TEXT 仍是未启用的扩展分支。使用分级提示会记录 assisted，不能恢复成“首次独立作答”。
 
-## 4. 导师与编排的两个执行入口
+## 4. 导师与编排入口
 
 `/tutor/requests` 是持久队列。EVIDENCE_ONLY 整理真实 BM25 片段；MODEL 通过已配置的非流式 Chat Completions HTTP 适配器请求外部模型。没有配置时 MODEL 显式返回能力缺失，不能降级成模板却标为模型回答。模型输出经过结构、引用与长度校验；供应商响应、费用和教学质量仍需在实际部署中评测。
 
 请求在同一用户、会话、工作空间、课程版本和快照边界内运行。领取、预留、提交分别使用短事务；HTTP 等待不持有数据库锁。超时、取消、来源撤回、账号禁用和空间归档都不能让迟到结果恢复为可见答案。已派发但结果不明的外部请求保留 UNKNOWN 预留，不能靠自动重试制造重复费用。
 
-`/workspaces/{id}/evidence-runs` 运行固定的本地检索 DAG，可查步骤和事件并暂停、恢复或取消。通用自然语言任务规划、自由工具执行和多专家自主调度仍未接通；STEER 不提供伪实现。两个入口共享工作空间和来源约束，不能把一个导师 HTTP 适配器计为所有规划工具均已注册。
+`/workspaces/{id}/evidence-runs` 运行固定的本地检索 DAG。`/workspaces/{id}/agent-runs` 运行受限学习任务，支持本地或模型规划、1–3 个允许专家、独立复核及 DOCUMENT/SLIDES/NOTEBOOK 草稿组装，步骤和历史均可追踪、暂停、恢复或取消。NOTEBOOK 固定上下文中明确选择的 1–8 条本人错题/受助作答，历史作答可在创建 context 时显式带入。通用自由工具执行、自动子图重规划和 STEER 仍未启用。实际 token/time 有界；未配置价格表时 maxCostMicros 不能冒充真实货币费用上限。
 
 ## 5. 作品、引用和导出
 
 每次保存/使用作品都验证其当前 revision、实际 JSON hash、工作空间、审核状态与来源。直接输入最多 64 个，直接与传递来源合计最多 256 个。读取上下文、导师准入、错题动作、导出领取和下载复用同一有界来源闭包检查；自然到期的记忆即使尚未产生撤回事件也会阻断后续使用。
 
-当前可导出 DOCUMENT 的 Markdown/HTML、文本及代码幻灯片的 HTML、DIAGRAM 的 SVG、NOTEBOOK/INTERACTION 的静态 HTML。包含未实现素材类型的导出明确拒绝，不静默丢掉图片。静态错题文件没有离线保密判分能力。PPTX、DOCX、PDF、PNG、音视频和对象存储素材链仍待接入。
+当前可导出 DOCUMENT 的 Markdown/HTML/DOCX/PDF、SLIDES 的 HTML/PPTX/PDF、DIAGRAM 的 SVG、NOTEBOOK/INTERACTION 的静态 HTML。PNG/JPEG 私有素材可嵌入幻灯片；不支持元素会明确拒绝。默认导出文件最大 8 MiB，每用户 8 个待办/200 个日作业/256 MiB 缓存，复用相同输入导出并清理失效载荷。静态错题文件没有离线保密判分能力；生成式音视频、PNG 光栅渲染与外部对象存储仍待接入。
 
 导出提交返回 202 和持久 job，成功后返回私有下载路径。下载响应为附件，带 no-store、nosniff 和严格 CSP；实际字节有 SHA-256。被替换/撤回/到期的来源使下载失效；保存过的文件无法由平台追回。Markdown/HTML/SVG 渲染不会执行模型或用户提供的 JavaScript。
 
@@ -77,4 +81,4 @@ UUID 是资源标识，不是权限令牌。revision 使用 int32 范围；epoch
 
 ## 7. 开发新增接口的收口规则
 
-先明确事实归属、身份/课程/工作空间边界、幂等和失败语义，再实现端点、schema、DTO、SQL、前端调用及回归。运行 `python scripts/sync_contract_index.py` 更新索引，再运行 `python scripts/verify.py` 核对路由和契约。密码修改、账户数据清理、批量导入、SSE、沙箱和完整媒体仍是后续工作，入口不得返回伪造成功。
+先明确事实归属、身份/课程/工作空间边界、幂等和失败语义，再实现端点、schema、DTO、SQL、前端调用及回归。运行 `python scripts/sync_contract_index.py` 更新索引，再运行 `python scripts/verify.py` 核对路由和契约。密码修改、会话撤销、关闭账户与原始素材载荷清理已接通，保留审计/学习事实的边界见 [账户说明](22-account-assets-operations.md)。批量资料解析、SSE、用户程序执行和完整生成媒体仍是后续工作，入口不得返回伪造成功。

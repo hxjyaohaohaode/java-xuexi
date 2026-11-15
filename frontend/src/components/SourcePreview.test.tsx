@@ -49,7 +49,8 @@ describe('safe source preview', () => {
         }}
       />,
     );
-    expect(screen.getByText(payload).tagName).toBe('CODE');
+    // Both the spatial slide and its full-text reading view keep code as literal text.
+    expect(screen.getAllByText(payload).every((element) => element.tagName === 'CODE')).toBe(true);
     expect(screen.getByText('Explain the bound')).toBeInTheDocument();
   });
 });

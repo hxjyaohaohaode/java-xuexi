@@ -2,7 +2,7 @@
 """Exercise a packaged runtime over real HTTP, including a process restart.
 
 Build the jar separately, then run:
-  python scripts/smoke_runtime.py --jar backend/target/typeforge-backend-0.4.0-SNAPSHOT.jar
+  python scripts/smoke_runtime.py --jar backend/target/typeforge-backend-0.5.0-SNAPSHOT.jar
   python .work/mysql-validation/with_mysql.py python scripts/smoke_runtime.py --profile mysql
 
 The default uses a new task-owned H2 file database. MySQL mode requires an explicit
@@ -331,8 +331,8 @@ class Smoke:
         self.check("capabilities distinguish working local services from unconfigured model/compiler/media",
                    capabilities["businessReady"] is False and not enabled.intersection(unavailable)
                    and {"CHOICE_GRADING", "LOCAL_EVIDENCE_WORKFLOW", "OUTBOX_PROJECTIONS"} <= enabled
-                   and {"FINITE_TYPE_LAB", "NOTEBOOK_ACTIONS", "STATIC_EXPORT", "TUTOR_EVIDENCE_ONLY", "EDITORIAL_PUBLISHING"} <= enabled
-                   and {"LLM_PLANNING", "LLM_TUTOR", "UNTRUSTED_CODE_EXECUTION", "MEDIA_GENERATION", "BINARY_EXPORT"} <= unavailable)
+                   and {"FINITE_TYPE_LAB", "NOTEBOOK_ACTIONS", "STATIC_EXPORT", "TUTOR_EVIDENCE_ONLY", "EDITORIAL_PUBLISHING", "STUDY_WORKFLOW", "PRIVATE_ASSETS", "OFFICE_PDF_EXPORT", "ACCOUNT_LIFECYCLE", "LEARNING_ANALYTICS"} <= enabled
+                   and {"LLM_PLANNING", "LLM_TUTOR", "UNTRUSTED_CODE_EXECUTION", "MEDIA_GENERATION", "COMPILE_ONLY", "CODE_GRADING"} <= unavailable)
         return capabilities
 
     def verify_private_sql(self, saved):
@@ -457,8 +457,8 @@ class Smoke:
                                       "expectedRunEpoch": run["runEpoch"], "instruction": "Invent an expert answer"}, expected=(503,))
         self.check("unconfigured language-model steering explicitly fails", unavailable.get("code") == "CAPABILITY_UNAVAILABLE")
         unsupported = client.request("POST", API + "/attempts", {**attempt_input, "answer": {"kind": "CODE", "source": "class Demo {}"}},
-                                     expected=(503,), key="code-" + uuid.uuid4().hex)
-        self.check("untrusted code is refused without a compiler worker", unsupported.get("code") == "CAPABILITY_UNAVAILABLE")
+                                     expected=(400,), key="code-" + uuid.uuid4().hex)
+        self.check("code answers cannot be submitted to a selection exercise", unsupported.get("code") == "INVALID_INPUT")
         # v0.4: actual HTTP linkage, persisted on both H2 and MySQL, then compared after restart.
         preference = client.request("GET", API + "/me/preferences")
         preference = client.request("PUT", API + "/me/preferences", {**preference, "theme": "dark", "reducedMotion": True},
@@ -504,7 +504,21 @@ class Smoke:
         self.check("successful export exposes an authenticated file whose bytes match the stored hash",
                    export["status"] == "SUCCEEDED" and export["downloadPath"] is not None
                    and hashlib.sha256(client.download(export["downloadPath"])).hexdigest() == export["contentHash"])
-        extras = {"preference": preference, "lab": lab, "tutor": tutor, "export": export, "documentId": document_id}
+        # Independent workspace keeps this journey's original event cursor assertions exact.
+        studio = client.request("POST", API + "/workspaces", {"releaseId": release, "title": "Study and native files", "guidanceMode": "COLLABORATIVE"}, expected=(201,), key="studio-" + uuid.uuid4().hex)
+        studio_goal = client.request("POST", API + f"/workspaces/{studio['id']}/goals", {"text": "Explain Java PECS extends super wildcard type safety", "acceptance": ["Use published knowledge and editable drafts"]}, expected=(201,), key="study-goal-" + uuid.uuid4().hex)
+        studio_context = client.request("POST", API + f"/workspaces/{studio['id']}/context", expected=(201,))
+        study = client.request("POST", API + f"/workspaces/{studio['id']}/agent-runs", {"goalId": studio_goal["id"], "snapshotId": studio_context["id"], "requestedOutputs": ["DOCUMENT", "SLIDES"], "mode": "EVIDENCE_ONLY", "budget": {"maxTokens": 100000, "maxWallMillis": 600000, "maxCostMicros": 1000000, "maxParallel": 3}}, expected=(202,), key="study-" + uuid.uuid4().hex)
+        study = self.wait_for("actual study workflow completes planning, specialist, review and outputs", lambda: client.request("GET", API + "/agent-runs/" + study["id"]), lambda value: value["status"] in ("COMPLETED", "PARTIAL", "FAILED", "CANCELLED", "WAITING_USER"))
+        self.check("study workflow persists a completed revised DAG without inventing model usage", study["status"] == "COMPLETED" and study["planRevision"] == 2 and study["spentTokens"] == study["reservedTokens"] == 0)
+        native_exports = []
+        for step_key, file_format in (("output-document", "DOCX"), ("output-slides", "PPTX")):
+            source = next(step for step in study["steps"] if step["key"] == step_key)["outputRefs"][0]
+            job = client.request("POST", API + f"/artifacts/{source['id']}/exports", {"artifactRevision": source["revision"], "format": file_format}, expected=(202,), key="native-" + uuid.uuid4().hex)
+            job = self.wait_for(file_format + " file is actually rendered", lambda: client.request("GET", API + "/export-jobs/" + job["id"]), lambda value: value["status"] in ("SUCCEEDED", "FAILED", "CANCELLED"))
+            self.check(file_format + " exposes valid Office ZIP bytes with matching SHA-256", job["status"] == "SUCCEEDED" and job["downloadPath"] is not None and client.download(job["downloadPath"]).startswith(b"PK") and hashlib.sha256(client.download(job["downloadPath"])).hexdigest() == job["contentHash"])
+            native_exports.append(job)
+        extras = {"preference": preference, "lab": lab, "tutor": tutor, "export": export, "documentId": document_id, "study": study, "nativeExports": native_exports}
         attacker = Client(self, base)
         other_password = secrets.token_urlsafe(24)
         self.secrets.add(other_password)
@@ -563,6 +577,9 @@ class Smoke:
         self.check("capability honesty survives restart", self.capabilities(restored) == saved["capabilities"])
         self.verify_private_sql(saved)
         self.check("export bytes survive actual process restart", hashlib.sha256(restored.download(extras["export"]["downloadPath"])).hexdigest() == extras["export"]["contentHash"])
+        self.check("study DAG and output references survive restart unchanged", restored.request("GET", API + "/agent-runs/" + extras["study"]["id"]) == extras["study"])
+        for native in extras["nativeExports"]:
+            self.check(native["format"] + " bytes survive process restart", restored.request("GET", API + "/export-jobs/" + native["id"]) == native and hashlib.sha256(restored.download(native["downloadPath"])).hexdigest() == native["contentHash"])
         restored.request("POST", API + f"/memories/{memory['id']}/revoke", {"expectedRevision": memory["revision"]}, expected=(204,))
         stale_export = restored.request("GET", API + "/export-jobs/" + extras["export"]["id"])
         stale_tutor = restored.request("GET", API + "/tutor/requests/" + extras["tutor"]["id"])

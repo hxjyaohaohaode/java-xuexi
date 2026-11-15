@@ -30,8 +30,9 @@ public class ArtifactService implements ArtifactStudio<JsonNode> {
     private final ArtifactInvalidation invalidation;
     private final JsonCodec json;
     private final SchemaCatalog schemas;
-    public ArtifactService(JdbcTemplate jdbc,TransactionTemplate tx,WorkspaceService workspaces,EventJournal events,ArtifactInvalidation invalidation,JsonCodec json,SchemaCatalog schemas) {
-        this.jdbc=jdbc;this.tx=tx;this.workspaces=workspaces;this.events=events;this.invalidation=invalidation;this.json=json;this.schemas=schemas;
+    private final AssetService assets;
+    public ArtifactService(JdbcTemplate jdbc,TransactionTemplate tx,WorkspaceService workspaces,EventJournal events,ArtifactInvalidation invalidation,JsonCodec json,SchemaCatalog schemas,AssetService assets) {
+        this.jdbc=jdbc;this.tx=tx;this.workspaces=workspaces;this.events=events;this.invalidation=invalidation;this.json=json;this.schemas=schemas;this.assets=assets;
     }
     public Artifact create(UUID owner,UUID workspace,String kind,String title,UUID goal,String key) {
         WorkspaceService.requireText(title,255);WorkspaceService.requireKey(key);
@@ -86,6 +87,7 @@ public class ArtifactService implements ArtifactStudio<JsonNode> {
                 jdbc.update("INSERT INTO artifact_input_reference(workspace_id,artifact_id,artifact_revision,source_kind,source_id,source_revision,source_hash) VALUES(?,?,?,?,?,?,?)",workspace.toString(),artifact.toString(),next,ref.kind(),ref.id().toString(),ref.revision(),ref.contentHash());
             }
             for(Reference ref:inputs) {
+                if(ref.kind().equals("ASSET")) jdbc.update("INSERT INTO artifact_asset(workspace_id,artifact_id,artifact_revision,asset_id,usage_role) VALUES(?,?,?,?,'SOURCE')",workspace.toString(),artifact.toString(),next,ref.id().toString());
                 if(ref.kind().equals("ARTIFACT")) jdbc.update("INSERT INTO artifact_dependency(workspace_id,source_id,source_revision,target_id,target_revision,dependency_kind,segment_refs) VALUES(?,?,?,?,?,'FACT','[]')",workspace.toString(),ref.id().toString(),ref.revision(),artifact.toString(),next);
             }
             jdbc.update("UPDATE learning_artifact SET current_revision=? WHERE id=?",next,artifact.toString());
@@ -122,7 +124,16 @@ public class ArtifactService implements ArtifactStudio<JsonNode> {
                 Reference embedded=json.read(node.toString(),Reference.class);
                 if(!inputs.contains(embedded)) throw DomainException.invalid("Embedded citation is not in the admitted input manifest");
             }
-            if(node.has("assetId") && !node.path("assetId").isNull()) throw new DomainException("CAPABILITY_UNAVAILABLE",503,"Asset admission is not configured in this runtime");
+            if(node.hasNonNull("assetId")) {
+                UUID assetId=UUID.fromString(node.path("assetId").asText());var asset=assets.get(owner,assetId);
+                if(!asset.workspaceId().equals(workspace) || !asset.status().equals("READY")) throw DomainException.conflict("Asset is unavailable in this workspace");
+                if(inputs.stream().noneMatch(ref->ref.kind().equals("ASSET") && ref.id().equals(assetId) && ref.revision()==asset.revision() && ref.contentHash().equals(asset.contentHash()))) throw DomainException.invalid("Each embedded asset needs its current ASSET reference in the input manifest");
+                String kind=node.path("kind").asText(),track=node.path("track").asText(),mime=asset.mimeType();
+                if(Set.of("IMAGE","DIAGRAM").contains(kind) && !mime.startsWith("image/") || (node.has("voiceId") || track.equals("AUDIO")) && !mime.startsWith("audio/") || track.equals("VISUAL") && !(mime.startsWith("image/") || mime.startsWith("video/"))) throw DomainException.invalid("The asset media type does not match its content element");
+                if(Set.of("TEXT","CODE").contains(kind) || track.equals("SUBTITLE")) throw DomainException.invalid("Text elements cannot embed media assets");
+            }
+            if(node.has("width") && node.has("x") && node.has("height") && node.has("y") && (node.path("x").asDouble()+node.path("width").asDouble()>1.000001 || node.path("y").asDouble()+node.path("height").asDouble()>1.000001)) throw DomainException.invalid("A slide element extends beyond its canvas");
+            if(node.has("x") && Set.of("IMAGE","DIAGRAM").contains(node.path("kind").asText()) && (!node.hasNonNull("assetId") || node.path("alt").asText().isBlank())) throw DomainException.invalid("A slide image needs an admitted private asset and a meaningful alternative description");
             if(node.has("sourceHash") && node.has("originalSource") && !json.sha256(node.path("originalSource").asText()).equals(node.path("sourceHash").asText())) throw DomainException.invalid("Source hash does not match the exact UTF-8 source");
             if(node.has("diagnosticIds") && !node.path("diagnosticIds").isEmpty()) throw new DomainException("CAPABILITY_UNAVAILABLE",503,"Compiler diagnostic admission is not configured in this runtime");
             if(node.has("solutionRef") && !node.path("solutionRef").isNull()) throw new DomainException("CAPABILITY_UNAVAILABLE",503,"Hidden solution admission is not configured in this runtime");

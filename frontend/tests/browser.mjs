@@ -180,7 +180,7 @@ try {
       acceptsWhitespace: false,
     });
     await usernameInput.fill(username);
-    await page.getByLabel('密码', { exact: false }).fill(password);
+    await page.getByLabel('密码', { exact: true }).fill(password);
     await page.getByRole('button', { name: '注册并进入', exact: true }).click();
     await page.getByLabel('工作空间名称', { exact: true }).fill('浏览器验收 A');
     await page.getByRole('button', { name: '创建工作空间', exact: true }).click();
@@ -422,6 +422,61 @@ try {
       await page.getByRole('button', { name: '保存为学习文档', exact: true }).click();
       await page.locator('.editor-heading').waitFor();
       await page.locator('.source-manifest').waitFor();
+    },
+  );
+  await check(
+    'all enabled learner pages fit desktop and 390/320px layouts with keyboard-complete mobile navigation',
+    async () => {
+      const routes = [
+        ['learn', '.reading-main'],
+        ['practice', '.question-card'],
+        ['progress', '.analytics-totals'],
+        ['lab', '.compiler-layout'],
+        ['studio', '.editor-heading'],
+        ['tutor', '.conversation-main'],
+        ['memory', '.panel'],
+        ['agents', '.study-layout'],
+        ['settings', '.account-settings'],
+      ];
+      for (const [route, ready] of routes) {
+        await page.setViewportSize({ width: 1440, height: 1000 });
+        const link = page.locator(`.sidebar a[href="#${route}"]`);
+        if (!(await link.count())) continue;
+        await link.click();
+        await page.locator(ready).first().waitFor();
+        for (const width of [1440, 390, 320]) {
+          await page.setViewportSize({ width, height: width === 1440 ? 1000 : 844 });
+          assert.ok(
+            await page.evaluate(
+              () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+            ),
+            `${route} overflows at ${width}px`,
+          );
+          await capturePage(page, `review-${route}-${width}.png`);
+        }
+      }
+      await page.getByRole('button', { name: '打开菜单', exact: true }).click();
+      const menu = page.getByRole('dialog', { name: '主导航', exact: true });
+      await menu.waitFor();
+      assert.equal(await page.locator('.main-shell').evaluate((element) => element.inert), true);
+      await page.keyboard.press('Shift+Tab');
+      assert.equal(
+        await menu.evaluate((element) => element.contains(document.activeElement)),
+        true,
+      );
+      await capturePage(page, 'review-mobile-navigation.png');
+      await page.keyboard.press('Escape');
+      assert.equal(
+        await page
+          .getByRole('button', { name: '打开菜单', exact: true })
+          .evaluate((element) => element === document.activeElement),
+        true,
+      );
+      assert.equal(await page.locator('.main-shell').evaluate((element) => element.inert), false);
+      await page.setViewportSize({ width: 1440, height: 1000 });
+      await page.getByRole('button', { name: '收起导航', exact: true }).click();
+      await capturePage(page, 'review-collapsed-navigation.png');
+      await page.getByRole('button', { name: '展开导航', exact: true }).click();
     },
   );
   await check(

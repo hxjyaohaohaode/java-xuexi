@@ -1,14 +1,23 @@
 import { useState } from 'react';
-import { ArrowRight, Braces, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Braces, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { api } from '../api';
 import { useMutation } from '../hooks';
 import { ErrorNotice, Field } from '../components/ui';
 import type { Session } from '../types';
 
-export function Auth({ onSession }: { onSession: (session: Session) => void }) {
+export function Auth({
+  onSession,
+  notice = '',
+}: {
+  onSession: (session: Session) => void;
+  notice?: string;
+}) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [visible, setVisible] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
+  const passwordTooLong = new TextEncoder().encode(password).length > 72;
   const mutation = useMutation();
   async function submit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -81,6 +90,8 @@ export function Auth({ onSession }: { onSession: (session: Session) => void }) {
           <div className="segments" aria-label="认证方式">
             <button
               type="button"
+              disabled={mutation.busy}
+              aria-pressed={mode === 'login'}
               className={mode === 'login' ? 'selected' : ''}
               onClick={() => {
                 setMode('login');
@@ -91,6 +102,8 @@ export function Auth({ onSession }: { onSession: (session: Session) => void }) {
             </button>
             <button
               type="button"
+              disabled={mutation.busy}
+              aria-pressed={mode === 'register'}
               className={mode === 'register' ? 'selected' : ''}
               onClick={() => {
                 setMode('register');
@@ -100,7 +113,12 @@ export function Auth({ onSession }: { onSession: (session: Session) => void }) {
               注册
             </button>
           </div>
-          <form onSubmit={submit}>
+          {notice && (
+            <p className="notice" role="status">
+              {notice}
+            </p>
+          )}
+          <form onSubmit={submit} aria-busy={mutation.busy}>
             <Field label="用户名" hint="3–64 位小写字母、数字、点、短横线或下划线">
               <input
                 required
@@ -109,6 +127,7 @@ export function Auth({ onSession }: { onSession: (session: Session) => void }) {
                 spellCheck={false}
                 pattern="[a-z0-9][a-z0-9_.\-]{2,63}"
                 value={username}
+                maxLength={64}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={mutation.busy}
               />
@@ -117,22 +136,44 @@ export function Auth({ onSession }: { onSession: (session: Session) => void }) {
               label="密码"
               hint={mode === 'register' ? '至少 12 个字符；UTF-8 编码最多 72 字节。' : undefined}
             >
-              <input
-                required
-                type="password"
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                minLength={mode === 'register' ? 12 : 1}
-                maxLength={72}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={mutation.busy}
-              />
+              <div className="password-field">
+                <input
+                  required
+                  aria-label="密码"
+                  type={visible ? 'text' : 'password'}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  minLength={mode === 'register' ? 12 : 1}
+                  maxLength={72}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={mutation.busy}
+                  aria-invalid={passwordTooLong}
+                  onKeyUp={(e) => setCapsLock(e.getModifierState('CapsLock'))}
+                  onBlur={() => setCapsLock(false)}
+                />
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label={visible ? '隐藏密码' : '显示密码'}
+                  aria-pressed={visible}
+                  onClick={() => setVisible(!visible)}
+                >
+                  {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </Field>
+            {capsLock && (
+              <p className="field-hint" role="status">
+                大写锁定已开启。
+              </p>
+            )}
+            {passwordTooLong && (
+              <p className="field-error" role="alert">
+                密码超过 72 字节，请缩短后再提交。
+              </p>
+            )}
             <ErrorNotice error={mutation.error} />
-            <button
-              className="primary wide"
-              disabled={mutation.busy || new TextEncoder().encode(password).length > 72}
-            >
+            <button className="primary wide" disabled={mutation.busy || passwordTooLong}>
               {mutation.busy ? '正在建立会话…' : mode === 'login' ? '进入工作台' : '注册并进入'}
               <ArrowRight size={17} />
             </button>

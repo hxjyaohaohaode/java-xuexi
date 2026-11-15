@@ -1,23 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { api } from '../api';
 import { useWorkspace } from '../context';
-import { useMutation, useResource } from '../hooks';
+import { useMutation, usePolling, useResource } from '../hooks';
 import { Badge, Empty, ErrorNotice, Loading, SectionTitle } from '../components/ui';
+import { LearningAnalytics } from '../components/LearningAnalytics';
 import type { Concept, Progress, Review } from '../types';
 
 export function ProgressPage() {
-  const { workspace, tick, refresh, navigate } = useWorkspace();
+  const { workspace, tick, refresh, navigate, can } = useWorkspace();
   const [projectionTick, setProjectionTick] = useState(0);
   const progress = useResource<Progress>('/me/progress', tick + projectionTick);
   const reviews = useResource<Review[]>('/me/reviews', tick + projectionTick);
   const concepts = useResource<{ items: Concept[] }>(`/concepts?releaseId=${workspace.releaseId}`);
   const mutation = useMutation();
-  useEffect(() => {
-    if (progress.data?.rebuilding) {
-      const timer = setTimeout(() => setProjectionTick((n) => n + 1), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [progress.data, projectionTick]);
+  usePolling(
+    !!progress.data?.rebuilding,
+    () => setProjectionTick((value) => value + 1),
+    progress.loading || reviews.loading,
+    !!progress.error || !!reviews.error,
+  );
   const name = (id: string) => concepts.data?.items.find((c) => c.id === id)?.title || '关联概念';
   const pending = reviews.data?.filter((r) => r.status === 'PENDING' || r.status === 'DUE') || [];
   return (
@@ -27,6 +28,7 @@ export function ProgressPage() {
         title="进度与复习"
         description="这里展示账号积累的独立样本与服务端复习安排。阅读时长、点击次数和重复刷题不会冒充掌握程度。"
       />
+      {can('LEARNING_ANALYTICS') && <LearningAnalytics version={projectionTick} />}
       <ErrorNotice error={progress.error} retry={progress.reload} />
       {progress.loading && !progress.data ? (
         <Loading />
@@ -134,7 +136,16 @@ export function ProgressPage() {
                   </small>
                 </div>
                 <div className="row wrap">
-                  <Badge>{review.status === 'DISMISSED' ? '已移除' : review.status}</Badge>
+                  <Badge>
+                    {(
+                      {
+                        DISMISSED: '已移除',
+                        PENDING: '待复习',
+                        DUE: '可以复习',
+                        COMPLETED: '已完成',
+                      } as Record<string, string>
+                    )[review.status] || review.status}
+                  </Badge>
                   <button onClick={() => navigate('practice', review.conceptId)}>去复习</button>
                   {review.status !== 'DISMISSED' && (
                     <button

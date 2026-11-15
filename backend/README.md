@@ -1,6 +1,6 @@
 # Java 后端：启动、配置与接手
 
-Java 17、Spring Boot 3.5.16、Maven 3.9.x；版本 `0.4.0-SNAPSHOT`，`-Xlint:all -Werror`。当前能力与下一步集中在 [模块接手指南](../docs/02-modules.md)，操作状态见 [契约索引](../contracts/README.md)，实际验证见 [当前验收](../evidence/runtime-review.md)。
+Java 17、Spring Boot 3.5.16、Maven 3.9.x；版本 `0.5.0-SNAPSHOT`，`-Xlint:all -Werror`。当前 109 个公开操作均有实际路由实现，但运行时继续报告 `businessReady=false`，不把接口数量当作完整产品完成率。当前能力与剩余范围集中在[模块接手指南](../docs/02-modules.md)，操作字段见[契约索引](../contracts/README.md)，实际验证见[当前验收](../evidence/runtime-review.md)。
 
 ## 1. 构建与本地运行
 
@@ -10,7 +10,7 @@ Java 17、Spring Boot 3.5.16、Maven 3.9.x；版本 `0.4.0-SNAPSHOT`，`-Xlint:a
 npm ci --prefix frontend
 npm run build --prefix frontend
 mvn -B -ntp -f backend/pom.xml clean verify
-java -jar backend/target/typeforge-backend-0.4.0-SNAPSHOT.jar --spring.profiles.active=demo
+java -jar backend/target/typeforge-backend-0.5.0-SNAPSHOT.jar --spring.profiles.active=demo
 ```
 
 访问 http://127.0.0.1:8080/。前端dist作为静态资源随JAR打包；仅构建后端而没有dist时业务API可用，但capabilities会明确FRONTEND不可用。开发模式用前端Vite代理连接同源语义的API，不开放任意CORS。
@@ -26,10 +26,14 @@ HTTP顺序是 GET `/api/v1/auth/csrf` → 带Cookie和返回CSRF header注册 �
 编辑角色只接受运维显式启动配置，**账户必须已经真实注册且ACTIVE**：
 
 ```sh
-TYPEFORGE_EDITOR_USERS=editor-a,editor-b java -jar backend/target/typeforge-backend-0.4.0-SNAPSHOT.jar --spring.profiles.active=demo
+TYPEFORGE_EDITOR_USERS=editor-a,editor-b java -jar backend/target/typeforge-backend-0.5.0-SNAPSHOT.jar --spring.profiles.active=demo
 ```
 
-这里 `editor-a/editor-b` 是示例用户名，须替换为你们已注册并核对的账号。`TYPEFORGE_ADMIN_USERS` 同样可指定维护者。配置缺失默认不授予；账号不存在或格式无效会启动失败，不偷偷创建账号或密码。操作写审计、重复启动不重复授予；配置完成可移除环境项，角色仍持久保存。新角色登录后生效，内容服务每次复查数据库角色，旧session不能保留已撤销编辑权限。完整账号管理/密码找回/撤权界面尚未提供。
+这里 `editor-a/editor-b` 是示例用户名，须替换为已注册并核对的账号。`TYPEFORGE_ADMIN_USERS` 同样可指定维护者。配置缺失默认不授予；账号不存在或格式无效会启动失败，不创建账号或密码。操作写审计、重复启动不重复授予；配置完成可移除环境项，角色仍持久保存。新角色重新登录后生效，内容服务每次复查数据库角色，旧 session 不能保留已撤销编辑权限。曾具有编辑/管理权限的关闭账号保留用户名，启动配置遇到该关闭账号会跳过授权并记录日志，防止同名新账号继承权限。
+
+个人中心已支持显示名 CAS、改密、会话列表与撤销、关闭账号。改密成功撤销所有会话，包括当前会话；关闭通过各领域撤回端口取消未完成任务、归档空间、清除上传字节与导出缓存，同时保留历史学习和审核证据。关闭不是全量物理擦除。密码找回、角色撤权管理界面及完整隐私擦除流程仍需实现。
+
+会话同时具有 Servlet 30 分钟空闲期限和持久记录 12 小时绝对期限，每人最多 10 个有效会话。账号 UUID 和认证 epoch 防止迟到登录或同名再注册误认身份。认证限流使用数据库原子计数，安全设置和配额见[账户与素材说明](../docs/22-account-assets-operations.md)。生产 HTTPS 设置 `TYPEFORGE_SECURE_COOKIE=true`；多实例部署还需明确 Servlet 会话黏性或复制方案，持久撤销表本身不等于完整会话存储。
 
 内部worker路由始终denyAll；公开API不能领取lease、伪造完成工具或结算预算。编辑接口位于 `/api/v1/admin/**`，并有真实作者/审核者和版本检查。两人合作是作者加另一名独立编辑，不是用系统账号制造审核记录。
 
@@ -53,26 +57,64 @@ TYPEFORGE_EDITOR_USERS=editor-a,editor-b java -jar backend/target/typeforge-back
 
 响应正文有上限、禁止重定向、结构和引用严格验证；不把模型输出直接作为执行指令。HTTP在事务外，回写重新检查owner/workspace/context/epoch/lease。发送后的未知结果保留UNKNOWN额度，不自动重试付费调用；取消只撤销平台结果提交权，不能承诺供应商退费。
 
-## 4. MySQL
+## 4. 独立编译 worker 与代码题
 
-设置 `TYPEFORGE_DB_URL` 为真实 MySQL JDBC URL、`TYPEFORGE_DB_USER` 与 `TYPEFORGE_DB_PASSWORD`，运行 `--spring.profiles.active=mysql`（演示验证可加 `,demo`）。连接信息仅放本地安全配置。MySQL Profile执行V001–V006原始迁移，默认H2使用对应兼容迁移。
+编译默认关闭，`/api/v1/capabilities` 会报告 `COMPILE_ONLY`/`CODE_GRADING` 当前是否可用。启用时先按[独立编译 worker 说明](../workers/compiler/README.md)在专用 Linux 主机部署 Python broker 和 Docker，再由 API 的服务端安全配置提供：
 
-共享短事务采用READ_COMMITTED；学习写入锁序是user→workspace→具体资源。编辑事务另以content_workbench_lock串行化两人编辑，并锁定实际编辑账户；该锁内没有网络或workspace调用。模型调用不占数据库锁，文本导出是有输入/输出大小上限的确定性本地转换。
+```properties
+typeforge.compiler.enabled=true
+typeforge.compiler.worker-url=http://127.0.0.1:8091/v1/compile
+typeforge.compiler.worker-token=<至少32字符的服务端随机令牌>
+```
+
+跨主机使用 HTTPS 和受保护网络；浏览器不能选择 worker 地址、镜像、文件路径、编译参数或令牌。broker 启动时固定镜像 ID，任务在新建的非 root、无网络、只读基础系统 Docker 容器内执行 Java 17 编译，禁用注解处理并限制 CPU、内存、PIDs、输出和时间。**API JVM 从不编译或运行用户代码，broker 没有主机编译降级。** 当前只编译，不运行生成字节码。
+
+| API 编译配置 | 默认值与含义 |
+| --- | --- |
+| `typeforge.compiler.timeout-millis` | 45,000；worker HTTP 整体期限 |
+| `typeforge.compiler.max-pending` | 每账号 4 个等待或执行作业 |
+| `typeforge.compiler.global-pending` | 全局 256 个等待或执行作业 |
+| `typeforge.compiler.daily-limit` | 每账号每日 200 个作业 |
+| `typeforge.compiler.dispatch-enabled` | `true`；测试可关闭并显式推进 |
+
+普通编译返回公共诊断；代码题另执行审核后的 2～8 个正反编译契约检查，公共编译通过本身不能给成绩。隐藏检查、隐藏诊断和标准答案不返回学习者。基础设施失败产生 `FAILED`/不可用状态，不伪装成学生答错。多层提示持久记录，同题族后续作答保留辅助练习属性。
+
+本轮执行环境没有 Docker/Podman；协议、队列和固定 Java 语义测试不能代替真实容器隔离验收。真实宿主的网络、文件、资源和进程清理测试仍是部署前的独立门禁。
+
+## 5. 教学工作流、作品与私有素材
+
+`EVIDENCE_ONLY` 教学工作流在默认环境可用。配置 MODEL 后，规划者只能选择 1～3 项教学分工；专家与审阅分别通过持久导师请求执行，最后生成 DOCUMENT、SLIDES 或 NOTEBOOK 草稿。用户选择的较早作答可加入固定上下文，创建时检查归属、课程、判分状态和快照包含关系。暂停、恢复、取消、未知用量和来源变化继续使用 epoch/lease 与预算控制。
+
+这是受限的 planner → expert → review → DRAFT 链，不能执行任意模型生成工具。专家和审阅者可使用同一模型，不代表人工独立核验；生成稿不会覆盖用户修改。真实模型教学质量、外部金额账单和通用工具自治仍需独立实现或验收。
+
+文档支持 Markdown/HTML/DOCX/PDF，幻灯片支持 HTML/PPTX/PDF 和授权 PNG/JPEG 实际内嵌；关系图支持受控 SVG，错题/交互作品支持静态 HTML。Office 文件可重新打开并编辑文字/代码，PDF 嵌入中文字体。导出持久队列固定源版本、内容 hash 和 renderer 版本；最终提交及下载都复验来源，重启后读取同一文件字节。
+
+导出默认每人最多 8 个待处理任务、24 小时 200 个新任务、256 MiB 缓存；单文件 8 MiB。同版本/格式复用，过时缓存回收并保留作业元信息。单次渲染最多 32 MP 图片输入，输出流有实时限额；取消阻止迟到提交，本地库可能完成当前计算。调度由 `typeforge.export.dispatch-enabled` 和 `typeforge.study.dispatch-enabled` 控制，默认均为 `true`。
+
+私有素材直接接收有 CSRF 和幂等键的 multipart 文件，支持 PNG/JPEG/PCM WAV/MP3/MP4。默认单项 8 MiB、每人总量 100 MiB，可配置 `typeforge.assets.max-owner-bytes`；Servlet 整体 multipart 请求为 9 MiB。素材保存真实字节和 SHA-256，支持授权 Range 下载；撤回删除字节并同步使依赖作品失效。当前是有界数据库 BLOB 存储及格式结构验证，没有 AV 扫描、生成式图像、TTS 或视频时间线渲染。细节见[账户与素材](../docs/22-account-assets-operations.md)、[教学工作流与导出](../docs/23-study-and-exports.md)。
+
+## 6. MySQL 与运维
+
+设置 `TYPEFORGE_DB_URL` 为真实 MySQL JDBC URL、`TYPEFORGE_DB_USER` 与 `TYPEFORGE_DB_PASSWORD`，运行 `--spring.profiles.active=mysql`（演示验证可加 `,demo`）。连接信息仅放安全配置。MySQL Profile 执行 V001–V011 原始迁移，默认 H2 使用对应兼容迁移；当前有 79 张领域表。已应用迁移不回写，已有库必须沿完整升级链前进。
+
+共享短事务采用 READ_COMMITTED；学习写入锁序为 user → workspace → 具体资源。编辑事务以 content_workbench_lock 串行化编辑并锁定实际编辑账号，该锁内没有网络或 workspace 调用。模型 HTTP 和二进制渲染在数据库事务外执行，提交重新核对状态与来源。
 
 outbox效果、receipt与published同事务，每空间按完整流头顺序投递；失败5次后形成阻塞本空间的死信，其他空间仍可继续。运维重试使用内部维护方法，未开放普通学习者接口。
 
-## 5. 正式内容工作台的操作顺序
+`GET /api/v1/admin/operations` 要求数据库中的当前 ADMIN 角色，只返回真实队列聚合与当前进程的请求直方图。P50/P95 是固定桶上界，不是生产容量结论；该接口不包含私人请求内容。监控告警、生产 SLO、备份与恢复演练仍需部署侧验证。
+
+## 7. 正式内容工作台的操作顺序
 
 1. 两人分别注册，运维配置编辑角色后重新登录。
 2. 来源登记：真实网址、版本、使用范围；手工采集提交实际原稿、清洗稿和加工说明，查看服务器哈希与去重结果。
-3. 创建概念及前置关系；创建知识draft绑定 sourceId/ingestionId/section；创建题目draft绑定知识版本和当前实际支持的SINGLE/MULTIPLE答案结构。
+3. 创建概念及前置关系；创建知识 draft 绑定 sourceId/ingestionId/section；题目绑定知识版本。客观题使用选择答案结构，SIGNATURE/REFACTOR/FILL 使用经审核的 `compileChecks` 和提示，公开练习 DTO 不泄露这些隐藏检查。
 4. 另一编辑读取完整内容，亲自审核并提交 `expectedContentHash`。作者自审、过期hash、损坏答案结构均拒绝。
 5. 选择确切知识/题目revision构建release。检查清单与概念图，再带 `expectedManifestHash` 和 `expectedActiveRevision` 发布。
 6. 新建学习空间读取新release并实际检索/做题；旧空间继续读旧release。需要回退时激活已发布正式release，仍校验当前指针revision。
 
 准确字段、所有列表/详情和响应见OpenAPI；`ContentWorkbenchIntegrationTest` 包含完整真实session HTTP流程，可作为开发时的调用样例。该测试使用隔离测试作者和明确夹具，不计作两位学生的人类审核记录。
 
-## 6. 验证命令
+## 8. 验证命令
 
 ```sh
 python scripts/sync_contract_index.py --check
@@ -80,6 +122,9 @@ python scripts/verify.py
 mvn -B -ntp -f backend/pom.xml clean verify
 python scripts/smoke_runtime.py --profile h2
 python scripts/verify_mysql.py
+python -m unittest discover -s workers/compiler -p 'test_*.py'
 ```
 
-真实MySQL HTTP重启、隔离级别和浏览器检查采用专用配置与同一构建；详见验收记录和GitHub Actions。所有可用模块仍有生产化与完整产品范围内的后续工作；不得将测试夹具、确定性证据、有限类型规则分别冒充真实模型效果、全部专家自治或用户源码沙箱。
+真实 MySQL HTTP 重启、隔离级别和浏览器检查使用专用配置及同一最终构建。模式验证覆盖全部 11 个迁移；账户/素材可用 `scripts/verify_private_modules_mysql.py` 在显式隔离连接上复跑，并输出实际 JDBC 引擎证据。MySQL 专用门禁需要 `MYSQL_TEST_CONNECTION`，只接受标明用途的回环测试库，不能指向个人或生产数据库。
+
+所有结果以验收记录和 CI 的实际执行为准。仍需完成的范围包括通用工具自治、外部模型教学与账单验收、生成式图像/TTS/视频、真实 Docker 宿主验收、生产性能 SLO 及备份恢复；测试夹具、有限类型规则和配置入口不能代替这些实测。

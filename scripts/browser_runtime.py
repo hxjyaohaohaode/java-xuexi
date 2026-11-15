@@ -2,7 +2,7 @@
 """Launch an isolated real demo jar, run the frontend driver, retain logs, and always clean up.
 
 No server responses are mocked. A blocked/missing browser exits nonzero; it is never a skipped pass.
-Run from any directory: python3 scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.4.0-SNAPSHOT.jar
+Run from any directory: python3 scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.5.0-SNAPSHOT.jar
 """
 from __future__ import annotations
 import argparse

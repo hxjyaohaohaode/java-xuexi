@@ -1,8 +1,8 @@
 # 多模态学习作品与动态错题集
 
-本章保留完整创作目标，并明确 v0.4 当前范围：作品 DSL/语义校验、不可变版本、输入血缘和失效传播；真实作答构建 NOTEBOOK，predict/openEvidence/submitAnswer 受控动作；文档和文本幻灯片编辑与安全预览；导师回答保存为带完整来源的 DRAFT；真实 Markdown/HTML/SVG 私有下载。声音/镜头制作、媒体素材、二进制 PPTX/DOCX/PDF 及自主多专家审稿尚待实现。准确操作见 [契约](../contracts/README.md)，实测见 [当前验收](../evidence/runtime-review.md)。
+本章保留完整创作目标，并明确 v0.5 当前范围：作品 DSL/语义校验、不可变版本、输入血缘和失效传播；从本人明确选择的真实错题/提示后作答构建 NOTEBOOK；预测、证据、复练、编译与分级提示受控动作；文档/幻灯片编辑、私有图片选择与安全预览；导师及学习任务生成带完整来源的 DRAFT；真实 Markdown/HTML/SVG/DOCX/PPTX/PDF 私有下载。学习任务已接通有限规划、专家回答、独立复核与作品组装。声音/镜头制作、通用任意工具自治和真实供应商教学效果评测仍待完成。准确操作见 [契约](../contracts/README.md)，实测见 [当前验收](../evidence/runtime-review.md)，新增实现和限制见 [学习任务与原生导出](23-study-and-exports.md)。
 
-当前导出矩阵：DOCUMENT→Markdown/HTML；SLIDES→文本/代码 HTML；DIAGRAM→SVG；NOTEBOOK/INTERACTION→静态 HTML。包含未支持素材的幻灯片不会静默丢图；静态错题文件不提供离线保密判分。以下类型表中的完整输出列属于最终目标。
+当前导出矩阵：DOCUMENT→Markdown/HTML/DOCX/PDF；SLIDES→HTML/PPTX/PDF；DIAGRAM→SVG；NOTEBOOK/INTERACTION→静态 HTML。PNG/JPEG 私有图片进入幻灯片后参与血缘复检，并嵌入真实文件；包含不支持元素时受控拒绝，不静默丢失。静态错题文件不提供离线保密判分。以下类型表中超出本矩阵的输出仍属于最终目标。
 
 当前来源撤回的可完成性由保存准入保证：每个作品版本最多 256 个不同的直接/传递来源，每个来源最多 256 个仍有效的依赖版本。超限在保存阶段拒绝；历史 `STALE` 版本不占额度，替换根作品会同步释放其失效下游的额度。公开 `input_refs` 保留直接输入，服务另外持久化传递索引以完整撤回。旧开发库若索引不完整或已经越界，会明确要求维护修复，不假装部分撤回成功；详见 [运行数据字典](../database/data-dictionary.md)。
 
@@ -10,7 +10,7 @@
 
 所有产物统一为 Artifact：稳定 id、workspaceId、kind、当前 revision、创建 run、学习目标、证据与知识发布。ArtifactRevision 保存类型化 DSL、输入引用、contentHash、作者 Agent/学生、审核状态与渲染依赖。源作品和导出文件分开：PPTX/PDF/MP4 是某一 revision 的导出，不是唯一源文件。
 
-用户可直接编辑、局部提问、框选修改、创建分支、比较版本、还原局部、更换媒介。修改传播按依赖图执行：修改讲解结论会使对应幻灯片、旁白段、字幕和视频镜头过期；仅改背景色不重新调用知识专家。所有“已更新”标记来自真实依赖和渲染状态。
+当前可直接编辑文档和幻灯片、查看版本、保留来源并导出；并发写入通过 revision CAS 拒绝旧覆盖。学习任务使用源作品的实际当前内容组装草稿，取消或旧 epoch 的迟到结果不能覆盖用户编辑。局部框选、候选分支合并以及未来旁白/镜头级传播是后续扩展目标；已接通的来源变更和撤回通过实际依赖图失效。
 
 ## 2. 作品类型与制作链路
 
@@ -26,7 +26,7 @@
 
 图像模型、TTS/视频模型、渲染器分别是能力适配器；并非制作视频必然调用昂贵视频生成模型。代码关系动画优先结构化图形+时间线+旁白合成，既可准确表达泛型，又能控制修改和成本。
 
-正式 DOCX/PDF 导出必须使用用户要求的统一模板：中文 FZKai-Z03S、英文数字 Times New Roman、正文11磅/36磅首行缩进等，以完整 FORMAT.md 为准。部署时把获授权模板作为服务器资源登记并校验 hash，不依赖开发机 C 盘路径。PPT 的布局单独设计，不把 Word 页式强套到幻灯片。
+正式课程提交的 DOCX/PDF 仍须满足用户约定的 FORMAT.md 模板，包括获授权的 FZKai-Z03S/Times New Roman、字号和缩进。当前 v0.5 下载采用明确的通用排版：Apache POI 生成可编辑 DOCX/PPTX，PDFBox 从同一版本 DSL 独立排版，并嵌入仓库所带的 OFL 中文字体；PDF 不是 DOCX 的逐页转换副本，也不冒充正式模板验收。获授权模板、Word→PDF 同版转换及逐页视觉核验应在正式提交前单独接入。PPT 的布局单独设计。
 
 ## 3. 高交互错题集的六种块
 
@@ -43,13 +43,15 @@
 
 首版采用白名单 DSL 组件渲染，布局与逻辑分离。扩展自由 HTML 时运行于独立 origin 的 sandbox iframe，默认禁同源身份/网络/顶层导航，postMessage 必须校验 origin、source、消息 schema、任务能力令牌。代码执行仍只在 M04 worker，iframe 隔离不代替代码沙箱。
 
-素材服务按 owner/workspace/revision 控权，禁止客户端提供任意文件路径；对象存储 key 由服务端产生，短时签名 URL 与下载权限绑定。校验 MIME/大小/hash，SVG 净化，HTML净化，解压防路径穿越与压缩炸弹，导出不附带隐藏答案、未选中的私人上下文或密钥；用户显式保存到作品的内容仍按本人私有下载规则处理。
+当前素材服务按 owner/workspace/asset/revision 控权，原始字节存入受限私有数据库表，经会话鉴权下载与 Range 读取；没有公开对象 URL。PNG/JPEG 实际解码，WAV/MP3/MP4 校验结构和时长；SVG/HTML/任意路径和任意远程 URL 不在上传白名单内。大小、hash、像素、时长、每日次数与用户总量均受限，撤回/闭户物理删除对应原始字节并失效引用，详见 [账户与素材](22-account-assets-operations.md)。外部对象存储、病毒扫描和 Office/PDF 私人资料解析仍是扩展项。导出不附带隐藏答案、未选中的私人上下文或密钥。
 
 离线能力明确分层：阅读/PPT/媒体/受控交互可打包；真实模型、服务器编译、云端记忆需要连接。离线练习若内含答案要标注练习模式，不能伪装成保密测验。PPT中的网页交互使用明确链接/二维码，不宣称PPTX自动保留完整浏览器交互。
 
-## 5. 示例任务图
+## 5. 完整目标的示例任务图
 
 目标：“用我的三道 PECS 错题生成可交互错题集、8页PPT和2分钟微课”。
+
+当前可选 DOCUMENT、SLIDES、NOTEBOOK 三种产物，NOTEBOOK 固定本人选定的 1–8 条符合条件的作答；视频/音频不作为已实现输出。下列微课和媒体专家流程用于说明后续完整目标。
 
 1. 读取三次本人提交与独立学习证据，固定 releaseId/contextRevision。
 2. 并行：泛型专家核对错因；代码专家复现诊断；教学设计专家提出递进结构。
@@ -79,7 +81,7 @@
 | 视频 | Timeline DSL→固定素材解析→受控滤镜/字幕/音轨→隔离合成→抽帧/时轴检查 | 不接受模型任意FFmpeg字符串；时间线边界、音画字幕同步、黑帧/空镜/可播放性；渲染与模型生成分开计费 |
 | 交互作品 | 六类块DSL→前端组件注册→允许action分派→客观服务→状态恢复 | 无任意主站JS，逐块真实操作/键盘/触屏测试；复练分数仍来自M05 |
 
-Java侧可以选Apache POI的XWPF/XSLF作为DOCX/PPTX适配器候选，但版式与格式兼容性需要逐份渲染验证；XWPF文档明确并非所有能力都在高层API覆盖。独立预览可用受控浏览器；正式Word→PDF保持同源文件。视频可使用FFmpeg过滤/合成能力，但工具只接受经过验证的Timeline DSL，命令参数由服务端构造。本次没有安装或验收这些导出适配器。[XWPF官方说明](https://poi.apache.org/components/document/quick-guide-xwpf.html)、[XSLF官方示例](https://poi.apache.org/components/slideshow/xslf-cookbook.html)、[FFmpeg过滤文档](https://ffmpeg.org/ffmpeg-filters.html)、[Playwright页面与PDF接口](https://playwright.dev/docs/api/class-page#page-pdf)。
+当前 Java 已接入 Apache POI XWPF/XSLF 和 PDFBox；测试重新打开实际文件，核对中文、段落、图片、演讲备注、字体与分页，具体证据以运行报告为准。跨办公软件的视觉一致性和正式模板验收仍需逐份渲染核验。未来视频可使用 FFmpeg，但工具仅接受校验后的 Timeline DSL，命令参数由服务端构造；FFmpeg 渲染器尚未接入。[XWPF官方说明](https://poi.apache.org/components/document/quick-guide-xwpf.html)、[XSLF官方示例](https://poi.apache.org/components/slideshow/xslf-cookbook.html)、[FFmpeg过滤文档](https://ffmpeg.org/ffmpeg-filters.html)。
 
 当前基础DSL用于明确协议，不宣称已覆盖复杂表格、图表、动画、数学公式和全部PPT形状。深度开发按schemaVersion扩展，例如Document加入table/figure、Slides加入chart/animation时先补正反例、renderer和编辑器，再提供入口，禁止以任意JSON对象绕过类型边界。
 

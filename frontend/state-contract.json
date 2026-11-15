@@ -117,8 +117,9 @@
       "onDuplicate": "ignore",
       "onGap": "resync-before-advancing-cursor",
       "onExpiredCursor": "refetch-snapshot-then-reconnect",
-      "uiStatus": "Run status/steps are fetched by getAgentRun polling; listRunEvents transport remains available on backend but is not consumed by this UI",
-      "uiConsumesEventStream": false
+      "uiStatus": "Run status/steps are fetched from authoritative run snapshots; Agents displays the first 100 RunEvents as an audit view without using event payloads as business facts.",
+      "uiConsumesEventStream": false,
+      "uiShowsBoundedAuditEvents": true
     },
     "workspace": {
       "status": "implemented ordered polling with AbortController and workspace generation isolation",
@@ -238,27 +239,30 @@
     "browser": "LOCAL_ENVIRONMENT_BLOCKED: Chromium AF_UNIX socket permission; browser CI remains a required gate",
     "report": "frontend/test-results/browser-report.json",
     "finalIntegrationReport": "See repository README for the current final acceptance report",
-    "serviceIntegration": "PASS: real HTTP DOM, 9 linked flows; frontend/test-results/live-dom-report.json"
+    "serviceIntegration": "PASS: real HTTP DOM, 13 linked flows; frontend/test-results/live-dom-report.json; rerun against the final JAR and record its hash in dom-runtime-report.json"
   },
   "implementationScope": {
     "routing": "hash routes; same-origin session and CSRF",
     "pages": [
-      "knowledge and reading",
-      "choice practice and feedback",
-      "progress and reviews",
-      "finite type lab",
-      "documents and slides",
-      "notebook actions",
+      "knowledge, persistent reading receipts and search",
+      "choice and code practice, hints and pending grading",
+      "progress, reviews and actual learning analytics",
+      "finite type lab and six code compilation labs",
+      "document source and keyboard/pointer slide editor",
+      "private image/audio/video asset library",
+      "notebook prediction, hints, compilation and reattempts",
+      "Markdown/HTML/SVG and capability-gated DOCX/PPTX/PDF exports",
       "persistent tutor",
-      "durable evidence workflow",
+      "durable evidence and study workflows",
       "memories and goals",
-      "preferences and capabilities"
+      "editorial sources, capture, revision, approval and publishing console",
+      "preferences, profile, password, sessions and account closure"
     ],
     "notImplemented": [
-      "editorial browser console",
-      "arbitrary compiler execution",
-      "image/audio/video generation",
-      "PPTX/DOCX/PDF generation",
+      "untrusted arbitrary Java execution",
+      "model image/audio/video generation",
+      "audio/video timeline editing",
+      "free multi-panel workspace layout",
       "SSE",
       "full-fidelity execution of all 209 external examples"
     ],

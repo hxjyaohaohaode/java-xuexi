@@ -6,20 +6,43 @@ import {
   LoaderCircle,
   SearchX,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { ApiError, message, safeSourceUrl } from '../api';
 import type { Evidence } from '../types';
 
 export function ErrorNotice({ error, retry }: { error: unknown; retry?: () => void }) {
   if (!error) return null;
-  const conflict = error instanceof ApiError && [409, 412].includes(error.status);
+  const conflict =
+    error instanceof ApiError &&
+    (error.status === 412 ||
+      /VERSION_CONFLICT|REVISION_CONFLICT|PRECONDITION_FAILED/.test(error.code));
+  const title = conflict
+    ? '发现版本冲突，当前输入已保留'
+    : error instanceof ApiError && error.code === 'ASSET_QUOTA_EXCEEDED'
+      ? '素材空间已满'
+      : error instanceof ApiError && error.status === 429
+        ? '操作较频繁，请稍后重试'
+        : error instanceof ApiError && error.code === 'OFFLINE'
+          ? '等待网络恢复'
+          : error instanceof ApiError && error.code === 'NETWORK_UNCERTAIN'
+            ? '服务端结果尚未确认，内容已保留'
+            : '请求尚未完成';
   return (
     <div className={`notice ${conflict ? 'warning' : 'error'}`} role="alert">
       <AlertCircle size={18} />
       <div>
-        <strong>{conflict ? '发现版本冲突，当前输入已保留' : '请求尚未完成'}</strong>
+        <strong>{title}</strong>
         <p>{message(error)}</p>
-        {error instanceof ApiError && error.traceId && <small>排查编号：{error.traceId}</small>}
+        {error instanceof ApiError && error.retryAfterSeconds && (
+          <small>约 {error.retryAfterSeconds} 秒后可重试。</small>
+        )}
+        {error instanceof ApiError && (
+          <details className="error-detail">
+            <summary>查看排查信息</summary>
+            <code>{error.code}</code>
+            {error.traceId && <small> · 排查编号：{error.traceId}</small>}
+          </details>
+        )}
         {retry && (
           <button className="text-button" onClick={retry}>
             重新读取
@@ -50,7 +73,7 @@ export function Empty({
     <div className="empty">
       <SearchX size={28} />
       <h3>{title}</h3>
-      {children && <p>{children}</p>}
+      {children && <div className="empty-description">{children}</div>}
       {action}
     </div>
   );
@@ -145,7 +168,12 @@ export const statusLabel: Record<string, string> = {
   PARTIAL: '部分完成',
   FAILED: '执行失败',
   CANCELLED: '已取消',
-  PENDING: '尚未开始',
+  COMPILE_ERROR: '编译未通过',
+  TIMED_OUT: '执行超时',
+  RESOURCE_LIMIT: '达到资源限制',
+  INFRA_ERROR: '编译服务异常',
+  RUNTIME_ERROR: '运行失败',
+  PENDING: '待处理',
   READY: '准备就绪',
   WAITING_TOOL: '等待工具',
   REVIEWING: '正在校验',
@@ -169,7 +197,16 @@ export function Status({ value }: { value: string }) {
       tone={
         ['COMPLETED', 'SUCCEEDED', 'GRADED', 'VERIFIED'].includes(value)
           ? 'good'
-          : ['FAILED', 'REJECTED', 'STALE'].includes(value)
+          : [
+                'FAILED',
+                'REJECTED',
+                'STALE',
+                'COMPILE_ERROR',
+                'TIMED_OUT',
+                'RESOURCE_LIMIT',
+                'INFRA_ERROR',
+                'RUNTIME_ERROR',
+              ].includes(value)
             ? 'bad'
             : ['PAUSED', 'PARTIAL', 'INSUFFICIENT_EVIDENCE', 'SUPERSEDED'].includes(value)
               ? 'warn'
@@ -195,5 +232,81 @@ export function Field({
       {children}
       {hint && <small>{hint}</small>}
     </label>
+  );
+}
+
+/** A focused, keyboard-complete dialog that restores the initiating control. */
+let scrollLocks = 0;
+let previousOverflow = '';
+export function lockBodyScroll() {
+  if (scrollLocks === 0) previousOverflow = document.body.style.overflow;
+  scrollLocks += 1;
+  document.body.style.overflow = 'hidden';
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    scrollLocks -= 1;
+    if (scrollLocks === 0) document.body.style.overflow = previousOverflow;
+  };
+}
+export function Dialog({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    const dialog = ref.current;
+    const releaseScroll = lockBodyScroll();
+    dialog?.showModal?.();
+    if (dialog && !dialog.open) dialog.setAttribute('open', '');
+    dialog?.querySelector<HTMLElement>('[autofocus], input, button')?.focus();
+    return () => {
+      dialog?.close?.();
+      releaseScroll();
+      previous?.focus();
+    };
+  }, []);
+  return (
+    <dialog
+      ref={ref}
+      className="native-dialog"
+      aria-label={title}
+      onCancel={(e) => {
+        e.preventDefault();
+        close.current();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          close.current();
+        }
+        if (e.key !== 'Tab') return;
+        const focusable = Array.from(
+          e.currentTarget.querySelectorAll<HTMLElement>(
+            'button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href],[tabindex="0"]',
+          ),
+        );
+        const first = focusable[0],
+          last = focusable.at(-1);
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }}
+    >
+      {children}
+    </dialog>
   );
 }

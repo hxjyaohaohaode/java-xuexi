@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Badge, Empty } from './ui';
 import type { ArtifactContent, TextBlock } from '../types';
 
@@ -68,6 +69,12 @@ export function SourcePreview({ content }: { content: ArtifactContent }) {
                     <pre>
                       <code>{element.text}</code>
                     </pre>
+                  ) : element.kind === 'IMAGE' && element.assetId ? (
+                    <PrivateImage
+                      key={element.assetId}
+                      id={element.assetId}
+                      alt={element.alt || '学习图片'}
+                    />
                   ) : element.kind === 'TEXT' ? (
                     <p>{element.text}</p>
                   ) : (
@@ -77,12 +84,28 @@ export function SourcePreview({ content }: { content: ArtifactContent }) {
               ))}
               <span className="slide-index">{String(i + 1).padStart(2, '0')}</span>
             </div>
-            {slide.notes && (
-              <details>
-                <summary>讲解备注</summary>
-                <p className="preserve-text">{slide.notes}</p>
-              </details>
-            )}
+            <details>
+              <summary>查看完整文本与讲解备注</summary>
+              {slide.elements
+                .filter((element) => element.kind === 'TEXT' || element.kind === 'CODE')
+                .map((element) =>
+                  element.kind === 'CODE' ? (
+                    <pre key={element.id}>
+                      <code>{element.text}</code>
+                    </pre>
+                  ) : (
+                    <p className="preserve-text" key={element.id}>
+                      {element.text}
+                    </p>
+                  ),
+                )}
+              {slide.notes && (
+                <>
+                  <h4>讲解备注</h4>
+                  <p className="preserve-text">{slide.notes}</p>
+                </>
+              )}
+            </details>
           </section>
         ))}
       </div>
@@ -144,5 +167,20 @@ export function SourcePreview({ content }: { content: ArtifactContent }) {
         </section>
       ))}
     </div>
+  );
+}
+
+function PrivateImage({ id, alt }: { id: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) || failed)
+    return <span className="muted">图片暂不可用，请检查素材是否仍有效。</span>;
+  return (
+    <img
+      className="slide-image"
+      src={`/api/v1/assets/${id}/download`}
+      alt={alt}
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
   );
 }

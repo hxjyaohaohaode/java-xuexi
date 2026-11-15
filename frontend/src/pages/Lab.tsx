@@ -2,17 +2,33 @@ import { useState } from 'react';
 import { ArrowRight, FlaskConical } from 'lucide-react';
 import { api } from '../api';
 import { useWorkspace } from '../context';
-import { useMutation, useResource } from '../hooks';
+import { useMutation, useResource, useSessionDraft } from '../hooks';
 import { Badge, Empty, ErrorNotice, Field, Loading, SectionTitle } from '../components/ui';
+import { CompilePanel } from '../components/Compiler';
 import type { LabResult } from '../types';
 
 export function Lab() {
-  const { workspace, can, tick, refresh } = useWorkspace();
-  const [sourceType, setSourceType] = useState('List<Integer>');
-  const [targetType, setTargetType] = useState('List<Number>');
-  const [labType, setLabType] = useState('ASSIGNMENT');
-  const [operation, setOperation] = useState('READ');
-  const [prediction, setPrediction] = useState('UNKNOWN');
+  const { workspace, session, can, tick, refresh } = useWorkspace();
+  const [sourceType, setSourceType] = useSessionDraft(
+    `tf.lab.sourceType.${session.userId}.${workspace.id}`,
+    'List<Integer>',
+  );
+  const [targetType, setTargetType] = useSessionDraft(
+    `tf.lab.targetType.${session.userId}.${workspace.id}`,
+    'List<Number>',
+  );
+  const [labType, setLabType] = useSessionDraft(
+    `tf.lab.labType.${session.userId}.${workspace.id}`,
+    'ASSIGNMENT',
+  );
+  const [operation, setOperation] = useSessionDraft(
+    `tf.lab.operation.${session.userId}.${workspace.id}`,
+    'READ',
+  );
+  const [prediction, setPrediction] = useSessionDraft(
+    `tf.lab.prediction.${session.userId}.${workspace.id}`,
+    'UNKNOWN',
+  );
   const [result, setResult] = useState<LabResult | null>(null);
   const mutation = useMutation();
   const history = useResource<LabResult[]>(
@@ -24,6 +40,7 @@ export function Lab() {
       <>
         <SectionTitle title="类型实验" />
         <Empty title="当前服务未启用类型实验">可先阅读知识卡并进行客观练习。</Empty>
+        <CompilePanel />
       </>
     );
   return (
@@ -65,73 +82,90 @@ export function Lab() {
               );
             }}
           >
-            <Field label="实验关系">
-              <select
-                value={labType}
-                onChange={(e) => {
-                  setLabType(e.target.value);
-                  setResult(null);
-                }}
-              >
-                <option value="ASSIGNMENT">赋值：源类型 → 目标类型</option>
-                <option value="READ_WRITE">容器的读取或写入</option>
-              </select>
-            </Field>
-            {labType === 'READ_WRITE' && (
-              <Field label="操作">
-                <select value={operation} onChange={(e) => setOperation(e.target.value)}>
-                  <option value="READ">读取：容器 → 接收值类型</option>
-                  <option value="WRITE">写入：值类型 → 容器</option>
+            <fieldset disabled={mutation.busy}>
+              <Field label="实验关系">
+                <select
+                  value={labType}
+                  onChange={(e) => {
+                    setLabType(e.target.value);
+                    setResult(null);
+                  }}
+                >
+                  <option value="ASSIGNMENT">赋值：源类型 → 目标类型</option>
+                  <option value="READ_WRITE">容器的读取或写入</option>
                 </select>
               </Field>
-            )}
-            <div className="type-flow-input">
-              <Field
-                label={labType === 'READ_WRITE' && operation === 'READ' ? '容器类型' : '源类型'}
-              >
-                <input
-                  className="code-input"
-                  value={sourceType}
+              {labType === 'READ_WRITE' && (
+                <Field label="操作">
+                  <select
+                    value={operation}
+                    onChange={(e) => {
+                      setOperation(e.target.value);
+                      setResult(null);
+                    }}
+                  >
+                    <option value="READ">读取：容器 → 接收值类型</option>
+                    <option value="WRITE">写入：值类型 → 容器</option>
+                  </select>
+                </Field>
+              )}
+              <div className="type-flow-input">
+                <Field
+                  label={labType === 'READ_WRITE' && operation === 'READ' ? '容器类型' : '源类型'}
+                >
+                  <input
+                    className="code-input"
+                    value={sourceType}
+                    onChange={(e) => {
+                      setSourceType(e.target.value);
+                      setResult(null);
+                    }}
+                    maxLength={500}
+                    required
+                  />
+                </Field>
+                <ArrowRight size={20} />
+                <Field
+                  label={
+                    labType === 'READ_WRITE' && operation === 'WRITE' ? '容器类型' : '目标类型'
+                  }
+                >
+                  <input
+                    className="code-input"
+                    value={targetType}
+                    onChange={(e) => {
+                      setTargetType(e.target.value);
+                      setResult(null);
+                    }}
+                    maxLength={500}
+                    required
+                  />
+                </Field>
+              </div>
+              <Field label="你的预测">
+                <select
+                  value={prediction}
                   onChange={(e) => {
-                    setSourceType(e.target.value);
+                    setPrediction(e.target.value);
                     setResult(null);
                   }}
-                  maxLength={500}
-                  required
-                />
+                >
+                  <option value="UNKNOWN">暂不确定</option>
+                  <option value="ALLOWED">允许</option>
+                  <option value="DENIED">拒绝</option>
+                </select>
               </Field>
-              <ArrowRight size={20} />
-              <Field
-                label={labType === 'READ_WRITE' && operation === 'WRITE' ? '容器类型' : '目标类型'}
-              >
-                <input
-                  className="code-input"
-                  value={targetType}
-                  onChange={(e) => {
-                    setTargetType(e.target.value);
-                    setResult(null);
-                  }}
-                  maxLength={500}
-                  required
-                />
-              </Field>
-            </div>
-            <Field label="你的预测">
-              <select value={prediction} onChange={(e) => setPrediction(e.target.value)}>
-                <option value="UNKNOWN">暂不确定</option>
-                <option value="ALLOWED">允许</option>
-                <option value="DENIED">拒绝</option>
-              </select>
-            </Field>
-            <ErrorNotice error={mutation.error} />
-            <button className="primary" disabled={mutation.busy}>
-              {mutation.busy ? '正在求值…' : '检验类型关系'}
-            </button>
+              <ErrorNotice error={mutation.error} />
+              <button className="primary" disabled={mutation.busy}>
+                {mutation.busy ? '正在求值…' : '检验类型关系'}
+              </button>
+            </fieldset>
           </form>
           <div className="lab-examples">
             <span className="muted small">载入例子</span>
             <button
               className="text-button"
+              disabled={mutation.busy}
               onClick={() => {
                 setLabType('ASSIGNMENT');
                 setSourceType('List<Integer>');
@@ -143,6 +177,7 @@ export function Lab() {
             </button>
             <button
               className="text-button"
+              disabled={mutation.busy}
               onClick={() => {
                 setLabType('READ_WRITE');
                 setOperation('WRITE');
@@ -176,6 +211,11 @@ export function Lab() {
                       : '不支持此表达式'}
                 </Badge>
               </div>
+              <div className="type-relation">
+                <code>{sourceType}</code>
+                <ArrowRight size={18} />
+                <code>{targetType}</code>
+              </div>
               <p className="preserve-text">{result.explanation}</p>
               <dl className="metadata">
                 <dt>规则</dt>
@@ -196,6 +236,7 @@ export function Lab() {
           )}
         </section>
       </div>
+      <CompilePanel />
       <section className="panel">
         <h2>最近的实验</h2>
         <ErrorNotice error={history.error} retry={history.reload} />

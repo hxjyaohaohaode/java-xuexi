@@ -187,10 +187,12 @@ class FullLearningLoopIntegrationTest {
         owner.call("PATCH","/me/reviews/"+key(),Map.of("status","DONE"),400,null,null);
     }
 
-    @Test void unsupportedCodeGradingCreatesNoLearningFactOrOutboxEvent() throws Exception {
+    @Test void codeAnswerForASelectionExerciseCreatesNoLearningFactOrOutboxEvent() throws Exception {
         Client c=new Client();String workspace=c.workspace(key()).path("id").asText();JsonNode e=exercise(c);
         long before=jdbc.queryForObject("SELECT event_sequence FROM learning_workspace WHERE id=?",Long.class,workspace);
-        c.call("POST","/attempts",Map.of("workspaceId",workspace,"releaseId",RELEASE,"exerciseId",e.path("id").asText(),"exerciseRevision",1,"answer",Map.of("kind","CODE","source","class UserCode {}")),503,null,key());
+        // Code grading is now supported for reviewed SIGNATURE/REFACTOR/FILL exercises;
+        // submitting CODE to this selection exercise is a client-shape mismatch, not an unavailable grader.
+        c.call("POST","/attempts",Map.of("workspaceId",workspace,"releaseId",RELEASE,"exerciseId",e.path("id").asText(),"exerciseRevision",1,"answer",Map.of("kind","CODE","source","class UserCode {}")),400,null,key());
         assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM exercise_attempt WHERE user_id=?",Integer.class,c.owner.toString()));
         assertEquals(before,jdbc.queryForObject("SELECT event_sequence FROM learning_workspace WHERE id=?",Long.class,workspace));
     }

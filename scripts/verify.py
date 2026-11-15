@@ -40,7 +40,9 @@ for source in (ROOT/'backend/src/main/java').rglob('*Controller.java'):
     code=source.read_text(encoding='utf-8')
     prefix_match=re.search(r'@RequestMapping\("([^"]+)"\)\s*public (?:final )?class',code)
     prefix=prefix_match.group(1) if prefix_match else ''
-    for method,path in re.findall(r'@(Get|Post|Put|Patch|Delete)Mapping(?:\("([^"]*)"\))?(?=\s|@)',code):
+    for method,args in re.findall(r'@(Get|Post|Put|Patch|Delete)Mapping(?:\(([^)]*)\))?(?=\s|@)',code):
+        path_match=re.search(r'"([^"]*)"',args)
+        path=path_match.group(1) if path_match else ''
         full=prefix+path
         if full.startswith('/api/v1/'):
             controller_routes.add((full[len('/api/v1'):],method.lower()))
@@ -162,8 +164,9 @@ check(len(tool_ids)==len(tools),'unique tool capability registry')
 check(all(set(r['allowedTools']) <= tool_ids for r in roles),'expert tools resolve to admitted registry')
 check(all(t['inputSchemaId'] in schemas and t['outputSchemaId'] in schemas for t in tools),'every tool has resolvable input/output schema')
 check(all(0 < t['timeoutMillis'] <= policy['complexRun']['maxWallMillis'] for t in tools),'tool deadlines fit overall run bound')
-check(all(r['status']=='planned' for r in roles),'LLM expert roles stay planned until an actual model adapter is admitted')
-check({t['id'] for t in tools if t['status']=='implemented'}=={'retrieveContext','searchEvidence'},'only two deterministic read tools are implemented')
+check(all(r['status'] in {'planned','partial'} for r in roles),'role scope distinguishes bounded adapters from unimplemented general specialists')
+check({t['id'] for t in tools if t['status']=='implemented'}=={'retrieveContext','searchEvidence','planLearning','explainLearning','composeDocument','composeSlides','composeInteraction'},'only tested evidence and bounded study adapters are marked implemented')
+check((ROOT/'backend/src/test/java/io/typeforge/StudyWorkflowIntegrationTest.java').exists() and (ROOT/'backend/src/test/java/io/typeforge/StudyModelWorkflowTest.java').exists(),'study adapters have deterministic and loopback HTTP integration coverage')
 capabilities=read_json('agent/capability-matrix.json')
 check({c['id'] for c in capabilities['capabilities']}==tool_ids,'capability matrix covers exactly registered tool ids')
 check(all(not c['enabled'] or (c['status']=='implemented' and c['adapterReady'] and c['verificationEvidence']) for c in capabilities['capabilities']),'enabled tools require an adapter and verification evidence')

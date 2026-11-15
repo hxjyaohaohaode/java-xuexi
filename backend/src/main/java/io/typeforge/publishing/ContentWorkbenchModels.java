@@ -1,6 +1,7 @@
 package io.typeforge.publishing;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.typeforge.compiler.CodeRubric;
 import io.typeforge.ingestion.IngestionModels.SourceReference;
 import java.time.Instant;
 import java.util.List;
@@ -17,7 +18,16 @@ public final class ContentWorkbenchModels {
     public record Chunk(UUID id, int revision, UUID conceptId, String title, String body, String contentHash,
                         String reviewHash, String status, UUID authorId, List<SourceReference> sources) {}
     public record ChoiceOption(String id, String text) {}
-    public record ChoiceAnswer(List<ChoiceOption> options, List<String> optionIds, String explanation, List<String> misconceptions) {}
+    public record ChoiceAnswer(List<ChoiceOption> options, List<String> optionIds, String explanation, List<String> misconceptions,
+                               List<CodeRubric.Rule> compileChecks,List<String> hints) {
+        public ChoiceAnswer {
+            compileChecks=compileChecks==null?List.of():List.copyOf(compileChecks);
+            hints=hints==null?List.of():List.copyOf(hints);
+        }
+        public ChoiceAnswer(List<ChoiceOption> options,List<String> optionIds,String explanation,List<String> misconceptions) {
+            this(options,optionIds,explanation,misconceptions,List.of(),List.of());
+        }
+    }
     public record ExerciseInput(UUID id, int revision, int baseRevision, UUID familyId, String kind, int difficulty,
                                 String prompt, List<UUID> conceptIds, ChoiceAnswer answerSpec, List<ContentRef> knowledgeRefs) {}
     public record Exercise(UUID id, int revision, UUID familyId, String kind, int difficulty, String prompt,

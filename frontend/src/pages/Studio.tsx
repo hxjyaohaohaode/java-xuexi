@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Download,
   FileText,
@@ -9,11 +9,14 @@ import {
   ArrowDown,
   ArrowUp,
   LibraryBig,
+  Undo2,
+  Redo2,
+  Image,
 } from 'lucide-react';
 import { ApiError, api } from '../api';
 import { useWorkspace } from '../context';
-import { useMutation, useResource } from '../hooks';
-import { readSaved, reconcileDraft, writeSaved } from '../state';
+import { useMutation, usePolling, useResource, useSessionDraft, useUnsavedChanges } from '../hooks';
+import { readSaved, removeSaved, reconcileDraft, writeSaved } from '../state';
 import {
   Badge,
   Confirmed,
@@ -25,13 +28,18 @@ import {
   Status,
   EvidenceList,
 } from '../components/ui';
+import { SlideEditor } from '../components/SlideEditor';
+import { AssetsPanel } from '../components/Assets';
+import { CompileDiagnostics, jobPending, starterSource } from '../components/Compiler';
 import { SourcePreview } from '../components/SourcePreview';
 import type {
   Artifact,
+  Asset,
   ArtifactContent,
   ArtifactVersion,
   Attempt,
   Concept,
+  CompileJob,
   Exercise,
   ExportJob,
   InteractionBlock,
@@ -78,11 +86,18 @@ function initialContent(artifact: Artifact): ArtifactContent {
 }
 
 export function Studio() {
-  const { workspace, tick, selection, navigate, refresh } = useWorkspace();
+  const { workspace, session, tick, selection, navigate, refresh, can } = useWorkspace();
   const artifacts = useResource<Artifact[]>(`/workspaces/${workspace.id}/artifacts`, tick);
   const [creating, setCreating] = useState(false);
-  const [title, setTitle] = useState('泛型学习讲义');
-  const [kind, setKind] = useState('DOCUMENT');
+  const [mediaOpen, setMediaOpen] = useState(false);
+  const [title, setTitle] = useSessionDraft(
+    `tf.artifact-title.${session.userId}.${workspace.id}`,
+    '泛型学习讲义',
+  );
+  const [kind, setKind] = useSessionDraft(
+    `tf.artifact-kind.${session.userId}.${workspace.id}`,
+    'DOCUMENT',
+  );
   const mutation = useMutation();
   const selected =
     artifacts.data?.find((a) => a.id === selection) ||
@@ -111,24 +126,42 @@ export function Studio() {
         title="作品与错题集"
         description="讲义、幻灯片和错题源稿共享版本与证据引用。预览展示当前源稿；只有保存成功的版本可以导出。"
         action={
-          <button className="primary" onClick={() => setCreating((v) => !v)}>
-            <Plus size={17} />
-            新建作品
-          </button>
+          <div className="row wrap">
+            {can('PRIVATE_ASSETS') && (
+              <button aria-expanded={mediaOpen} onClick={() => setMediaOpen(!mediaOpen)}>
+                <Image size={17} />
+                素材库
+              </button>
+            )}
+            <button
+              className="primary"
+              disabled={mutation.busy}
+              onClick={() => setCreating((v) => !v)}
+            >
+              <Plus size={17} />
+              新建作品
+            </button>
+          </div>
         }
       />
+      {mediaOpen && can('PRIVATE_ASSETS') && (
+        <div className="panel">
+          <AssetsPanel />
+        </div>
+      )}
       {creating && (
         <form className="inline-create panel" onSubmit={create}>
           <Field label="作品名称">
             <input
               value={title}
+              disabled={mutation.busy}
               maxLength={255}
               required
               onChange={(e) => setTitle(e.target.value)}
             />
           </Field>
           <Field label="源稿类型">
-            <select value={kind} onChange={(e) => setKind(e.target.value)}>
+            <select value={kind} disabled={mutation.busy} onChange={(e) => setKind(e.target.value)}>
               <option value="DOCUMENT">文档讲义</option>
               <option value="SLIDES">幻灯片</option>
             </select>
@@ -136,7 +169,7 @@ export function Studio() {
           <button className="primary" disabled={mutation.busy}>
             {mutation.busy ? '正在创建…' : '创建源稿'}
           </button>
-          <button type="button" onClick={() => setCreating(false)}>
+          <button type="button" disabled={mutation.busy} onClick={() => setCreating(false)}>
             取消
           </button>
           <ErrorNotice error={mutation.error} />
@@ -179,7 +212,9 @@ export function Studio() {
                 </span>
               </button>
             ))}
-            <p className="muted small">错题集从真实作答构建。图片、音频和视频生成尚未接入。</p>
+            <p className="muted small">
+              错题集从真实作答构建。自己的素材与自动生成内容会分别标明来源。
+            </p>
           </aside>
           <section className="studio-main">
             {selected ? (
@@ -220,6 +255,12 @@ function ArtifactEditor({ artifact }: { artifact: Artifact }) {
   const [conflict, setConflict] = useState(false);
   const [sourcePicker, setSourcePicker] = useState(false);
   const [sourceId, setSourceId] = useState('');
+  const [assetPicker, setAssetPicker] = useState(false);
+  const [assetSlideId, setAssetSlideId] = useState('');
+  const [undo, setUndo] = useState<Draft[]>([]);
+  const [redo, setRedo] = useState<Draft[]>([]);
+  const lastEdit = useRef(0);
+  useUnsavedChanges(draft.dirty);
   const mutation = useMutation();
   const concepts = useResource<{ items: Concept[] }>(
     sourcePicker ? `/concepts?releaseId=${workspace.releaseId}` : null,
@@ -238,10 +279,45 @@ function ArtifactEditor({ artifact }: { artifact: Artifact }) {
   }, [remote.data]);
   useEffect(() => {
     if (draft.dirty) writeSaved(storageKey, draft);
-    else sessionStorage.removeItem(storageKey);
+    else removeSaved(storageKey);
   }, [draft, storageKey]);
   const update = (content: ArtifactContent) => {
+    if (mutation.busy) return;
+    rememberEdit();
     setDraft((d) => ({ ...d, content, dirty: true }));
+    setSaved(false);
+  };
+  const rememberEdit = (force = false) => {
+    const now = Date.now();
+    if (force || now - lastEdit.current > 700) {
+      setUndo((previous) => {
+        const bounded = [...previous, draft].slice(-20);
+        // Undo remains bounded even for the maximum document size.
+        while (bounded.length > 1 && JSON.stringify(bounded).length > 1_000_000) bounded.shift();
+        return bounded;
+      });
+    }
+    lastEdit.current = now;
+    setRedo([]);
+  };
+  const restoreEdit = (direction: 'undo' | 'redo') => {
+    const stack = direction === 'undo' ? undo : redo;
+    const previous = stack.at(-1);
+    if (!previous || mutation.busy) return;
+    if (direction === 'undo') {
+      setUndo(stack.slice(0, -1));
+      setRedo((p) => [...p, draft]);
+    } else {
+      setRedo(stack.slice(0, -1));
+      setUndo((p) => [...p, draft]);
+    }
+    setDraft((d) => ({
+      ...d,
+      content: previous.content,
+      inputRefs: previous.inputRefs,
+      dirty: true,
+    }));
+    lastEdit.current = 0;
     setSaved(false);
   };
   const save = () =>
@@ -260,6 +336,8 @@ function ArtifactEditor({ artifact }: { artifact: Artifact }) {
           dirty: false,
         });
         setSaved(true);
+        setUndo([]);
+        setRedo([]);
         setConflict(false);
         refresh();
       },
@@ -267,6 +345,7 @@ function ArtifactEditor({ artifact }: { artifact: Artifact }) {
   const addSource = () => {
     const concept = concepts.data?.items.find((c) => c.id === sourceId);
     if (!concept) return;
+    rememberEdit(true);
     const refs = concept.evidence.map((e) => ({
       kind: 'KNOWLEDGE_CHUNK' as const,
       id: e.chunkId,
@@ -313,12 +392,76 @@ function ArtifactEditor({ artifact }: { artifact: Artifact }) {
     setSourcePicker(false);
     setSaved(false);
   };
+  const insertImage = (asset: Asset) => {
+    if (draft.content.kind !== 'SLIDES') return;
+    const target =
+      draft.content.slides.find((slide) => slide.id === assetSlideId) || draft.content.slides[0];
+    if (!target || target.elements.length >= 100) return;
+    rememberEdit(true);
+    const reference: Reference = {
+      kind: 'ASSET',
+      id: asset.id,
+      revision: asset.revision,
+      contentHash: asset.contentHash,
+    };
+    setDraft((current) => {
+      if (current.content.kind !== 'SLIDES') return current;
+      return {
+        ...current,
+        dirty: true,
+        inputRefs: [
+          ...new Map(
+            [...current.inputRefs, reference].map((item) => [`${item.kind}:${item.id}`, item]),
+          ).values(),
+        ],
+        content: {
+          ...current.content,
+          slides: current.content.slides.map((slide) =>
+            slide.id === target.id
+              ? {
+                  ...slide,
+                  elements: [
+                    ...slide.elements,
+                    {
+                      id: crypto.randomUUID(),
+                      kind: 'IMAGE',
+                      x: 0.56,
+                      y: 0.28,
+                      width: 0.36,
+                      height: 0.52,
+                      text: '',
+                      assetId: asset.id,
+                      alt: asset.filename,
+                    },
+                  ],
+                }
+              : slide,
+          ),
+        },
+      };
+    });
+    setSaved(false);
+    setAssetPicker(false);
+    setTab('preview');
+  };
   const currentRemote =
     remote.data && remote.data.revision >= draft.baseRevision ? remote.data : null;
   const blocked =
     currentRemote?.reviewStatus === 'STALE' || currentRemote?.reviewStatus === 'REJECTED';
   return (
-    <fieldset disabled={mutation.busy} aria-label="作品源稿编辑" style={{ minWidth: 0 }}>
+    <fieldset
+      disabled={mutation.busy}
+      aria-label="作品源稿编辑"
+      aria-busy={mutation.busy}
+      style={{ minWidth: 0 }}
+      onKeyDown={(event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+          event.preventDefault();
+          if (!mutation.busy && !blocked && !conflict && (draft.dirty || draft.baseRevision === 0))
+            void save();
+        }
+      }}
+    >
       <header className="editor-heading">
         <div>
           <h2>{artifact.title}</h2>
@@ -426,23 +569,69 @@ function ArtifactEditor({ artifact }: { artifact: Artifact }) {
         <>
           <div className="editor-toolbar">
             <div className="segments" aria-label="源稿视图">
-              <button className={tab === 'edit' ? 'selected' : ''} onClick={() => setTab('edit')}>
+              <button
+                aria-pressed={tab === 'edit'}
+                className={tab === 'edit' ? 'selected' : ''}
+                onClick={() => setTab('edit')}
+              >
                 编辑源稿
               </button>
               <button
                 className={tab === 'preview' ? 'selected' : ''}
+                aria-pressed={tab === 'preview'}
                 onClick={() => setTab('preview')}
               >
                 预览
               </button>
             </div>
             {['DOCUMENT', 'SLIDES'].includes(artifact.kind) && (
-              <button onClick={() => setSourcePicker((v) => !v)}>
-                <Plus size={15} />
-                引用课程知识
-              </button>
+              <div className="row wrap editor-actions">
+                <button
+                  className="icon-button"
+                  disabled={!undo.length}
+                  aria-label="撤销修改"
+                  onClick={() => restoreEdit('undo')}
+                >
+                  <Undo2 size={17} />
+                </button>
+                <button
+                  className="icon-button"
+                  disabled={!redo.length}
+                  aria-label="重做修改"
+                  onClick={() => restoreEdit('redo')}
+                >
+                  <Redo2 size={17} />
+                </button>
+                {artifact.kind === 'SLIDES' && can('PRIVATE_ASSETS') && (
+                  <button onClick={() => setAssetPicker(!assetPicker)} aria-expanded={assetPicker}>
+                    <Image size={15} />
+                    插入图片
+                  </button>
+                )}
+                <button onClick={() => setSourcePicker((v) => !v)} aria-expanded={sourcePicker}>
+                  <Plus size={15} />
+                  引用课程知识
+                </button>
+              </div>
             )}
           </div>
+          {assetPicker && draft.content.kind === 'SLIDES' && (
+            <section className="source-picker">
+              <Field label="图片插入到">
+                <select
+                  value={assetSlideId || draft.content.slides[0]?.id || ''}
+                  onChange={(e) => setAssetSlideId(e.target.value)}
+                >
+                  {draft.content.slides.map((slide, index) => (
+                    <option value={slide.id} key={slide.id}>
+                      第 {index + 1} 页 · {slide.title}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <AssetsPanel onInsert={insertImage} />
+            </section>
+          )}
           {sourcePicker && (
             <section className="source-picker">
               <Field label="选择要引用的知识卡">
@@ -602,123 +791,7 @@ function StructuredEditor({
         </button>
       </div>
     );
-  if (content.kind === 'SLIDES')
-    return (
-      <div className="block-editor">
-        <Field label="画幅">
-          <select
-            value={content.aspect}
-            onChange={(e) => onChange({ ...content, aspect: e.target.value as '16:9' | '4:3' })}
-          >
-            <option value="16:9">16:9</option>
-            <option value="4:3">4:3</option>
-          </select>
-        </Field>
-        {content.slides.map((slide, index) => (
-          <section className="edit-block" key={slide.id}>
-            <div className="row spread">
-              <h3>第 {index + 1} 页</h3>
-              <button
-                className="icon-button"
-                aria-label={`删除第 ${index + 1} 页`}
-                disabled={content.slides.length <= 1}
-                onClick={() =>
-                  onChange({ ...content, slides: content.slides.filter((s) => s.id !== slide.id) })
-                }
-              >
-                <Trash2 size={15} />
-              </button>
-            </div>
-            <Field label={`第 ${index + 1} 页标题`}>
-              <input
-                value={slide.title}
-                maxLength={200}
-                onChange={(e) =>
-                  onChange({
-                    ...content,
-                    slides: content.slides.map((s) =>
-                      s.id === slide.id ? { ...s, title: e.target.value } : s,
-                    ),
-                  })
-                }
-              />
-            </Field>
-            {slide.elements.map((element, elementIndex) => (
-              <div key={element.id}>
-                <Field label={`第 ${index + 1} 页元素 ${elementIndex + 1}`}>
-                  <textarea
-                    rows={5}
-                    maxLength={8000}
-                    value={element.text}
-                    onChange={(e) =>
-                      onChange({
-                        ...content,
-                        slides: content.slides.map((s) =>
-                          s.id === slide.id
-                            ? {
-                                ...s,
-                                elements: s.elements.map((el) =>
-                                  el.id === element.id ? { ...el, text: e.target.value } : el,
-                                ),
-                              }
-                            : s,
-                        ),
-                      })
-                    }
-                  />
-                </Field>
-                <label className="checkbox-field">
-                  <input
-                    type="checkbox"
-                    checked={element.kind === 'CODE'}
-                    onChange={(e) =>
-                      onChange({
-                        ...content,
-                        slides: content.slides.map((s) =>
-                          s.id === slide.id
-                            ? {
-                                ...s,
-                                elements: s.elements.map((el) =>
-                                  el.id === element.id
-                                    ? { ...el, kind: e.target.checked ? 'CODE' : 'TEXT' }
-                                    : el,
-                                ),
-                              }
-                            : s,
-                        ),
-                      })
-                    }
-                  />
-                  作为代码显示
-                </label>
-              </div>
-            ))}
-            <Field label={`第 ${index + 1} 页讲解备注`}>
-              <textarea
-                rows={2}
-                maxLength={8000}
-                value={slide.notes}
-                onChange={(e) =>
-                  onChange({
-                    ...content,
-                    slides: content.slides.map((s) =>
-                      s.id === slide.id ? { ...s, notes: e.target.value } : s,
-                    ),
-                  })
-                }
-              />
-            </Field>
-          </section>
-        ))}
-        <button
-          disabled={content.slides.length >= 80}
-          onClick={() => onChange({ ...content, slides: [...content.slides, freshSlide()] })}
-        >
-          <Plus size={16} />
-          添加一页
-        </button>
-      </div>
-    );
+  if (content.kind === 'SLIDES') return <SlideEditor content={content} onChange={onChange} />;
   return <SourcePreview content={content} />;
 }
 function ExportPanel({
@@ -732,7 +805,7 @@ function ExportPanel({
   dirty: boolean;
   blocked: boolean;
 }) {
-  const { tick } = useWorkspace();
+  const { tick, can } = useWorkspace();
   const [format, setFormat] = useState(
     artifact.kind === 'DOCUMENT' ? 'MARKDOWN' : artifact.kind === 'DIAGRAM' ? 'SVG' : 'HTML',
   );
@@ -746,15 +819,17 @@ function ExportPanel({
   useEffect(() => {
     if (current.data) setJob(current.data);
   }, [current.data]);
-  useEffect(() => {
-    if (job && ['QUEUED', 'RUNNING'].includes(job.status)) {
-      const timer = setTimeout(() => setPoll((n) => n + 1), 1200);
-      return () => clearTimeout(timer);
-    }
-  }, [job, poll]);
+  usePolling(
+    !!job && ['QUEUED', 'RUNNING'].includes(job.status),
+    () => setPoll((value) => value + 1),
+    current.loading,
+    !!current.error,
+    1200,
+  );
   const download = current.data || job;
   const path = download?.downloadPath;
-  const safePath = path?.startsWith(`/api/v1/export-jobs/${download?.id}/download`) ? path : null;
+  const safePath = path === `/api/v1/export-jobs/${download?.id}/download` ? path : null;
+  const pending = !!download && ['QUEUED', 'RUNNING'].includes(download.status);
   return (
     <section className="export-panel">
       <div>
@@ -766,15 +841,29 @@ function ExportPanel({
         </p>
       </div>
       <div className="row wrap">
-        <select aria-label="导出格式" value={format} onChange={(e) => setFormat(e.target.value)}>
+        <select
+          aria-label="导出格式"
+          disabled={mutation.busy || pending}
+          value={format}
+          onChange={(e) => setFormat(e.target.value)}
+        >
           {artifact.kind === 'DOCUMENT' && <option value="MARKDOWN">Markdown 文档</option>}
           {artifact.kind !== 'DIAGRAM' && (
             <option value="HTML">HTML {artifact.kind === 'SLIDES' ? '幻灯片' : '文档'}</option>
           )}
           {artifact.kind === 'DIAGRAM' && <option value="SVG">SVG 图</option>}
+          {can('OFFICE_PDF_EXPORT') && artifact.kind === 'DOCUMENT' && (
+            <option value="DOCX">Word 文档（.docx）</option>
+          )}
+          {can('OFFICE_PDF_EXPORT') && artifact.kind === 'SLIDES' && (
+            <option value="PPTX">PowerPoint（.pptx）</option>
+          )}
+          {can('OFFICE_PDF_EXPORT') && ['DOCUMENT', 'SLIDES'].includes(artifact.kind) && (
+            <option value="PDF">PDF 文档</option>
+          )}
         </select>
         <button
-          disabled={mutation.busy || dirty || blocked || revision === 0}
+          disabled={mutation.busy || pending || dirty || blocked || revision === 0}
           onClick={() =>
             void mutation.run(
               () =>
@@ -789,7 +878,7 @@ function ExportPanel({
           }
         >
           <Download size={16} />
-          生成导出文件
+          {mutation.busy ? '正在提交…' : pending ? '正在生成文件…' : '生成导出文件'}
         </button>
       </div>
       {dirty && <small className="muted">请先保存当前修改。</small>}
@@ -801,6 +890,25 @@ function ExportPanel({
         <div className="row wrap">
           <Status value={download.status} />
           <span className="small">源版本 {download.artifactRevision}</span>
+          {pending && (
+            <button
+              disabled={mutation.busy}
+              onClick={() =>
+                void mutation.run(
+                  () =>
+                    api.request<ExportJob>(
+                      `/export-jobs/${download.id}/cancel`,
+                      'POST',
+                      undefined,
+                      { idempotent: true },
+                    ),
+                  setJob,
+                )
+              }
+            >
+              取消导出
+            </button>
+          )}
           {download.status === 'SUCCEEDED' &&
           download.sourceState === 'CURRENT' &&
           download.artifactRevision === revision &&
@@ -836,25 +944,65 @@ function NotebookBlock({
   block: InteractionBlock;
   disabled: boolean;
 }) {
-  const { workspace, refresh } = useWorkspace();
+  const { workspace, session, can, refresh, navigate } = useWorkspace();
   const exercise = useResource<Exercise>(
     block.exerciseRef
       ? `/exercises/${block.exerciseRef.id}?releaseId=${workspace.releaseId}&revision=${block.exerciseRef.revision}`
       : null,
   );
   const concepts = useResource<{ items: Concept[] }>(`/concepts?releaseId=${workspace.releaseId}`);
-  const [prediction, setPrediction] = useState('');
-  const [options, setOptions] = useState<string[]>([]);
-  const [feedback, setFeedback] = useState<Attempt | null>(null);
+  const [prediction, setPrediction] = useSessionDraft(
+    `tf.notebook-prediction.${session.userId}.${workspace.id}.${artifact.id}.${block.id}`,
+    '',
+  );
+  const [options, setOptions] = useSessionDraft<string[]>(
+    `tf.notebook-answer.${session.userId}.${workspace.id}.${artifact.id}.${block.id}`,
+    [],
+  );
+  const [source, setSource] = useSessionDraft(
+    `tf.notebook-code.${session.userId}.${workspace.id}.${artifact.id}.${block.id}`,
+    typeof block.config.originalSource === 'string' ? block.config.originalSource : starterSource,
+  );
+  const [compileId, setCompileId] = useSessionDraft(
+    `tf.notebook-compile.${session.userId}.${workspace.id}.${artifact.id}.${block.id}`,
+    '',
+  );
+  const [hintLevel, setHintLevel] = useState(1);
+  const [poll, setPoll] = useState(0);
+  const [feedback, setFeedback] = useSessionDraft<Attempt | null>(
+    `tf.notebook-feedback.${session.userId}.${workspace.id}.${artifact.id}.${block.id}`,
+    null,
+  );
   const [notice, setNotice] = useState('');
   const [showEvidence, setShowEvidence] = useState(false);
   const mutation = useMutation();
+  const pending = !!feedback && ['PENDING', 'QUEUED', 'RUNNING'].includes(feedback.status);
+  const latest = useResource<Attempt>(pending ? `/attempts/${feedback!.id}` : null, poll);
+  const compilation = useResource<CompileJob>(
+    compileId ? `/compile-jobs/${compileId}` : null,
+    poll,
+  );
+  const isCode = !!exercise.data && ['SIGNATURE', 'REFACTOR', 'FILL'].includes(exercise.data.kind);
+  const sourceBytes = new TextEncoder().encode(source).byteLength;
+  useEffect(() => {
+    if (latest.data && latest.data.id === feedback?.id && latest.data.status !== feedback.status) {
+      setFeedback(latest.data);
+      refresh();
+    }
+  }, [latest.data, feedback]);
+  usePolling(
+    pending || (!!compileId && (!compilation.data || jobPending(compilation.data.status))),
+    () => setPoll((value) => value + 1),
+    latest.loading || compilation.loading,
+    !!latest.error || !!compilation.error,
+  );
   const action = (action: string) =>
     version &&
     mutation.run(
       async () => {
         const result = await api.request<{
           attemptId: string | null;
+          compileJobId: string | null;
           message: string;
           evidenceRefs: { id: string; revision: number }[];
         }>(
@@ -865,7 +1013,13 @@ function NotebookBlock({
             blockId: block.id,
             action,
             expectedBlockRevision: block.revision,
-            answer: action === 'submitAnswer' ? { kind: 'CHOICE', optionIds: options } : null,
+            answer:
+              action === 'requestCompile' || (action === 'submitAnswer' && isCode)
+                ? { kind: 'CODE', source }
+                : action === 'submitAnswer'
+                  ? { kind: 'CHOICE', optionIds: options }
+                  : null,
+            ...(action === 'requestHint' ? { hintLevel } : {}),
             selection: action === 'predict' ? prediction : '',
           },
           { idempotent: true },
@@ -880,6 +1034,8 @@ function NotebookBlock({
       ({ result, attempt }) => {
         setNotice(result.message);
         if (attempt) setFeedback(attempt);
+        if (result.compileJobId) setCompileId(result.compileJobId);
+        if (action === 'requestHint') setHintLevel((value) => Math.min(value + 1, 3));
         if (action === 'openEvidence') setShowEvidence(true);
         refresh();
       },
@@ -909,7 +1065,7 @@ function NotebookBlock({
           maxLength={1000}
           value={prediction}
           onChange={(e) => setPrediction(e.target.value)}
-          disabled={disabled}
+          disabled={disabled || mutation.busy}
         />
       </Field>
       <button
@@ -924,8 +1080,8 @@ function NotebookBlock({
         记录预测
       </button>
       <ErrorNotice error={exercise.error} retry={exercise.reload} />
-      {exercise.data && (
-        <fieldset className="answer-options" disabled={disabled || mutation.busy}>
+      {exercise.data && !isCode && (
+        <fieldset className="answer-options" disabled={disabled || mutation.busy || pending}>
           <legend>重新选择答案</legend>
           {exercise.data.options.map((option) => (
             <label
@@ -953,19 +1109,72 @@ function NotebookBlock({
           ))}
         </fieldset>
       )}
+      {(isCode || block.allowedActions.includes('requestCompile')) && (
+        <Field
+          label="修改本题代码 · Main.java"
+          hint={`${sourceBytes.toLocaleString()} / 32,768 字节`}
+        >
+          <textarea
+            className="code-editor"
+            rows={14}
+            spellCheck={false}
+            maxLength={32768}
+            value={source}
+            disabled={disabled || mutation.busy || pending || jobPending(compilation.data?.status)}
+            onChange={(e) => {
+              setSource(e.target.value);
+              setFeedback(null);
+            }}
+          />
+        </Field>
+      )}
       <div className="row wrap">
         <button
           className="primary"
           disabled={
             disabled ||
             mutation.busy ||
-            options.length === 0 ||
+            pending ||
+            (isCode
+              ? !can('CODE_GRADING') || !source.trim() || sourceBytes > 32768
+              : options.length === 0) ||
             !block.allowedActions.includes('submitAnswer')
           }
           onClick={() => void action('submitAnswer')}
         >
           提交复练
         </button>
+        {block.allowedActions.includes('requestHint') && can('EXERCISE_HINTS') && (
+          <button
+            disabled={disabled || mutation.busy || pending}
+            onClick={() => void action('requestHint')}
+          >
+            查看第 {hintLevel} 级提示
+          </button>
+        )}
+        {block.allowedActions.includes('requestCompile') && can('COMPILE_ONLY') && (
+          <button
+            disabled={
+              disabled ||
+              mutation.busy ||
+              pending ||
+              jobPending(compilation.data?.status) ||
+              !source.trim() ||
+              sourceBytes > 32768
+            }
+            onClick={() => void action('requestCompile')}
+          >
+            仅检查编译
+          </button>
+        )}
+        {block.attemptId && can('STUDY_WORKFLOW') && (
+          <button
+            disabled={disabled || mutation.busy}
+            onClick={() => navigate('agents', block.attemptId!)}
+          >
+            为这道错题创建学习任务
+          </button>
+        )}
         <button
           disabled={disabled || mutation.busy || !block.allowedActions.includes('openEvidence')}
           onClick={() => void action('openEvidence')}
@@ -975,12 +1184,26 @@ function NotebookBlock({
       </div>
       <ErrorNotice error={mutation.error} />
       {notice && <Confirmed>{notice}</Confirmed>}
+      <ErrorNotice error={latest.error} retry={latest.reload} />
+      <ErrorNotice error={compilation.error} retry={compilation.reload} />
+      {compilation.data && (
+        <details>
+          <summary>编译任务 · {compilation.data.status}</summary>
+          <CompileDiagnostics job={compilation.data} />
+        </details>
+      )}
       {feedback && (
         <section className="feedback" aria-live="polite">
           <h3>
-            复练反馈 · {feedback.score}/{feedback.maximum}
+            复练反馈 ·{' '}
+            {feedback.status === 'GRADED' ? (
+              `${feedback.score}/${feedback.maximum}`
+            ) : (
+              <Status value={feedback.status} />
+            )}
           </h3>
           <p className="preserve-text">{feedback.feedback}</p>
+          {pending && <Loading label="代码作答已入队，正在等待题目规则验证。" />}
           <p className="muted small">重复题目家族不会增加独立掌握样本。</p>
         </section>
       )}

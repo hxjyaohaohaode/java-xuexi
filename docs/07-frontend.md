@@ -1,12 +1,12 @@
 # 前端样式、页面与交互规范
 
-本章区分当前 v0.4 React 客户端与保留的组件研究。已实现页面、运行命令和真实能力边界见 [前端 README](../frontend/README.md)；跨模块状态见 [工作空间状态协议](15-frontend-state-network.md) 和 [机器可读摘要](../frontend/state-contract.json)。单元/DOM/图形浏览器验收分别记录；本地 Chromium 在打开页面前受系统 socket 限制，不能把该阻塞记为图形浏览器 PASS。
+本章区分当前 v0.5 React 客户端与保留的组件研究。已实现页面、运行命令和真实能力边界见 [前端 README](../frontend/README.md)；跨模块状态见 [工作空间状态协议](15-frontend-state-network.md) 和 [机器可读摘要](../frontend/state-contract.json)。单元/DOM/图形浏览器验收分别记录；本地 Chromium 在打开页面前受系统 socket 限制，不能把该阻塞记为图形浏览器 PASS。
 
 ## 1. 研究范围与证据边界
 
 已逐条阅读用户《前端组件交互参考.md》的 1–209 条，完整取舍见 [209 条研究台账](../frontend/reference-ledger.csv)。四个核心候选已读取官方 TS + Tailwind 源文件：#68 LineSidebar、#69 AnimatedList、#92 SpotlightCard、#102 Stepper。另四项 #110/#111/#114/#127 已补读关键源码，详见本章后半部分；其他候选仅完成目录与业务适配研究，**没有宣称已运行 209 个演示、完成触屏验收或复制组件**。
 
-源码参考快照：React Bits commit `4e0d091d3b1ea8b7aadef33716a8d99d164ae4ce`。v0.4 已实现原创业务界面，未复制 React Bits 组件或安装整个动效库；若以后直接迁移外部组件，安装前仍须核对固定版本、完整实现、许可和真实演示。台账中“候选”不等于“已采用上线”。
+源码参考快照：React Bits commit `4e0d091d3b1ea8b7aadef33716a8d99d164ae4ce`。v0.5 已实现原创业务界面，未复制 React Bits 组件或安装整个动效库；若以后直接迁移外部组件，安装前仍须核对固定版本、完整实现、许可和真实演示。台账中“候选”不等于“已采用上线”。
 
 ## 2. 视觉方向
 
@@ -26,32 +26,30 @@
 | border | #E2E7DF | #3B4942 | 分隔线；输入边界需复测 ≥3:1 |
 | inputBorder | #708885 | #78918B | 输入控件边界；对比度由 scripts/verify.py 按实际 tokens 核验 |
 
-规格保存在 [design-tokens.json](../frontend/design-tokens.json)。当前间距采用 4px 基础节奏；交互控件目标至少 44px；代码字号 14–24 可调；页面正文以 14px、行高 1.8–1.95 为主，知识与文档阅读按场景加大；卡片圆角 12，输入 8，大面板 16。细边框为主，阴影只用于浮层。不把整个系统堆成玻璃卡片，不用模糊正文制造层次。
+规格保存在 [design-tokens.json](../frontend/design-tokens.json)。当前间距采用 4px 基础节奏；交互控件目标至少 44px；代码字号 14–24 可调；页面正文以 14px、行高 1.8–1.95 为主，知识与文档阅读按场景加大；原基础圆角为卡片 12、输入 8、大面板 16；v0.5 交互层调整为输入 10、按钮 11、主要阅读面板 18，并用低对比阴影区分表面。不把整个系统堆成玻璃卡片，不用模糊正文制造层次。
 
 ## 3. 桌面与移动布局
 
-当前桌面使用 224px 左导航、弹性主内容和独立页面。知识页为目录＋阅读面；练习页为题目列表＋作答；作品页为作品列表＋源稿/预览；导师页为会话列表＋消息。960px 以下内容逐步合并为单列；760px 以下导航使用可开关菜单。当前没有可拖动三栏、悬浮导师侧栏或自由画布，相关描述作为后续方向保留。
+当前桌面使用可收起的左导航、弹性主内容和独立页面。知识页为目录＋阅读面；练习页为题目列表＋作答；作品页为作品列表＋源稿/预览；导师页为会话列表＋消息；学习任务为目标输入＋阶段/成果。1120px 以下较复杂面板逐步合并；760px 以下导航使用菜单，内容提供焦点约束、Escape、返回焦点和滚动恢复。幻灯片已支持对象拖动/缩放和键盘等价操作；可拖动三栏、悬浮导师侧栏与任意工作区布局仍是后续方向。
 
-页面使用 `#learn`、`#practice`、`#progress`、`#lab`、`#studio/<artifactId>`、`#tutor`、`#memory`、`#settings`，空间选择由当前账号持有。代码块自身可滚动，正文响应式布局；真实 320/390/768/1440 视口、软键盘和屏幕阅读器结果以实际验收报告为准。
+页面使用 `#learn`、`#practice`、`#progress`、`#lab`、`#studio/<artifactId>`、`#tutor`、`#memory`、`#settings`、`#agents`、`#content`，空间选择由当前账号持有。代码块自身可滚动，正文响应式布局；真实 320/390/768/1440 视口、软键盘和屏幕阅读器结果以实际验收报告为准。
 
 ## 4. 页面与业务状态
 
-| 路由 | 核心布局与操作 | 数据/联动 | 必须设计的状态 |
+| 当前 hash 路由 | 核心布局与操作 | 数据/联动 | 必须区分的状态 |
 |---|---|---|---|
-| `/` | 项目介绍、继续学习、当前能力入口 | framework 能力清单 | 未登录/加载/模块未上线 |
-| `/learn` | 概念路径、前置关系、进度与章节列表 | concepts + progress | 空记录/前置不足/历史版本 |
-| `/learn/:conceptId` | 阅读、正反例对照、证据抽屉、去实验 | concept/releaseId | 404/退役/引用失效/阅读已保存 |
-| `/labs/:labType` | 预测→类型操作→核验→解释 | lab session + compile job | 不支持/排队/超时/警告/取消 |
-| `/practice/:exerciseId` | 题干、回答区、提示层级、反馈 | exercise + attempt | 未答/提交中/重复请求/基础设施失败 |
-| `/reviews` | 复练清单、原因、修改前后 | review_item + attempts | 证据不足/无复练/更新延迟 |
-| `/knowledge` | 术语搜索、筛选、证据列表 | retrieval + source | 无命中/失败/旧版本/加载更多 |
-| `/tutor/:conversationId` | 对话、上下文卡、证据、建议 | tutor request + own attempt | 断开/无证据/模型不可用/取消 |
-| `/progress` | 独立正确率、样本量、错因、时间线 | learner_concept | 未练习/部分数据/投影重建 |
-| `/admin/content` | 来源、卡片、题目、审核与版本 diff | admin APIs | 无权限/编辑冲突/审核未通过 |
-| `/admin/releases` | 校验清单、发布/回退、索引状态 | release/index_snapshot | 发布中/失败/并发冲突/回退完成 |
-| `/settings` | 主题、动效、字号、隐私与会话 | preferences/session | 保存中/失败恢复/退出 |
+| `#learn` / `#learn/<conceptId>` | 概念目录、阅读、检索、来源与前后节 | release / concepts / readings | 加载、无匹配、读取失败、已读确认 |
+| `#lab` | 有限规则与六类代码实验 | lab session / compile job | 不支持、未配置、排队、诊断、取消、旧源码结果 |
+| `#practice` / `#practice/<exerciseId>` | 选择题或代码编辑、三级提示与反馈 | exercise / attempt / hints | 未答、PENDING、GRADED、FAILED、受助练习 |
+| `#progress` | 学习证据、复习、趋势及明细 | projection / reviews / analytics | 未练习、待投影、窗口含今天、样本不足 |
+| `#studio/<artifactId>` | 源稿、幻灯片画布、预览、素材与导出 | revisions / ASSET refs / export jobs | 脏稿、冲突、来源失效、容量、失败、实际文件完成 |
+| `#tutor` | 持久对话、固定上下文、证据与转文档 | tutor request / snapshot | 本地证据、模型未配置、处理中、取消、来源失效 |
+| `#agents` | 目标、预算、阶段、记录与学习成果 | agent run / teaching plan / artifact refs | 排队、运行、等待、部分完成、失败、完成 |
+| `#memory` | 个人记忆与目标 | memories / goals / contexts | 独立草稿、CAS、撤回、归档、来源失效 |
+| `#content` | 来源采集、知识/题目、审核与发布 | content authoring / approval / releases | 权限、独立脏稿、审核状态、冻结、发布冲突 |
+| `#settings` | 主题、动效、空间、账户与会话 | preferences / profile / sessions | 保存中、CAS、改密失败、撤销、账户停用 |
 
-每页加载失败都有重试与保留输入；不能用空态遮掩服务器错误。表单失败焦点落到错误概要，字段保留原值。未实现能力不呈现可点击主操作。
+加载失败显示错误与可用的读取重试，表单保留输入。错误与成功反馈留在操作附近；不能用空态遮掩服务器错误。能力未启用时提供明确限制而不显示虚假的可执行入口。原页面路径草案（如 `/admin/releases`）不代表已部署路由；内容流程统一在 `#content`。
 
 ## 5. 核心交互拆解
 
@@ -93,13 +91,13 @@ Uiverse #173 焦点输入、#197 文件树、#200 主题开关、#207 发送、#
 - 成功/错误：由响应决定；错误提示保留源位置并可跳到对应代码行；toast 不作为唯一错误容器。
 - 键盘：Tab/Shift+Tab 连贯；Esc 关闭抽屉并恢复焦点；Ctrl+Enter 运行仅在编辑区域激活；中文输入法合成时 Enter 不发送。
 - 屏幕阅读：装饰 aria-hidden，图形关系同时有文本表格；状态只在改变时适度 announce，不逐 token 播报。
-- 动效：一般反馈 120–220ms，面板 220–320ms，必要实验步骤最长 560ms；同屏最多一个连续动画，离屏暂停，所有 listener/observer/rAF 清理。
+- 动效：当前交互层一般反馈 150ms、面板 260ms、按压 80ms，可中断；减少动效直接切换状态。后台轮询在隐藏或离线时暂停，所有 listener / timer 清理。参考 Apple HIG 的 [Motion](https://developer.apple.com/design/human-interface-guidelines/motion) 与 [Feedback](https://developer.apple.com/design/human-interface-guidelines/feedback)，不复制其产品界面或装饰。
 - 性能目标：首屏 JS gzip <250 KiB（编辑器另行懒加载）、CLS<0.1、实验无输入阻塞；实际指标待实现后在固定设备上测量。
 - 验收：鼠标/键盘/触屏，320/768/1440 宽度，浅/深主题，减少动效，离线/慢网，重复挂载卸载，保存/取消/重试/历史后退均覆盖。
 
 ## 8. 许可与落地门槛
 
-React Bits 当前为 [MIT + Commons Clause](https://github.com/DavidHDev/react-bits/blob/4e0d091d3b1ea8b7aadef33716a8d99d164ae4ce/LICENSE.md)，应用内使用与重新分发组件包有区别。对这些外部组件仅保留研究和链接，没有复制到组件库；v0.4 的 React 业务界面是原创实现。真正采用时保留版权许可，逐项登记源文件/commit/依赖锁文件/改造/交互测试/限制；Uiverse 的每个作品分别核对。没有实现和实测的条目不能标成完成。
+React Bits 当前为 [MIT + Commons Clause](https://github.com/DavidHDev/react-bits/blob/4e0d091d3b1ea8b7aadef33716a8d99d164ae4ce/LICENSE.md)，应用内使用与重新分发组件包有区别。对这些外部组件仅保留研究和链接，没有复制到组件库；v0.5 的 React 业务界面是原创实现。真正采用时保留版权许可，逐项登记源文件/commit/依赖锁文件/改造/交互测试/限制；Uiverse 的每个作品分别核对。没有实现和实测的条目不能标成完成。
 
 ## 9. 以Agent工作空间为主界面
 
@@ -142,10 +140,12 @@ React Bits 当前为 [MIT + Commons Clause](https://github.com/DavidHDev/react-b
 
 接入时以 [状态协议第五节](15-frontend-state-network.md#5-需要可操作的五条联动)的五条业务链为验收单位。每个链路既检查正常路径，也检查断线、旧版本、权限变化、重复响应、模型未配置及中文输入法，确认同一真实状态在所有相关视图一致呈现。
 
-## 11. v0.4 当前实现与保留边界
+## 12. v0.5 当前实现与保留边界
 
-实际主链包括：课程检索与阅读→客观题作答→真实错题稿与复练→进度/复习；记忆/目标→快照→证据任务或导师→带来源的学习文档；文档/幻灯片源稿→CAS 版本→异步静态文件导出；目标更新或记忆撤回→旧来源失效。详细实现映射见 [交互实现与参考边界](../frontend/interaction-implementation.md)。
+实际主链包括：课程检索与持久阅读→选择题或受能力约束的代码题→真实提示、错题稿与复练→进度/复习/趋势；六类编译正反例→预测→真实任务→诊断；记忆/目标/明确选择的历史错题→同证据快照→本地证据工作流或模型任务→文稿、幻灯片与复练笔记；私有素材→带固定 ASSET 引用的可编辑幻灯片→真实 Office/PDF 导出；内容来源/采集→修订→独立审核→冻结发布。来源变更和撤回继续使依赖的任务/作品失效。
 
-`SINGLE` 使用单选 radio，`MULTIPLE` 等已配置客观选择题使用 checkbox；提交格式统一为 `Answer.kind=CHOICE`，不得将题目 kind 与答案编码混淆。只有服务端 GRADED 结果展示分数。导师 DTO 的 limitations 是文本，导出 limitations 是列表；偏好 PUT 同时携带 body.revision 与 quoted If-Match。
+`SINGLE` 使用单选 radio，其他已配置客观选择题使用 checkbox，提交为 `Answer.kind=CHOICE`。`SIGNATURE`、`REFACTOR`、`FILL` 使用 `Answer.kind=CODE`；题目 kind 不是 `CODE`。只有服务端 GRADED 才展示分数；PENDING 的 score / maximum / evidenceRef 为 null。提示会使后续同题族作答成为辅助练习，单纯编译通过不会自动得分。详细映射见 [交互实现与参考边界](../frontend/interaction-implementation.md)。
 
-正式编辑发布浏览器控制台、任意 Java 编译器、媒体生成、Office/PDF 二进制导出、SSE、自由多面板布局和全部外部参考的高保真复刻不属于已实现范围。真实图形浏览器门禁在 CI 运行，受限本地环境仅可执行单元与真实 HTTP DOM 联调，不能将后者写成移动设备或屏幕阅读器已验证。
+前端单元检查覆盖 41 个用例，包含 CAS/草稿、轮询、旧作用域、审核协议、多来源、代码异步判分与安全预览；真实 HTTP DOM 链路检查后端响应与真实文件字节。每次完整验收须引用实际报告及最终 jar 哈希，不能以文档中的数字代替测试记录。
+
+尚未实现或未完成现场验收的边界：任意不可信 Java 执行、模型图片/音视频生成、音视频时间线编辑、SSE、自由多面板布局，以及全部外部参考的高保真复刻。图形浏览器门禁在 CI 运行；受限本地环境 Chromium 在打开页面前被内部 socket 权限阻止。不能将单元或 DOM 通过写成移动设备、屏幕阅读器或视觉验收通过。

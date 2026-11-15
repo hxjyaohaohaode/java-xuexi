@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "reviewedAt": "2026-11-13",
+  "reviewedAt": "2026-11-15",
   "purpose": "逐项区分能力协议、真实适配器与运行可用性。静态登记不构成权限授予，也不能由模型更改。",
   "statusDefinitions": {
     "planned": "计划能力；没有已验证的可调用适配器。",
@@ -9,7 +9,7 @@
     "partial": "部分基础协议/源版本已实现；必要的资产或执行适配器尚缺，不能当完整成品能力。"
   },
   "availabilityRule": "实际可调用 = status为implemented 且 enabled 且 adapterReady 且配置有效 且当前请求通过权限/范围/预算/版本/租约校验。任何静态字段不得替代运行时鉴权。",
-  "verificationBoundary": "两个确定性只读工具接入固定EvidenceWorkflow。另有真实持久导师HTTP适配和文本导出业务服务，但尚未接入通用Agent工具dispatcher；本地协议测试不代表真实外部模型质量。",
+  "verificationBoundary": "Local evidence workflow and bounded study workflow are implemented. Configured MODEL planning selects 1–3 teaching specialists, followed by a separate review call and draft outputs. Loopback HTTP protocol tests do not establish external model quality. General arbitrary tool execution and generated media remain unavailable.",
   "publicReference": {
     "schemaId": "ContextRef",
     "fields": [
@@ -248,19 +248,19 @@
         "M13",
         "M08"
       ],
-      "status": "port",
-      "enabled": false,
-      "adapterReady": false,
+      "status": "implemented",
+      "enabled": true,
+      "adapterReady": true,
       "description": "创建带输入引用的Document DSL候选版本。",
       "inputSchemaId": "ToolComposeDocumentInput",
       "outputSchemaId": "ArtifactRevision",
       "effect": "JOB_OR_CANDIDATE_WRITE",
       "concurrencySafe": false,
       "availabilityRequires": [
-        "Document DSL校验",
-        "证据引用解析",
-        "作品CAS",
-        "已配置生成适配器"
+        "Valid owned goal and pinned snapshot",
+        "STUDY_WORKFLOW enabled; MODEL additionally requires configured tutor HTTP provider",
+        "Current epoch, step lease and admitted token reservation",
+        "Outputs remain DRAFT and preserve all source revisions"
       ],
       "runtimeGuards": [
         "authenticated-owner",
@@ -274,7 +274,12 @@
         "artifact-base-revision-on-write"
       ],
       "fallback": "允许手工创建或编辑文档源；不伪称智能生成。",
-      "verificationEvidence": []
+      "verificationEvidence": [
+        "backend/src/test/java/io/typeforge/StudyWorkflowIntegrationTest.java",
+        "backend/src/test/java/io/typeforge/StudyModelWorkflowTest.java",
+        "backend/src/test/java/io/typeforge/ArtifactFileExportTest.java"
+      ],
+      "admissionScope": "Only the bounded StudyWorkflowService with actual leases, versioned sources and tool accounting. Not a general arbitrary tool dispatcher."
     },
     {
       "id": "composeSlides",
@@ -283,19 +288,19 @@
         "M13",
         "M08"
       ],
-      "status": "port",
-      "enabled": false,
-      "adapterReady": false,
+      "status": "implemented",
+      "enabled": true,
+      "adapterReady": true,
       "description": "创建带证据的SlideDeck DSL；源作品和PPTX分别验收。",
       "inputSchemaId": "ToolComposeSlidesInput",
       "outputSchemaId": "ArtifactRevision",
       "effect": "JOB_OR_CANDIDATE_WRITE",
       "concurrencySafe": false,
       "availabilityRequires": [
-        "SlideDeck DSL校验",
-        "作品CAS",
-        "生成适配器",
-        "独立导出与版式检查"
+        "Valid owned goal and pinned snapshot",
+        "STUDY_WORKFLOW enabled; MODEL additionally requires configured tutor HTTP provider",
+        "Current epoch, step lease and admitted token reservation",
+        "Outputs remain DRAFT and preserve all source revisions"
       ],
       "runtimeGuards": [
         "authenticated-owner",
@@ -309,7 +314,12 @@
         "artifact-base-revision-on-write"
       ],
       "fallback": "文档表达或手工幻灯片源可作为明确替代，不能伪造PPTX。",
-      "verificationEvidence": []
+      "verificationEvidence": [
+        "backend/src/test/java/io/typeforge/StudyWorkflowIntegrationTest.java",
+        "backend/src/test/java/io/typeforge/StudyModelWorkflowTest.java",
+        "backend/src/test/java/io/typeforge/ArtifactFileExportTest.java"
+      ],
+      "admissionScope": "Only the bounded StudyWorkflowService with actual leases, versioned sources and tool accounting. Not a general arbitrary tool dispatcher."
     },
     {
       "id": "composeDiagram",
@@ -490,19 +500,19 @@
         "M14",
         "M05"
       ],
-      "status": "port",
-      "enabled": false,
-      "adapterReady": false,
+      "status": "implemented",
+      "enabled": true,
+      "adapterReady": true,
       "description": "构建白名单交互块，真实提交仍由练习服务判分。",
       "inputSchemaId": "ToolComposeInteractionInput",
       "outputSchemaId": "ArtifactRevision",
       "effect": "JOB_OR_CANDIDATE_WRITE",
       "concurrencySafe": false,
       "availabilityRequires": [
-        "Interaction/Notebook DSL校验",
-        "允许action分派",
-        "真实练习入口",
-        "版本和引用校验"
+        "Valid owned goal and pinned snapshot",
+        "STUDY_WORKFLOW enabled; MODEL additionally requires configured tutor HTTP provider",
+        "Current epoch, step lease and admitted token reservation",
+        "Outputs remain DRAFT and preserve all source revisions"
       ],
       "runtimeGuards": [
         "authenticated-owner",
@@ -516,7 +526,12 @@
         "artifact-base-revision-on-write"
       ],
       "fallback": "保留静态阅读版本并明确交互未启用。",
-      "verificationEvidence": []
+      "verificationEvidence": [
+        "backend/src/test/java/io/typeforge/StudyWorkflowIntegrationTest.java",
+        "backend/src/test/java/io/typeforge/StudyModelWorkflowTest.java",
+        "backend/src/test/java/io/typeforge/ArtifactFileExportTest.java"
+      ],
+      "admissionScope": "Only the bounded StudyWorkflowService with actual leases, versioned sources and tool accounting. Not a general arbitrary tool dispatcher."
     },
     {
       "id": "previewArtifact",
@@ -585,6 +600,64 @@
       ],
       "fallback": "维持未验证状态，不用JSON可解析替代行为通过。",
       "verificationEvidence": []
+    },
+    {
+      "id": "planLearning",
+      "effect": "JOB_OR_CANDIDATE_WRITE",
+      "status": "implemented",
+      "admission": "session owner + workspace + role capability + run epoch + budget",
+      "inputValidation": "strict JSON Schema; reject unknown properties",
+      "concurrency": "parallel reads; writes require admitted scope and revision fence",
+      "retry": "read retry bounded; external jobs reconcile executionKey/providerJobId before retry",
+      "inputSchemaId": "StudyRunInput",
+      "outputSchemaId": "StudyTeachingPlan",
+      "timeoutMillis": 120000,
+      "concurrencySafe": false,
+      "cancellation": "cooperative request + mandatory epoch/lease commit fence; worker hard deadline enforced separately",
+      "runtimeScope": "StudyWorkflowService only; durable TutorService quota, lease and source validation; EVIDENCE_ONLY and configured MODEL are explicit.",
+      "enabled": true,
+      "adapterReady": true,
+      "admissionScope": "Only the bounded StudyWorkflowService with actual leases, versioned sources and tool accounting. Not a general arbitrary tool dispatcher.",
+      "verificationEvidence": [
+        "backend/src/test/java/io/typeforge/StudyWorkflowIntegrationTest.java",
+        "backend/src/test/java/io/typeforge/StudyModelWorkflowTest.java",
+        "backend/src/test/java/io/typeforge/ArtifactFileExportTest.java"
+      ],
+      "availabilityRequires": [
+        "Valid owned goal and pinned snapshot",
+        "STUDY_WORKFLOW enabled; MODEL additionally requires configured tutor HTTP provider",
+        "Current epoch, step lease and admitted token reservation",
+        "Outputs remain DRAFT and preserve all source revisions"
+      ]
+    },
+    {
+      "id": "explainLearning",
+      "effect": "JOB_OR_CANDIDATE_WRITE",
+      "status": "implemented",
+      "admission": "session owner + workspace + role capability + run epoch + budget",
+      "inputValidation": "strict JSON Schema; reject unknown properties",
+      "concurrency": "parallel reads; writes require admitted scope and revision fence",
+      "retry": "read retry bounded; external jobs reconcile executionKey/providerJobId before retry",
+      "inputSchemaId": "TutorInput",
+      "outputSchemaId": "TutorResult",
+      "timeoutMillis": 120000,
+      "concurrencySafe": false,
+      "cancellation": "cooperative request + mandatory epoch/lease commit fence; worker hard deadline enforced separately",
+      "runtimeScope": "StudyWorkflowService only; durable TutorService quota, lease and source validation; EVIDENCE_ONLY and configured MODEL are explicit.",
+      "enabled": true,
+      "adapterReady": true,
+      "admissionScope": "Only the bounded StudyWorkflowService with actual leases, versioned sources and tool accounting. Not a general arbitrary tool dispatcher.",
+      "verificationEvidence": [
+        "backend/src/test/java/io/typeforge/StudyWorkflowIntegrationTest.java",
+        "backend/src/test/java/io/typeforge/StudyModelWorkflowTest.java",
+        "backend/src/test/java/io/typeforge/ArtifactFileExportTest.java"
+      ],
+      "availabilityRequires": [
+        "Valid owned goal and pinned snapshot",
+        "STUDY_WORKFLOW enabled; MODEL additionally requires configured tutor HTTP provider",
+        "Current epoch, step lease and admitted token reservation",
+        "Outputs remain DRAFT and preserve all source revisions"
+      ]
     }
   ],
   "artifactFormats": [
@@ -598,11 +671,13 @@
         "MARKDOWN",
         "HTML"
       ],
-      "exportStatus": "partial",
-      "sourceLimitations": "Manual immutable DRAFT source with validated references. Persistent inert text export queue and authenticated download available; no claim of binary office/media generation.",
+      "exportStatus": "implemented",
+      "sourceLimitations": "Editable native DOCX; searchable embedded-CJK PDF; fixed version, complete input lineage, bounded file queue and authenticated downloads.",
       "implementedExportFormats": [
         "MARKDOWN",
-        "HTML"
+        "HTML",
+        "DOCX",
+        "PDF"
       ]
     },
     {
@@ -610,13 +685,16 @@
       "sourceStatus": "implemented",
       "sourceSchemaId": "SlideDsl",
       "exportFormats": [
+        "HTML",
         "PPTX",
-        "HTML"
+        "PDF"
       ],
-      "exportStatus": "partial",
-      "sourceLimitations": "Manual immutable DRAFT source with validated references. Persistent inert text export queue and authenticated download available; no claim of binary office/media generation.",
+      "exportStatus": "implemented",
+      "sourceLimitations": "Editable PPTX and PDF from bounded normalized layout; actual private PNG/JPEG embedded in all three formats. Overflow and stale/revoked images are rejected.",
       "implementedExportFormats": [
-        "HTML"
+        "HTML",
+        "PPTX",
+        "PDF"
       ]
     },
     {
@@ -713,9 +791,31 @@
     "documentOperationId": "createTutorDocument",
     "modes": {
       "EVIDENCE_ONLY": "Deterministic retrieved excerpts; no model call",
-      "MODEL": "Configured server HTTP provider only; not an autonomous expert cluster"
+      "MODEL": "Configured server HTTP provider; bounded study workflow may orchestrate multiple tracked requests."
     },
     "generalToolDispatcher": false,
     "externalModelQualityVerified": false
+  },
+  "studyWorkflow": {
+    "entryOperationId": "createAgentRun",
+    "tools": [
+      "composeDocument",
+      "composeInteraction",
+      "composeSlides",
+      "explainLearning",
+      "planLearning"
+    ],
+    "modes": {
+      "EVIDENCE_ONLY": "Deterministic evidence excerpts, no model calls",
+      "MODEL": "Actual configured HTTP planner, selected specialists and separate review"
+    },
+    "generalToolDispatcher": false,
+    "externalModelQualityVerified": false,
+    "outputs": [
+      "DOCUMENT",
+      "SLIDES",
+      "NOTEBOOK"
+    ],
+    "monetaryBudget": "No configured provider pricing; token and time ceilings enforced, maxCostMicros does not cap provider charges."
   }
 }

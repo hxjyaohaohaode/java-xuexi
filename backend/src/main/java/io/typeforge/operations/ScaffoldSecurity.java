@@ -1,6 +1,8 @@
 package io.typeforge.operations;
 
 import io.typeforge.identity.IdentityService;
+import io.typeforge.identity.AccountService;
+import io.typeforge.identity.SessionValidityFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -12,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
 @Configuration
 public class ScaffoldSecurity {
@@ -20,8 +23,9 @@ public class ScaffoldSecurity {
         return new ProviderManager(provider);
     }
     @Bean CsrfTokenRepository csrfTokenRepository() { return new HttpSessionCsrfTokenRepository(); }
-    @Bean SecurityFilterChain filterChain(HttpSecurity http,CsrfTokenRepository csrf) throws Exception {
+    @Bean SecurityFilterChain filterChain(HttpSecurity http,CsrfTokenRepository csrf,AccountService accounts) throws Exception {
         return http.csrf(config->config.csrfTokenRepository(csrf))
+            .addFilterBefore(new SessionValidityFilter(accounts),AuthorizationFilter.class)
             .authorizeHttpRequests(auth->auth
                 .requestMatchers(HttpMethod.GET,"/api/v1/health","/api/v1/framework","/api/v1/auth/csrf").permitAll()
                 .requestMatchers(HttpMethod.GET,"/","/index.html","/assets/**","/favicon.svg").permitAll()

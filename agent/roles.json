@@ -5,10 +5,12 @@
     "responsibility": "解析目标、选择专家、提出可校验计划",
     "allowedTools": [
       "retrieveContext",
-      "inspectRun"
+      "inspectRun",
+      "planLearning"
     ],
-    "status": "planned",
-    "authority": "current-owner-workspace-only"
+    "status": "partial",
+    "authority": "current-owner-workspace-only",
+    "runtimeScope": "Bounded StudyWorkflow only; general-role capability is not fully implemented."
   },
   {
     "id": "learning-designer",
@@ -16,10 +18,12 @@
     "responsibility": "学习目标、先修诊断、由浅入深的活动设计",
     "allowedTools": [
       "searchEvidence",
-      "getOwnLearning"
+      "getOwnLearning",
+      "explainLearning"
     ],
-    "status": "planned",
-    "authority": "current-owner-workspace-only"
+    "status": "partial",
+    "authority": "current-owner-workspace-only",
+    "runtimeScope": "Bounded StudyWorkflow only; general-role capability is not fully implemented."
   },
   {
     "id": "generics-expert",
@@ -27,10 +31,12 @@
     "responsibility": "类型规则、边界、反例与规范对应",
     "allowedTools": [
       "searchEvidence",
-      "requestCompile"
+      "requestCompile",
+      "explainLearning"
     ],
-    "status": "planned",
-    "authority": "current-owner-workspace-only"
+    "status": "partial",
+    "authority": "current-owner-workspace-only",
+    "runtimeScope": "Bounded StudyWorkflow only; general-role capability is not fully implemented."
   },
   {
     "id": "code-coach",
@@ -38,10 +44,12 @@
     "responsibility": "诊断复现、代码修复、API签名核验",
     "allowedTools": [
       "requestCompile",
-      "getOwnAttempt"
+      "getOwnAttempt",
+      "explainLearning"
     ],
-    "status": "planned",
-    "authority": "current-owner-workspace-only"
+    "status": "partial",
+    "authority": "current-owner-workspace-only",
+    "runtimeScope": "Bounded StudyWorkflow only; general-role capability is not fully implemented."
   },
   {
     "id": "retrieval-researcher",
@@ -71,8 +79,9 @@
     "allowedTools": [
       "composeDocument"
     ],
-    "status": "planned",
-    "authority": "current-owner-workspace-only"
+    "status": "partial",
+    "authority": "current-owner-workspace-only",
+    "runtimeScope": "Bounded StudyWorkflow only; general-role capability is not fully implemented."
   },
   {
     "id": "slide-designer",
@@ -81,8 +90,9 @@
     "allowedTools": [
       "composeSlides"
     ],
-    "status": "planned",
-    "authority": "current-owner-workspace-only"
+    "status": "partial",
+    "authority": "current-owner-workspace-only",
+    "runtimeScope": "Bounded StudyWorkflow only; general-role capability is not fully implemented."
   },
   {
     "id": "visual-explainer",
@@ -124,8 +134,9 @@
       "composeInteraction",
       "requestCompile"
     ],
-    "status": "planned",
-    "authority": "current-owner-workspace-only"
+    "status": "partial",
+    "authority": "current-owner-workspace-only",
+    "runtimeScope": "Bounded StudyWorkflow only; general-role capability is not fully implemented."
   },
   {
     "id": "fact-checker",
@@ -133,10 +144,12 @@
     "responsibility": "核对规范、证据蕴含及编译事实",
     "allowedTools": [
       "searchEvidence",
-      "requestCompile"
+      "requestCompile",
+      "explainLearning"
     ],
-    "status": "planned",
-    "authority": "current-owner-workspace-only"
+    "status": "partial",
+    "authority": "current-owner-workspace-only",
+    "runtimeScope": "Bounded StudyWorkflow only; general-role capability is not fully implemented."
   },
   {
     "id": "experience-reviewer",

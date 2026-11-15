@@ -42,7 +42,11 @@ public class WorkspaceController {
         return workspaces.updateGoal(owner(principal),id,input.path("expectedRevision").asInt(),input.path("text").asText(),List.of(json.read(input.path("acceptance").toString(),String[].class)),input.path("status").asText());
     }
     @PostMapping("/workspaces/{id}/context") @ResponseStatus(HttpStatus.CREATED)
-    public WorkspaceService.Context snapshot(Principal principal,@PathVariable UUID id) { return workspaces.createContext(owner(principal),id); }
+    public WorkspaceService.Context snapshot(Principal principal,@PathVariable UUID id,@RequestBody(required=false) JsonNode input) {
+        if(input==null)return workspaces.createContext(owner(principal),id);
+        schemas.validate("ContextSnapshotInput",input);
+        return workspaces.createContext(owner(principal),id,List.of(json.read(input.path("attemptIds").toString(),UUID[].class)));
+    }
     @PostMapping("/workspaces/{id}/events") @ResponseStatus(HttpStatus.CREATED)
     public EventJournal.Event event(Principal principal,@PathVariable UUID id,@RequestBody JsonNode input) {
         schemas.validate("WorkspaceEventInput",input);

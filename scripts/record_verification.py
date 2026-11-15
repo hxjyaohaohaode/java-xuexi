@@ -10,9 +10,11 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import hashlib
+import io
 import json
 from pathlib import Path
 import subprocess
+import unittest
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -40,6 +42,19 @@ def require(condition, description):
         raise RuntimeError(description)
 
 
+def verify_compiler_python():
+    """Observe the small offline suite directly; actual Docker is an independent CI gate."""
+    output=io.StringIO()
+    suite=unittest.defaultTestLoader.discover(str(ROOT/'workers/compiler'),pattern='test_*.py')
+    result=unittest.TextTestRunner(stream=output,verbosity=2).run(suite)
+    report={'result':'PASS' if result.wasSuccessful() and not result.skipped else 'FAIL',
+            'tests':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),'skipped':len(result.skipped),
+            'scope':'Offline compiler broker/verifier behavior; no real container execution claim'}
+    (ROOT/'.work/compiler-unit.log').write_text(output.getvalue(),encoding='utf-8')
+    (ROOT/'.work/compiler-unit-verification.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
+    return report
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check-snapshot', action='store_true')
@@ -55,8 +70,10 @@ def main():
     mysql=read('.work/mysql-verification.json')
     isolation=read('.work/mysql-isolation-verification.json')
     editorial=read('.work/mysql-content-verification.json')
+    private_modules=read('.work/mysql-account-assets-verification.json')
+    compiler_unit=verify_compiler_python()
     smokes={name:read(f'.work/smoke-runtime-{name}.json') for name in ('h2','mysql')}
-    for name,result in [('contracts',static),('MySQL schema',mysql),('MySQL isolation',isolation),('MySQL editorial',editorial),*smokes.items()]:
+    for name,result in [('contracts',static),('MySQL schema',mysql),('MySQL isolation',isolation),('MySQL editorial',editorial),('MySQL accounts and assets',private_modules),('Compiler Python',compiler_unit),*smokes.items()]:
         require(result.get('result')=='PASS', name+' verification has not passed')
     pom=ET.parse(ROOT/'backend/pom.xml').getroot(); ns={'m':'http://maven.apache.org/POM/4.0.0'}
     version=pom.find('m:version',ns).text
@@ -94,28 +111,28 @@ def main():
         'reason':'Local Chromium cannot create required AF_UNIX sockets; no sandbox bypass was attempted.',
         'remoteGate':'Real Chromium Playwright integration is required in .github/workflows/baseline.yml on the exact pushed commit.'}
     report={'schemaVersion':'1.1','result':'PASS',
-        'scope':'v0.4 implemented runtime/local verification; graphical browser is an independent remote CI gate; not final course acceptance',
+        'scope':'v0.5 implemented runtime/local verification; graphical browser is an independent remote CI gate; not final course acceptance',
         'recordedAt':dt.datetime.now(dt.timezone.utc).isoformat(),
-        'baselineCommit':'01d465d9391f5f035f53c3a8b9e8a1f7762af1dc',
-        'environment':{'os':'Linux','maven':'3.9.9','jdk':'21.0.13.0.2','compilerRelease':17,
+        'baselineCommit':'60f5a836f7afb64f908a367403ea2307d85a70d5',
+        'environment':{'os':'Linux','maven':'3.9.11','jdk':'17.0.21','compilerRelease':17,
                        'springBoot':pom.find('m:parent/m:version',ns).text,'mysql':mysql['engine'],
                        'node':subprocess.check_output(['node','--version'],text=True).strip(),
                        'python':subprocess.check_output(['python','--version'],text=True).strip(),
                        'localMysqlMode':'official isolated server; not Docker'},
         'sourceSnapshot':current,
-        'java':{'command':'mvn -B -ntp -f backend/pom.xml clean verify; package refreshed after verified frontend-only fixes','result':'PASS',**totals,'jarSha256':jar_hash,'suites':suites},
-        'frontend':frontend,'contractsAndArchitecture':static,'mysqlSchema':mysql,'mysqlIsolation':isolation,'mysqlEditorial':editorial,
+        'java':{'command':'mvn -B -ntp -f backend/pom.xml clean verify','result':'PASS',**totals,'jarSha256':jar_hash,'suites':suites},
+        'frontend':frontend,'contractsAndArchitecture':static,'mysqlSchema':mysql,'mysqlIsolation':isolation,'mysqlEditorial':editorial,'mysqlAccountsAndAssets':private_modules,'compilerPython':compiler_unit,
         'httpAndRestart':{profile:{k:v for k,v in value.items() if k in {'result','profile','engine','startedAt','finishedAt','jarSha256','scope','checks','unexpectedLogErrors'}}
                           | {'httpRequests':len(value['http']),'shutdown':'graceful process termination and restart against the same database'} for profile,value in smokes.items()},
         'remoteCi':{'status':'VERIFY_EXACT_COMMIT_IN_GITHUB_ACTIONS','workflow':'.github/workflows/baseline.yml',
-                    'note':'This report records local gates. The published commit Actions run independently verifies Java 17, Docker MySQL and real Chromium.'},
-        'notVerified':['real supplier model teaching quality or billing invoices','autonomous multi-agent planner and full expert tool roster',
-                       'untrusted user-code execution sandbox','image/audio/video generation or binary document export',
+                    'note':'This report records local gates. The published commit Actions run independently verifies Java 17, Docker MySQL, the actual isolated javac worker and real Chromium.'},
+        'notVerified':['real supplier model teaching quality or billing invoices','unrestricted autonomous planner and full expert/media tool roster',
+                       'untrusted user-code execution sandbox','generative image/audio/video services and real container-isolation deployment',
                        'formal human review of the complete course corpus','production load/SLO/backup restore',
                        'hard-kill recovery of paid external effects with a real provider','final grading or individual student contributions']}
     (ROOT/REPORT).write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
     test_table='\n'.join(f"| `{suite['name'].rsplit('.',1)[-1]}` | {suite['tests']} | 0 / 0 / 0 |" for suite in suites)
-    review=f'''# v0.4 当前运行验收记录
+    review=f'''# v0.5 当前运行验收记录
 
 这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：{report['recordedAt']}。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
 
@@ -123,11 +140,13 @@ def main():
 
 | 门禁 | 已观察的结果 | 证明边界 |
 |---|---|---|
-| Java/Maven | {totals['tests']} 项，失败/错误/跳过均为 0 | 固定语言语义、SQL/HTTP、任务、导师协议夹具、内容发布与来源/导出回归 |
+| Java/Maven | {totals['tests']} 项，失败/错误/跳过均为 0 | 固定语言语义、账户/会话、SQL/HTTP、编译协议、学习任务/模型协议夹具、发布、素材与原生文件导出回归 |
 | 契约与架构 | {static['checksPassed']} 项通过；{static['implementedOperations']} 个 implemented / {static['plannedOperations']} 个 planned 操作 | 真实路由、schema、模块依赖、索引和文档对应；数量不是产品完成率 |
-| MySQL 8.4 | {len(mysql['checks'])} 项；{mysql['tables']} 张业务表；六条迁移 | 真实 MySQL 建表、复合外键、唯一性、CHECK、JSON与新增队列/审核/导出约束 |
+| MySQL 8.4 | {len(mysql['checks'])} 项；{mysql['tables']} 张业务表；11 条迁移 | 真实 MySQL 建表、复合外键、唯一性、CHECK、JSON与新增队列/审核/导出约束 |
 | MySQL 隔离 | {isolation['tests']} 项 | 实际 READ COMMITTED、锁后可见已提交写入，并有 REPEATABLE READ 对照 |
 | MySQL 内容服务 | {editorial['tests']} 项 | 实际 JDBC 引擎证明；人工录入、审核hash、发布/激活及并发服务在真实 MySQL 上复跑 |
+| MySQL 账户与素材 | {private_modules['tests']} 项 | 实际 JDBC 引擎证明；账户关闭/会话/并发身份、UTC统计、上传/撤回/配额及下载隔离 |
+| 编译 broker Python | {compiler_unit['tests']} 项 | 离线协议/边界/清理归属；真实容器隔离在远端 CI 独立执行 |
 | H2 实际 HTTP/重启 | {len(smokes['h2']['checks'])} 项；{len(smokes['h2']['http'])} 次请求 | 单独进程、真实会话/CSRF、业务链、真实下载、重启保留与撤回后失效 |
 | MySQL 实际 HTTP/重启 | {len(smokes['mysql']['checks'])} 项；{len(smokes['mysql']['http'])} 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
 | 前端类型/构建/单元 | {unit['numTotalTests']} 项单元通过；TypeScript 与 Vite 构建成功 | 编译与组件/状态逻辑；不等于真实浏览器布局验收 |
@@ -140,7 +159,9 @@ Java 各测试类的实际汇总：
 |---|---:|---|
 {test_table}
 
-## 本轮已覆盖的关键联动
+## 三轮审查与关键联动
+
+完整审查记录见 [development-review-v05.md](development-review-v05.md)：第一轮对齐16模块、接口与数据边界；第二轮真实集成测试并修复中断、回收和版本竞态；第三轮完整回归、MySQL、重启与前端DOM验证。每轮包含发现及修改，不以同一条命令重复三次代替审查。
 
 真实作答经 outbox 和幂等 receipt 进入独立题目家族证据与复习；错题块调用同一判分服务。阅读/预测/作品生成只记活动，不给虚假的掌握分。
 
@@ -166,6 +187,7 @@ python scripts/smoke_runtime.py --profile h2
 python scripts/smoke_runtime.py --profile mysql
 python scripts/verify_transaction_isolation.py
 python scripts/verify_content_mysql.py
+python scripts/verify_private_modules_mysql.py
 # Chromium 需按 frontend/README.md 安装：
 python scripts/browser_runtime.py --jar backend/target/typeforge-backend-{version}.jar
 ```
@@ -181,9 +203,9 @@ python scripts/browser_runtime.py --jar backend/target/typeforge-backend-{versio
 
 ## 仍未完成和未验证
 
-真实供应商模型的教学效果、费用账单、完整多专家规划、用户代码沙箱、完整多媒体与二进制导出、全课程人工审核、生产负载与备份恢复、正式答辩和个人贡献均不在本轮PASS范围内。逐模块剩余事项及代码入口见 [接手指南](../docs/02-modules.md)。最终40项课程验收保持独立，不因自动测试通过而自动升级。
+真实供应商模型的教学效果、费用账单、通用任意工具调度、真实容器隔离部署、生成式图像/音频/视频、全课程人工审核、生产负载与备份恢复、正式答辩和个人贡献均不在本轮PASS范围内。逐模块剩余事项及代码入口见 [接手指南](../docs/02-modules.md)。最终40项课程验收保持独立，不因自动测试通过而自动升级。
 
-旧基线报告和重复字段字典已清理；历史保留在Git。V001–V006为合法升级链，由 `database/migrations.lock.json`锁定，不能为清理旧版本而删除。
+旧基线报告和重复字段字典已清理；历史保留在Git。V001–V011为合法升级链，由 `database/migrations.lock.json`锁定，不能为清理旧版本而删除。
 '''
     (ROOT/REVIEW).write_text(review,encoding='utf-8')
     print(json.dumps({'result':'PASS','javaTests':totals['tests'],'frontendTests':unit['numTotalTests'],'sourceFiles':current['fileCount'],'sourceDigest':current['digest']},indent=2))

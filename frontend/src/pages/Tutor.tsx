@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { ArrowUp, CirclePause, Play, Plus, Square, Workflow } from 'lucide-react';
 import { api } from '../api';
 import { useWorkspace } from '../context';
-import { useMutation, useResource } from '../hooks';
-import { readSaved, submitOnEnter, writeSaved } from '../state';
+import { useMutation, usePolling, useResource, useSessionDraft, useUnsavedChanges } from '../hooks';
+import { readSaved, removeSaved, submitOnEnter, writeSaved } from '../state';
 import {
   Badge,
   Empty,
@@ -30,11 +30,16 @@ export function Tutor() {
       <div className="segments large" aria-label="导师模式">
         <button
           className={tab === 'conversation' ? 'selected' : ''}
+          aria-pressed={tab === 'conversation'}
           onClick={() => setTab('conversation')}
         >
           导师对话
         </button>
-        <button className={tab === 'workflow' ? 'selected' : ''} onClick={() => setTab('workflow')}>
+        <button
+          aria-pressed={tab === 'workflow'}
+          className={tab === 'workflow' ? 'selected' : ''}
+          onClick={() => setTab('workflow')}
+        >
           证据工作流
         </button>
       </div>
@@ -53,7 +58,11 @@ function ConversationPanel() {
   const [conversationId, setConversationId] = useState(() =>
     readSaved<string>(`tf.conversation.${session.userId}.${workspace.id}`, ''),
   );
-  const [question, setQuestion] = useState('');
+  const [question, setQuestion] = useSessionDraft(
+    `tf.question.${session.userId}.${workspace.id}`,
+    '',
+  );
+  useUnsavedChanges(!!question.trim());
   const [mode, setMode] = useState<'EVIDENCE_ONLY' | 'MODEL'>('EVIDENCE_ONLY');
   const [hintLevel, setHintLevel] = useState(1);
   const [poll, setPoll] = useState(0);
@@ -69,12 +78,13 @@ function ConversationPanel() {
     if (conversationId)
       writeSaved(`tf.conversation.${session.userId}.${workspace.id}`, conversationId);
   }, [conversationId, workspace.id, session.userId]);
-  useEffect(() => {
-    if (detail.data?.messages.some((m) => !terminalTutor.includes(m.status))) {
-      const timer = setTimeout(() => setPoll((n) => n + 1), 1200);
-      return () => clearTimeout(timer);
-    }
-  }, [detail.data, poll]);
+  usePolling(
+    !!detail.data?.messages.some((message) => !terminalTutor.includes(message.status)),
+    () => setPoll((value) => value + 1),
+    detail.loading,
+    !!detail.error,
+    1200,
+  );
   if (!can('TUTOR_EVIDENCE_ONLY'))
     return (
       <Empty title="导师服务尚未启用">课程阅读和练习仍可使用；未配置模型不会出现模拟回答。</Empty>
@@ -134,7 +144,7 @@ function ConversationPanel() {
           { conversationId: id, snapshotId: prepared.snapshotId, mode, question, hintLevel },
           { idempotent: true },
         );
-        sessionStorage.removeItem(key);
+        removeSaved(key);
         return { id, request };
       },
       ({ id }) => {
@@ -165,6 +175,8 @@ function ConversationPanel() {
         {conversations.data?.items.map((c) => (
           <button
             className={c.id === conversationId ? 'selected' : ''}
+            disabled={mutation.busy}
+            aria-pressed={c.id === conversationId}
             onClick={() => setConversationId(c.id)}
             key={c.id}
           >
@@ -178,6 +190,7 @@ function ConversationPanel() {
           <Field label="回答方式">
             <select
               value={mode}
+              disabled={mutation.busy}
               onChange={(e) => setMode(e.target.value as 'EVIDENCE_ONLY' | 'MODEL')}
             >
               <option value="EVIDENCE_ONLY">本地证据整理 · 无模型</option>
@@ -187,7 +200,11 @@ function ConversationPanel() {
             </select>
           </Field>
           <Field label="提示深度">
-            <select value={hintLevel} onChange={(e) => setHintLevel(Number(e.target.value))}>
+            <select
+              disabled={mutation.busy}
+              value={hintLevel}
+              onChange={(e) => setHintLevel(Number(e.target.value))}
+            >
               <option value={0}>0 · 方向提示</option>
               <option value={1}>1 · 相关规则</option>
               <option value={2}>2 · 关键步骤</option>
@@ -236,6 +253,7 @@ function ConversationPanel() {
           </label>
           <textarea
             id="tutor-question"
+            disabled={mutation.busy}
             rows={3}
             value={question}
             maxLength={4000}
@@ -250,6 +268,7 @@ function ConversationPanel() {
           />
           <div className="row spread">
             <span className="muted small">
+              {question.length}/4000 ·{' '}
               {mode === 'EVIDENCE_ONLY'
                 ? '本地课程证据 · 不调用大语言模型'
                 : '将调用已配置的模型供应商'}
@@ -356,7 +375,10 @@ function TutorMessage({ request, onChange }: { request: TutorRequest; onChange: 
 function EvidenceWorkflow() {
   const { workspace, session, events, refresh, can } = useWorkspace();
   const key = `tf.run.${session.userId}.${workspace.id}`;
-  const [query, setQuery] = useState('PECS 的读取与写入边界');
+  const [query, setQuery] = useSessionDraft(
+    `tf.workflow-question.${session.userId}.${workspace.id}`,
+    'PECS 的读取与写入边界',
+  );
   const [runId, setRunId] = useState(() => readSaved<string>(key, ''));
   const [poll, setPoll] = useState(0);
   const mutation = useMutation();
@@ -373,12 +395,12 @@ function EvidenceWorkflow() {
   useEffect(() => {
     if (runId) writeSaved(key, runId);
   }, [runId, key]);
-  useEffect(() => {
-    if (run && !terminalRun.includes(run.status) && run.status !== 'PAUSED') {
-      const timer = setTimeout(() => setPoll((n) => n + 1), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [run, poll]);
+  usePolling(
+    !!run && !terminalRun.includes(run.status) && run.status !== 'PAUSED',
+    () => setPoll((value) => value + 1),
+    result.loading,
+    !!result.error,
+  );
   const launch = () =>
     mutation.run(
       async () => {
@@ -409,7 +431,7 @@ function EvidenceWorkflow() {
           { goalId: prepared.goalId, snapshotId: prepared.snapshotId, query },
           { idempotent: true },
         );
-        sessionStorage.removeItem(preparationKey);
+        removeSaved(preparationKey);
         return run;
       },
       (r) => {
@@ -455,6 +477,7 @@ function EvidenceWorkflow() {
               required
               maxLength={500}
               value={query}
+              disabled={mutation.busy}
               onChange={(e) => setQuery(e.target.value)}
             />
           </Field>

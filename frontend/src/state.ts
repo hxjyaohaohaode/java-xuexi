@@ -69,3 +69,11 @@ export function writeSaved(key: string, value: unknown) {
     /* An unavailable local draft store never means a server save succeeded. */
   }
 }
+
+export function removeSaved(key: string) {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    /* Storage availability must not break a completed write. */
+  }
+}

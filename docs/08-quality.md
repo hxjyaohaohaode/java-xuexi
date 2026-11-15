@@ -2,7 +2,7 @@
 
 ## 1. 当前与最终的检查边界
 
-v0.4 的验证覆盖当前路由与契约、固定 javac 语义、SQL 事务、身份和编辑角色、学习投影、来源闭包、导师队列及本地 HTTP 协议夹具、内容审核发布、真实文本导出、前端组件和真实后端操作。实际命令、结果、环境和未验证限制只以 [当前验收](../evidence/runtime-review.md)为准；旧版本报告保留在 Git 历史。前端 209 条台账仍是参考研究记录，不能视为 209 个已运行组件。真实供应商教学质量、沙箱隔离、完整媒体、生产负载与备份恢复仍需专项实测。
+v0.5 的验证覆盖当前路由与契约、固定 javac 语义、SQL 事务、账户/会话生命周期、学习投影、来源闭包、导师及专家学习队列、编译协议与隐藏正反例、内容审核发布、私有素材和实际 Office/PDF 文件、前端组件及真实后端操作。三轮审查记录见 [开发审查](../evidence/development-review-v05.md)。实际命令、结果、环境和未验证限制只以 [当前验收](../evidence/runtime-review.md)为准；旧版本报告保留在 Git 历史。Docker 编译服务与图形 Chromium 在精确提交的远端 CI 独立验证；协议/DOM 测试不能替代这两个门禁。前端 209 条台账仍是研究记录。真实供应商教学质量、完整生成媒体、生产负载与备份恢复仍需专项实测。
 
 ## 2. 逐模块验收清单
 
@@ -71,7 +71,11 @@ mvn -B -ntp -f backend/pom.xml clean verify
 python scripts/verify_mysql.py
 python scripts/smoke_runtime.py --profile h2
 # 已安装 Playwright Chromium 后，运行真实浏览器集成：
-python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.4.0-SNAPSHOT.jar
+python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.5.0-SNAPSHOT.jar
+python -m unittest discover -s workers/compiler -p 'test_*.py'
+# 专用 Linux Docker 环境：
+docker build -t typeforge-compiler:jdk17 workers/compiler
+python workers/compiler/verify_docker.py --image typeforge-compiler:jdk17
 ```
 
 没有本地 JDK/Maven 时，在仓库根目录用容器（PowerShell）构建：
@@ -80,7 +84,7 @@ python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.4.0-S
 docker run --rm --mount "type=bind,source=$((Get-Location).Path),target=/workspace" --workdir /workspace maven:3.9-eclipse-temurin-17 mvn -B -ntp -f backend/pom.xml clean verify
 ```
 
-启动命令与 Profile 详见 [后端说明](../backend/README.md)：`mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=demo` 可启用演示课程。数据库迁移/连接、会话/CSRF 和部分业务 API 已实现；注册后登录并重新取 CSRF 才能使用受保护接口。正式部署仍需 TLS/安全 cookie、真实 MySQL 环境校验、限流与日志/备份、独立 worker、模型/媒体适配和完整前端；当前整体仍为 `businessReady=false`。
+启动命令与 Profile 详见 [后端说明](../backend/README.md)：`mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=demo` 可启用演示课程。数据库迁移/连接、会话/CSRF 和当前契约业务操作已实现；注册后登录并重新取 CSRF 才能使用受保护接口。正式部署仍需 TLS/安全 cookie、目标 MySQL 与 worker 环境验收、日志/备份、模型真实质量和媒体适配；`businessReady=false` 保留为正式产品验收未完成的事实，不把 API 覆盖率当生产认证。
 
 ## 7. 发布阻断规则
 

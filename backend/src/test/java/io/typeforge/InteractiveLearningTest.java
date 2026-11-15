@@ -70,10 +70,10 @@ class InteractiveLearningTest {
     }
     @Test void preferencesUseRealIdentityQuotedEtagAndCompareAndSwap() throws Exception {
         var user=account();var body=tree(new PreferenceService.Preference("dark",true,18,1));
-        var response=mvc.perform(put("/api/v1/me/preferences").with(user(user.username())).with(csrf()).header("If-Match","\"1\"").contentType("application/json").content(body.toString())).andReturn().getResponse();
+        var response=mvc.perform(put("/api/v1/me/preferences").session(HttpSessionFixture.login(mvc,json,user.username(),"fixture-password-strong-123")).with(csrf()).header("If-Match","\"1\"").contentType("application/json").content(body.toString())).andReturn().getResponse();
         assertEquals(200,response.getStatus());assertEquals("\"2\"",response.getHeader("ETag"));schemas.validate("Preference",json.tree(response.getContentAsString()));
-        assertEquals(412,mvc.perform(put("/api/v1/me/preferences").with(user(user.username())).with(csrf()).header("If-Match","\"1\"").contentType("application/json").content(body.toString())).andReturn().getResponse().getStatus());
-        assertEquals(400,mvc.perform(put("/api/v1/me/preferences").with(user(user.username())).with(csrf()).header("If-Match","1").contentType("application/json").content(body.toString())).andReturn().getResponse().getStatus());
+        assertEquals(412,mvc.perform(put("/api/v1/me/preferences").session(HttpSessionFixture.login(mvc,json,user.username(),"fixture-password-strong-123")).with(csrf()).header("If-Match","\"1\"").contentType("application/json").content(body.toString())).andReturn().getResponse().getStatus());
+        assertEquals(400,mvc.perform(put("/api/v1/me/preferences").session(HttpSessionFixture.login(mvc,json,user.username(),"fixture-password-strong-123")).with(csrf()).header("If-Match","1").contentType("application/json").content(body.toString())).andReturn().getResponse().getStatus());
         assertEquals("dark",preferences.get(user.userId()).theme());
     }
     @Test void labsPersistReplayAuthorizeAndNeverIncreaseMastery() {
@@ -115,7 +115,7 @@ class InteractiveLearningTest {
         var job=exports.create(user.userId(),artifact.id(),1,"HTML",idem);assertEquals("QUEUED",job.status());assertEquals(job.id(),exports.create(user.userId(),artifact.id(),1,"HTML",idem).id());
         exports.dispatchOnce();var done=exports.get(user.userId(),job.id());schemas.validate("ExportJob",tree(done));assertEquals("SUCCEEDED",done.status());
         var file=exports.download(user.userId(),job.id());String html=new String(file.bytes(),StandardCharsets.UTF_8);assertTrue(html.contains("&lt;script&gt;"));assertFalse(html.contains("<script>"));assertEquals(json.sha256(html),file.contentHash());
-        var response=mvc.perform(get("/api/v1/export-jobs/"+job.id()+"/download").with(user(user.username()))).andReturn().getResponse();assertEquals(200,response.getStatus());assertEquals("private, no-store",response.getHeader("Cache-Control"));assertTrue(response.getHeader("Content-Disposition").startsWith("attachment;"));assertTrue(response.getHeader("Content-Security-Policy").startsWith("sandbox;"));
+        var response=mvc.perform(get("/api/v1/export-jobs/"+job.id()+"/download").session(HttpSessionFixture.login(mvc,json,user.username(),"fixture-password-strong-123"))).andReturn().getResponse();assertEquals(200,response.getStatus());assertEquals("private, no-store",response.getHeader("Cache-Control"));assertTrue(response.getHeader("Content-Disposition").startsWith("attachment;"));assertTrue(response.getHeader("Content-Security-Policy").startsWith("sandbox;"));
         assertEquals(404,assertThrows(DomainException.class,()->exports.download(account().userId(),job.id())).status());
         workspaces.revokeMemory(user.userId(),workspace.id(),memory.id(),memory.revision());assertNull(exports.get(user.userId(),job.id()).downloadPath());assertEquals(409,assertThrows(DomainException.class,()->exports.download(user.userId(),job.id())).status());
     }
@@ -125,7 +125,7 @@ class InteractiveLearningTest {
         var pending=exports.create(owner,artifact.id(),1,"MARKDOWN",key());var version=artifacts.version(owner,artifact.id(),1);artifacts.save(owner,artifact.id(),1,version.content(),version.inputRefs());
         exports.dispatchOnce();assertEquals("FAILED",exports.get(owner,pending.id()).status());assertEquals("STALE_EXPORT_SOURCE",exports.get(owner,pending.id()).errorCode());
         assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM artifact_export_content WHERE export_id=?",Integer.class,pending.id().toString()));
-        assertEquals(503,assertThrows(DomainException.class,()->exports.create(owner,artifact.id(),2,"DOCX",key())).status());
+        assertEquals(503,assertThrows(DomainException.class,()->exports.create(owner,artifact.id(),2,"MP4",key())).status());
     }
     @Test void operatorRolesRequireExistingAccountsAndAreAuditedWithoutCreatingCredentials() {
         var editor=account();var bootstrap=new OperatorRoleBootstrap(jdbc,tx,json,editor.username(),"");bootstrap.run(new DefaultApplicationArguments());bootstrap.run(new DefaultApplicationArguments());

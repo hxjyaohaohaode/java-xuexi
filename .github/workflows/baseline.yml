@@ -5,6 +5,30 @@ on:
 permissions:
   contents: read
 jobs:
+  isolated-compiler:
+    name: Real compile-only Docker worker
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify broker protocol and cancellation regressions
+        run: python -m unittest discover -s workers/compiler -p 'test_*.py'
+      - name: Build the dedicated Java 17 compile image
+        run: docker build -t typeforge-compiler:jdk17 workers/compiler
+      - name: Verify actual isolation, generics, hidden checks and recovery
+        run: python workers/compiler/verify_docker.py --image typeforge-compiler:jdk17 --report .work/compiler-docker-verification.json
+      - name: Upload sanitized real-container verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiler-container-verification
+          path: .work/compiler-docker-verification.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
   contracts-and-data:
     name: Contracts and real MySQL integrity
     runs-on: ubuntu-24.04
@@ -77,7 +101,7 @@ jobs:
           npm run check
           npm run build
       - name: Verify Java semantics, transactions and package the runtime
-        run: mvn -B -ntp -f backend/pom.xml verify
+        run: mvn -B -ntp -f backend/pom.xml clean verify
       - name: Verify HTTP linkage and restart persistence on H2 files
         run: python scripts/smoke_runtime.py --profile h2
       - name: Ensure an independent MySQL client is available
@@ -108,11 +132,13 @@ jobs:
         run: python scripts/verify_transaction_isolation.py
       - name: Verify editorial transactions against real MySQL
         run: python scripts/verify_content_mysql.py
+      - name: Verify account lifecycle and private assets against real MySQL
+        run: python scripts/verify_private_modules_mysql.py
       - name: Install Chromium for the real browser integration
         working-directory: frontend
         run: npx playwright install --with-deps chromium
       - name: Verify the real browser against the packaged application
-        run: python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.4.0-SNAPSHOT.jar
+        run: python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.5.0-SNAPSHOT.jar
       - name: Upload sanitized runtime and isolation reports only
         if: always()
         uses: actions/upload-artifact@v4
@@ -123,6 +149,7 @@ jobs:
             .work/smoke-runtime-mysql.json
             .work/mysql-isolation-verification.json
             .work/mysql-content-verification.json
+            .work/mysql-account-assets-verification.json
             frontend/test-results/browser-runtime-report.json
             frontend/test-results/browser-report.json
             frontend/test-results/*.png

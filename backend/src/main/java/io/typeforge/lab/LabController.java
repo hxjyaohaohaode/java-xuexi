@@ -14,6 +14,7 @@ public class LabController {
     private final LabService labs;
     private final IdentityService users;
     public LabController(LabService labs,IdentityService users) {this.labs=labs;this.users=users;}
+    @GetMapping("/labs/examples") public List<CodeLabCatalog.Example> examples(Principal principal) {users.session(principal.getName());return CodeLabCatalog.examples();}
     @PostMapping("/labs/sessions") @ResponseStatus(HttpStatus.CREATED)
     public LabService.Session create(Principal principal,@RequestBody JsonNode input,@RequestHeader("Idempotency-Key") String key) {return labs.create(users.session(principal.getName()).userId(),input,key);}
     @GetMapping("/labs/sessions/{id}") public LabService.Session get(Principal principal,@PathVariable UUID id) {return labs.get(users.session(principal.getName()).userId(),id);}

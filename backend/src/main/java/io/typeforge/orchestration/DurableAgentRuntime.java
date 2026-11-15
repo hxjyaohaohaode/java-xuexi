@@ -562,6 +562,8 @@ public final class DurableAgentRuntime {
             List<String> hashes = switch (reference.kind()) {
                 case "ARTIFACT" -> jdbc.query("SELECT r.content_hash FROM artifact_revision r JOIN learning_artifact a ON a.id=r.artifact_id WHERE a.id=? AND a.workspace_id=? AND a.current_revision=? AND r.revision=? AND r.review_status='VERIFIED'",
                         (rs, row) -> rs.getString(1), reference.id().toString(), workspaceId.toString(), reference.revision(), reference.revision());
+                case "DRAFT_ARTIFACT" -> jdbc.query("SELECT r.content_hash FROM artifact_revision r JOIN learning_artifact a ON a.id=r.artifact_id WHERE a.id=? AND a.workspace_id=? AND a.current_revision=? AND r.revision=? AND r.review_status IN ('DRAFT','VERIFIED')",
+                        (rs, row) -> rs.getString(1), reference.id().toString(), workspaceId.toString(), reference.revision(), reference.revision());
                 case "KNOWLEDGE_CHUNK" -> jdbc.query("SELECT k.content_hash FROM knowledge_chunk k JOIN release_chunk r ON r.chunk_id=k.id AND r.chunk_revision=k.revision JOIN content_release cr ON cr.id=r.release_id WHERE k.id=? AND k.revision=? AND k.status='REVIEWED' AND cr.status='PUBLISHED' AND r.release_id=?",
                         (rs, row) -> rs.getString(1), reference.id().toString(), reference.revision(), workspace.releaseId().toString());
                 case "SNAPSHOT" -> jdbc.query("SELECT content_hash FROM context_snapshot WHERE id=? AND workspace_id=? AND workspace_revision=?",
@@ -575,6 +577,7 @@ public final class DurableAgentRuntime {
                 throw problem("OUTPUT_REFERENCE_INVALID", 409, "Output must identify existing, current and verified evidence in the same workspace");
             }
             if (reference.kind().equals("SNAPSHOT")) workspaces.validateSnapshot(ownerId, workspaceId, reference.id());
+            if (Set.of("ARTIFACT","DRAFT_ARTIFACT").contains(reference.kind())) workspaces.validateArtifactOutput(ownerId, workspaceId, reference.id(), reference.revision(), reference.contentHash());
         }
     }
 
@@ -591,7 +594,7 @@ public final class DurableAgentRuntime {
         }
         Set<String> identities = new HashSet<>();
         for (OutputReference reference : references) {
-            if (reference == null || reference.kind() == null || !Set.of("ARTIFACT", "KNOWLEDGE_CHUNK", "ATTEMPT", "SNAPSHOT").contains(reference.kind())
+            if (reference == null || reference.kind() == null || !Set.of("ARTIFACT", "DRAFT_ARTIFACT", "KNOWLEDGE_CHUNK", "ATTEMPT", "SNAPSHOT").contains(reference.kind())
                     || reference.id() == null || reference.revision() < 1 || reference.contentHash() == null
                     || !reference.contentHash().matches("[a-f0-9]{64}") || !identities.add(reference.kind() + ":" + reference.id())) {
                 throw problem("INVALID_OUTPUT_REFERENCE", 400, "Output references must be unique, typed and versioned");
