@@ -19,8 +19,9 @@ public class NotebookController {
     private final SchemaCatalog schemas;
     private final JsonCodec json;
     private final NotebookActions actions;
-    public NotebookController(NotebookService notebooks,IdentityService users,SchemaCatalog schemas,JsonCodec json,NotebookActions actions) {
-        this.notebooks=notebooks;this.users=users;this.schemas=schemas;this.json=json;this.actions=actions;
+    private final NotebookInteractionService interactions;
+    public NotebookController(NotebookService notebooks,IdentityService users,SchemaCatalog schemas,JsonCodec json,NotebookActions actions,NotebookInteractionService interactions) {
+        this.notebooks=notebooks;this.users=users;this.schemas=schemas;this.json=json;this.actions=actions;this.interactions=interactions;
     }
     @PostMapping("/workspaces/{id}/notebook-drafts") @ResponseStatus(HttpStatus.CREATED)
     public ArtifactService.Artifact notebook(Principal principal,@PathVariable UUID id,@RequestBody JsonNode input,@RequestHeader("Idempotency-Key") String key) {
@@ -30,5 +31,17 @@ public class NotebookController {
     @PostMapping("/notebooks/{id}/actions")
     public NotebookActions.Result action(Principal principal,@PathVariable UUID id,@RequestBody JsonNode input,@RequestHeader("Idempotency-Key") String key) {
         return actions.dispatch(users.session(principal.getName()).userId(),id,input,key);
+    }
+    @GetMapping("/notebooks/{id}/state")
+    public NotebookInteractionService.State state(Principal principal,@PathVariable UUID id,@RequestParam int artifactRevision) {
+        return interactions.state(users.session(principal.getName()).userId(),id,artifactRevision);
+    }
+    @GetMapping("/notebooks/{id}/block-options")
+    public NotebookInteractionService.Options options(Principal principal,@PathVariable UUID id,@RequestParam int artifactRevision,@RequestParam String originBlockId) {
+        return interactions.options(users.session(principal.getName()).userId(),id,artifactRevision,originBlockId);
+    }
+    @PostMapping("/notebooks/{id}/blocks") @ResponseStatus(HttpStatus.CREATED)
+    public ArtifactService.Version append(Principal principal,@PathVariable UUID id,@RequestBody JsonNode input,@RequestHeader("Idempotency-Key") String key) {
+        return interactions.append(users.session(principal.getName()).userId(),id,input,key);
     }
 }

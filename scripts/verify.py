@@ -7,10 +7,13 @@ import sys
 import hashlib
 from sync_contract_index import generated_files
 from urllib.parse import unquote
+from verification_inputs import capture_inputs, require_unchanged, write_report
 
 ROOT = Path(__file__).resolve().parents[1]
 errors = []
 checks = []
+write_report(ROOT/'.work/verification.json',{'result':'FAIL','error':'Static verification attempt has not completed'})
+verification_inputs=capture_inputs('static')
 
 def check(condition, label):
     (checks if condition else errors).append(label)
@@ -217,8 +220,10 @@ for path in ROOT.rglob('*.md'):
         if not target or re.match(r'^[a-zA-Z]+:',target):continue
         check((path.parent/unquote(target)).exists(),f'local link resolves: {path.relative_to(ROOT)} -> {target}')
 
-report={'result':'PASS' if not errors else 'FAIL','checksPassed':len(checks),'errors':errors,'operations':len(operations),'implementedOperations':len(implemented),'plannedOperations':len(operations)-len(implemented),'schemas':len(schemas),'conceptSeeds':len(concepts),'frontendReferences':len(ledger),'sqlTables':len(table_names),'expertRoles':len(roles),'toolCapabilities':len(tools)}
+try: inputs_unchanged=require_unchanged(verification_inputs)
+except Exception: inputs_unchanged=False;errors.append('Static verification inputs changed during execution')
+report={'result':'PASS' if not errors else 'FAIL','verificationInputs':verification_inputs,'inputsUnchanged':inputs_unchanged,'checksPassed':len(checks),'errors':errors,'operations':len(operations),'implementedOperations':len(implemented),'plannedOperations':len(operations)-len(implemented),'schemas':len(schemas),'conceptSeeds':len(concepts),'frontendReferences':len(ledger),'sqlTables':len(table_names),'expertRoles':len(roles),'toolCapabilities':len(tools)}
 (ROOT/'.work').mkdir(exist_ok=True)
-(ROOT/'.work/verification.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-print(json.dumps(report,ensure_ascii=False,indent=2))
+write_report(ROOT/'.work/verification.json',report)
+print(json.dumps({key:value for key,value in report.items() if key!='verificationInputs'},ensure_ascii=False,indent=2))
 sys.exit(bool(errors))

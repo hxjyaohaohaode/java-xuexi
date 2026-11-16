@@ -14,6 +14,9 @@ import {
   SectionTitle,
   Status,
 } from '../components/ui';
+import { BatchImports } from '../components/BatchImports';
+import { ContentDiff } from '../components/ContentDiff';
+import { TextRuleEditor, freshTextRubric, type TextRubric } from '../components/TextRuleEditor';
 
 type Ref = { id: string; revision: number };
 type Source = {
@@ -45,6 +48,7 @@ type Answer = {
   misconceptions: string[];
   hints?: string[];
   compileChecks?: unknown[];
+  textRubric?: TextRubric;
 };
 type Exercise = Ref & {
   familyId: string;
@@ -78,7 +82,7 @@ type Release = {
   active: boolean;
   activeRevision: number;
 };
-type Tab = 'sources' | 'knowledge' | 'exercises' | 'review' | 'releases';
+type Tab = 'sources' | 'imports' | 'knowledge' | 'exercises' | 'review' | 'releases';
 type DraftKey = 'source' | 'capture' | 'concept' | 'chunk' | 'exercise' | 'review' | 'release';
 const draftNames: Record<DraftKey, string> = {
   source: '资料来源',
@@ -91,6 +95,7 @@ const draftNames: Record<DraftKey, string> = {
 };
 const tabs: { id: Tab; title: string }[] = [
   { id: 'sources', title: '资料来源' },
+  { id: 'imports', title: '批量加工' },
   { id: 'knowledge', title: '知识版本' },
   { id: 'exercises', title: '练习设计' },
   { id: 'review', title: '独立审核' },
@@ -124,6 +129,8 @@ const freshExercise = () => ({
   misconceptions: [] as string[],
   hints: '',
   compileChecks: '',
+  textMode: false,
+  textRubric: freshTextRubric(),
 });
 const refKey = (ref: Ref) => `${ref.id}:${ref.revision}`;
 function toggleRef(values: Ref[], ref: Ref) {
@@ -133,7 +140,7 @@ function toggleRef(values: Ref[], ref: Ref) {
 }
 
 export function Content() {
-  const { session, refresh } = useWorkspace();
+  const { session, refresh, can } = useWorkspace();
   const allowed = session.roles.some((r) => ['EDITOR', 'ADMIN'].includes(r));
   const [tab, setTab] = useState<Tab>('sources');
   const [version, update] = useState(0);
@@ -244,6 +251,39 @@ export function Content() {
       commit,
     );
   const code = ['SIGNATURE', 'REFACTOR', 'FILL'].includes(exercise.kind);
+  const text = ['READING', 'DIAGNOSIS'].includes(exercise.kind) && !!exercise.textMode;
+  const loadExercise = (ref: Ref, derivative = false) =>
+    replaceDraft('exercise', () => {
+      void mutation.run(
+        () => api.get<Exercise>(`/admin/exercises/${ref.id}/revisions/${ref.revision}`),
+        (value) => {
+          setExercise({
+            id: derivative ? crypto.randomUUID() : value.id,
+            revision: derivative ? 1 : value.revision + 1,
+            baseRevision: derivative ? 0 : value.revision,
+            familyId: value.familyId,
+            kind: value.kind,
+            difficulty: value.difficulty,
+            prompt: value.prompt,
+            conceptIds: value.conceptIds,
+            knowledgeRefs: value.knowledgeRefs,
+            options: value.answerSpec.options,
+            correct: value.answerSpec.optionIds,
+            explanation: value.answerSpec.explanation,
+            misconceptions: value.answerSpec.misconceptions || [],
+            hints: (value.answerSpec.hints || []).join('\n---\n'),
+            compileChecks: JSON.stringify(value.answerSpec.compileChecks || [], null, 2),
+            textMode: !!value.answerSpec.textRubric,
+            textRubric: value.answerSpec.textRubric || freshTextRubric(),
+          });
+          changed('exercise');
+          if (derivative)
+            setNotice(
+              '已载入同题族的新练习草稿。请明确修改对照条件与判定规则，保存后仍需另一位编辑审核。',
+            );
+        },
+      );
+    });
   return (
     <div className="content-workbench">
       <SectionTitle
@@ -310,6 +350,30 @@ export function Content() {
       )}
       {sources.loading && !sources.data && <Loading />}
       <fieldset className="editor-scope" disabled={mutation.busy} aria-label="课程编辑表单">
+        <section
+          role="tabpanel"
+          id="content-imports"
+          aria-labelledby="tab-imports"
+          hidden={tab !== 'imports'}
+        >
+          {tab === 'imports' && (
+            <BatchImports
+              sources={sources.data || []}
+              onChange={() => {
+                update((v) => v + 1);
+                refresh();
+              }}
+              onCapture={(id) =>
+                replaceDraft('capture', () => {
+                  setSourceId(id);
+                  setCapture({ originalMarkdown: '', cleanedMarkdown: '', processingNote: '' });
+                  setDirty((current) => ({ ...current, capture: false }));
+                  setTab('sources');
+                })
+              }
+            />
+          )}
+        </section>
         <section
           role="tabpanel"
           id="content-sources"
@@ -720,6 +784,14 @@ export function Content() {
                 保存知识草稿
               </button>
             </form>
+            {chunk.baseRevision > 1 && can('CONTENT_REVISION_DIFF') && (
+              <ContentDiff
+                key={`chunk-${chunk.id}-${chunk.baseRevision}`}
+                kind="CHUNK"
+                id={chunk.id}
+                revision={chunk.baseRevision}
+              />
+            )}
           </div>
         </section>
         <section
@@ -741,40 +813,16 @@ export function Content() {
                   <button
                     className="text-button"
                     disabled={mutation.busy}
-                    onClick={() =>
-                      replaceDraft('exercise', () => {
-                        void mutation.run(
-                          () =>
-                            api.get<Exercise>(`/admin/exercises/${d.id}/revisions/${d.revision}`),
-                          (value) => {
-                            setExercise({
-                              id: value.id,
-                              revision: value.revision + 1,
-                              baseRevision: value.revision,
-                              familyId: value.familyId,
-                              kind: value.kind,
-                              difficulty: value.difficulty,
-                              prompt: value.prompt,
-                              conceptIds: value.conceptIds,
-                              knowledgeRefs: value.knowledgeRefs,
-                              options: value.answerSpec.options,
-                              correct: value.answerSpec.optionIds,
-                              explanation: value.answerSpec.explanation,
-                              misconceptions: value.answerSpec.misconceptions || [],
-                              hints: (value.answerSpec.hints || []).join('\n---\n'),
-                              compileChecks: JSON.stringify(
-                                value.answerSpec.compileChecks || [],
-                                null,
-                                2,
-                              ),
-                            });
-                            changed('exercise');
-                          },
-                        );
-                      })
-                    }
+                    onClick={() => loadExercise(d)}
                   >
                     修订为新版本
+                  </button>
+                  <button
+                    className="text-button"
+                    disabled={mutation.busy}
+                    onClick={() => loadExercise(d, true)}
+                  >
+                    派生同题族新练习
                   </button>
                 </div>
               ))}
@@ -824,6 +872,8 @@ export function Content() {
                       .filter(Boolean);
                     if (hints.length > 3 || hints.some((h) => h.length > 4000))
                       throw new Error('提示最多 3 层，每层最多 4,000 字符。');
+                    if (text && !can('TEXT_GRADING'))
+                      throw new Error('当前服务未启用文本核验，请保留草稿并稍后重试。');
                     return api.request(
                       '/admin/exercises',
                       'POST',
@@ -838,12 +888,13 @@ export function Content() {
                         conceptIds: exercise.conceptIds,
                         knowledgeRefs: exercise.knowledgeRefs,
                         answerSpec: {
-                          options: code ? [] : exercise.options,
-                          optionIds: code ? [] : exercise.correct,
+                          options: code || text ? [] : exercise.options,
+                          optionIds: code || text ? [] : exercise.correct,
                           explanation: exercise.explanation,
                           misconceptions: exercise.misconceptions,
                           hints,
                           compileChecks,
+                          ...(text ? { textRubric: exercise.textRubric || freshTextRubric() } : {}),
                         },
                       },
                       { idempotent: true },
@@ -864,6 +915,8 @@ export function Content() {
                       setExercise({
                         ...exercise,
                         kind: e.target.value,
+                        textMode:
+                          ['READING', 'DIAGNOSIS'].includes(e.target.value) && !!exercise.textMode,
                         correct:
                           e.target.value === 'SINGLE'
                             ? [exercise.correct[0] || 'A']
@@ -900,6 +953,28 @@ export function Content() {
                   </select>
                 </Field>
               </div>
+              {['READING', 'DIAGNOSIS'].includes(exercise.kind) && (
+                <Field
+                  label="作答与核验方式"
+                  hint="有限文本适合术语、类型表达式和明确短答；开放式解释仍需人工评价。"
+                >
+                  <select
+                    value={text ? 'TEXT' : 'CHOICE'}
+                    onChange={(event) =>
+                      setExercise({
+                        ...exercise,
+                        textMode: event.target.value === 'TEXT',
+                        textRubric: exercise.textRubric || freshTextRubric(),
+                      })
+                    }
+                  >
+                    <option value="CHOICE">客观选项</option>
+                    <option value="TEXT" disabled={!can('TEXT_GRADING')}>
+                      有限文本精确核验
+                    </option>
+                  </select>
+                </Field>
+              )}
               <Field label="题目内容">
                 <textarea
                   required
@@ -968,6 +1043,14 @@ export function Content() {
                     onChange={(e) => setExercise({ ...exercise, compileChecks: e.target.value })}
                   />
                 </Field>
+              ) : text ? (
+                <TextRuleEditor
+                  value={exercise.textRubric || freshTextRubric()}
+                  onChange={(value) => {
+                    setExercise({ ...exercise, textRubric: value });
+                    changed('exercise');
+                  }}
+                />
               ) : (
                 <fieldset>
                   <legend>选项与标准答案</legend>
@@ -1050,12 +1133,23 @@ export function Content() {
               <button
                 className="primary"
                 disabled={
-                  mutation.busy || !exercise.conceptIds.length || !exercise.knowledgeRefs.length
+                  mutation.busy ||
+                  !exercise.conceptIds.length ||
+                  !exercise.knowledgeRefs.length ||
+                  (text && !can('TEXT_GRADING'))
                 }
               >
                 保存练习草稿
               </button>
             </form>
+            {exercise.baseRevision > 1 && can('CONTENT_REVISION_DIFF') && (
+              <ContentDiff
+                key={`exercise-${exercise.id}-${exercise.baseRevision}`}
+                kind="EXERCISE"
+                id={exercise.id}
+                revision={exercise.baseRevision}
+              />
+            )}
           </div>
         </section>
         <section
@@ -1125,6 +1219,14 @@ export function Content() {
                   <dt>完整审核哈希</dt>
                   <dd>{detail.data.reviewHash}</dd>
                 </dl>
+                {can('CONTENT_REVISION_DIFF') && (
+                  <ContentDiff
+                    key={`${reviewTarget.kind}:${detail.data.id}:${detail.data.revision}`}
+                    kind={reviewTarget.kind as 'CHUNK' | 'EXERCISE'}
+                    id={detail.data.id}
+                    revision={detail.data.revision}
+                  />
+                )}
                 <Field label="审核意见">
                   <textarea
                     rows={5}

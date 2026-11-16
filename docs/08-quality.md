@@ -2,7 +2,7 @@
 
 ## 1. 当前与最终的检查边界
 
-v0.5 的验证覆盖当前路由与契约、固定 javac 语义、SQL 事务、账户/会话生命周期、学习投影、来源闭包、导师及专家学习队列、编译协议与隐藏正反例、内容审核发布、私有素材和实际 Office/PDF 文件、前端组件及真实后端操作。三轮审查记录见 [开发审查](../evidence/development-review-v05.md)。实际命令、结果、环境和未验证限制只以 [当前验收](../evidence/runtime-review.md)为准；旧版本报告保留在 Git 历史。Docker 编译服务与图形 Chromium 在精确提交的远端 CI 独立验证；协议/DOM 测试不能替代这两个门禁。前端 209 条台账仍是研究记录。真实供应商教学质量、完整生成媒体、生产负载与备份恢复仍需专项实测。
+v0.6 的验证覆盖当前路由与契约、固定 javac 语义、SQL 事务、账户/会话生命周期、学习投影、来源闭包、导师及专家学习队列、编译协议与隐藏正反例、内容审核发布、私有素材和实际 Office/PDF 文件、前端组件及真实后端操作。三轮审查记录见 [开发审查](../evidence/development-review-v06.md)。实际命令、结果、环境和未验证限制只以 [当前验收](../evidence/runtime-review.md)为准；旧版本报告保留在 Git 历史。Docker 编译服务与图形 Chromium 在精确提交的远端 CI 独立验证；协议/DOM 测试不能替代这两个门禁。前端 209 条台账仍是研究记录。真实供应商教学质量、完整生成媒体、生产负载与备份恢复仍需专项实测。
 
 ## 2. 逐模块验收清单
 
@@ -18,7 +18,7 @@ v0.5 的验证覆盖当前路由与契约、固定 javac 语义、SQL 事务、�
 | M08 | 术语/符号/误区检索 | 无答案、版本混用、错误引用、中文分词误伤 | gold set、Recall/MRR、失败例 |
 | M09 | 带出处解释、诊断、提示阶梯 | 提示注入、虚构诊断、错误引用、模型断开、跨用户上下文 | 真实模型评测、费用、失败说明 |
 | M10 | 审核、发布、历史激活 | 作者自审、并发编辑/发布、索引构建失败、部分清单 | 发布前后快照与恢复结果 |
-| M11 | 八类材料可追溯、真实贡献 | 对话缺失、伪造截图、不可解释生成代码、密钥误入日志 | 两人评审、提交、答辩模拟 |
+| M11 | 私有评测套件/不可变运行/逐例证据；最终八类材料与真实贡献 | 跨账户、修改历史、伪完成、部分结果漏计容量；伪造截图与贡献 | 实际 BM25/SQL/HTTP、报告 hash、取消租约与容量；真人评审和答辩另验 |
 | M12 | 干净启动、迁移、备份恢复 | 数据库/模型/worker断开、磁盘满、限流、资源泄露 | CI、压测、故障演练、恢复报告 |
 | M13 | 动态DAG、能力准入、消息接续、预算与取消 | 子图环、未知工具、写冲突、迟到提交、未知外部结果、无限修复 | 计划与持久运行时测试＋后续真实外部适配器/模型故障测试 |
 | M14 | 八类作品、版本、局部修改、真实导出 | 错素材/模板、过期revision、跨空间引用、渲染失败、SSRF/文件攻击 | schema负例＋后续文件可打开/可编辑/可播放证据 |
@@ -65,13 +65,13 @@ python -m pip install -r requirements-dev.txt
 python scripts/sync_contract_index.py --check
 python scripts/verify.py
 npm --prefix frontend ci
-npm --prefix frontend run check
-npm --prefix frontend run build
-mvn -B -ntp -f backend/pom.xml clean verify
+python -m unittest discover -s scripts -p 'test_*.py'
+python scripts/verify_frontend.py
+python scripts/verify_java.py
 python scripts/verify_mysql.py
 python scripts/smoke_runtime.py --profile h2
 # 已安装 Playwright Chromium 后，运行真实浏览器集成：
-python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.5.0-SNAPSHOT.jar
+python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar
 python -m unittest discover -s workers/compiler -p 'test_*.py'
 # 专用 Linux Docker 环境：
 docker build -t typeforge-compiler:jdk17 workers/compiler
@@ -87,6 +87,8 @@ docker run --rm --mount "type=bind,source=$((Get-Location).Path),target=/workspa
 启动命令与 Profile 详见 [后端说明](../backend/README.md)：`mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=demo` 可启用演示课程。数据库迁移/连接、会话/CSRF 和当前契约业务操作已实现；注册后登录并重新取 CSRF 才能使用受保护接口。正式部署仍需 TLS/安全 cookie、目标 MySQL 与 worker 环境验收、日志/备份、模型真实质量和媒体适配；`businessReady=false` 保留为正式产品验收未完成的事实，不把 API 覆盖率当生产认证。
 
 ## 7. 发布阻断规则
+
+实际验证报告绑定各自的源码输入清单；干净构建还绑定完整 JUnit 方法/参数案例集合、前端构建和最终 JAR。测试中途改动源码、缺少某个测试类、复用旧成功报告、浏览器场景外异常或两次启动期间换包都会阻断验收。汇总脚本必须读取这些实际运行证明，不能仅凭当前目录存在 PASS 文件便给新源码生成成功摘要。
 
 P0 缺陷：知识或判分严重错误、越权、密钥泄露、用户代码逃逸、数据丢失、主链路不可完成。P1：版本混用、重复加分、无法恢复、主要键盘路径缺失。最终提交前 P0/P1 必须关闭；低优先级缺陷写清影响与回避。框架提交允许未实现功能，前提是显式 planned 且不伪造验收结果。
 

@@ -9,9 +9,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 
 /** Explicit opt-in only; never infer a test database from a general developer or production connection. */
-final class PrivateModuleDatabaseFixture {
-    private static final boolean MYSQL="true".equals(System.getenv("TYPEFORGE_MYSQL_ACCOUNT_TEST"));
-    static void configure(DynamicPropertyRegistry properties,String h2Name) {
+public final class PrivateModuleDatabaseFixture {
+    private static final boolean MYSQL="true".equals(System.getenv("TYPEFORGE_MYSQL_ACCOUNT_TEST")) || "true".equals(System.getenv("TYPEFORGE_MYSQL_V06_TEST"));
+    public static void configure(DynamicPropertyRegistry properties,String h2Name) {
         if(!MYSQL) {
             properties.add("spring.datasource.url",()->"jdbc:h2:mem:"+h2Name+";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DEFAULT_NULL_ORDERING=HIGH");
             properties.add("spring.datasource.username",()->"sa");properties.add("spring.datasource.password",()->"");
@@ -25,7 +25,7 @@ final class PrivateModuleDatabaseFixture {
         properties.add("spring.datasource.url",()->url);properties.add("spring.datasource.username",()->username);properties.add("spring.datasource.password",()->password);
         properties.add("spring.datasource.driver-class-name",()->"com.mysql.cj.jdbc.Driver");properties.add("spring.flyway.locations",()->"classpath:database");
     }
-    static void prove(JdbcTemplate jdbc,JsonCodec json,String suite) {
+    public static void prove(JdbcTemplate jdbc,JsonCodec json,String suite) {
         if(!MYSQL)return;
         Map<String,Object> proof=jdbc.execute((ConnectionCallback<Map<String,Object>>)connection->Map.of("suite",suite,"engine",connection.getMetaData().getDatabaseProductName(),"version",connection.getMetaData().getDatabaseProductVersion(),"database",connection.getCatalog()));
         if(!"MySQL".equals(proof.get("engine")) || !proof.get("version").toString().startsWith("8.4."))throw new IllegalStateException("Actual private module JDBC connection is not the required MySQL 8.4 engine");

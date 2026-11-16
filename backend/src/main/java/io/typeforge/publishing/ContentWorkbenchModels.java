@@ -2,6 +2,7 @@ package io.typeforge.publishing;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.typeforge.compiler.CodeRubric;
+import io.typeforge.exercise.TextRubric;
 import io.typeforge.ingestion.IngestionModels.SourceReference;
 import java.time.Instant;
 import java.util.List;
@@ -19,13 +20,16 @@ public final class ContentWorkbenchModels {
                         String reviewHash, String status, UUID authorId, List<SourceReference> sources) {}
     public record ChoiceOption(String id, String text) {}
     public record ChoiceAnswer(List<ChoiceOption> options, List<String> optionIds, String explanation, List<String> misconceptions,
-                               List<CodeRubric.Rule> compileChecks,List<String> hints) {
+                               List<CodeRubric.Rule> compileChecks,List<String> hints,TextRubric.Spec textRubric) {
         public ChoiceAnswer {
             compileChecks=compileChecks==null?List.of():List.copyOf(compileChecks);
             hints=hints==null?List.of():List.copyOf(hints);
         }
         public ChoiceAnswer(List<ChoiceOption> options,List<String> optionIds,String explanation,List<String> misconceptions) {
-            this(options,optionIds,explanation,misconceptions,List.of(),List.of());
+            this(options,optionIds,explanation,misconceptions,List.of(),List.of(),null);
+        }
+        public ChoiceAnswer(List<ChoiceOption> options,List<String> optionIds,String explanation,List<String> misconceptions,List<CodeRubric.Rule> compileChecks,List<String> hints) {
+            this(options,optionIds,explanation,misconceptions,compileChecks,hints,null);
         }
     }
     public record ExerciseInput(UUID id, int revision, int baseRevision, UUID familyId, String kind, int difficulty,

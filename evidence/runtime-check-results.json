@@ -1,9 +1,9 @@
 {
-  "schemaVersion": "1.1",
+  "schemaVersion": "1.2",
   "result": "PASS",
-  "scope": "v0.5 implemented runtime/local verification; graphical browser is an independent remote CI gate; not final course acceptance",
-  "recordedAt": "2026-11-15T18:01:18.878872+00:00",
-  "baselineCommit": "60f5a836f7afb64f908a367403ea2307d85a70d5",
+  "scope": "v0.6 implemented runtime/local verification; graphical browser is an independent remote CI gate; not final course acceptance",
+  "recordedAt": "2026-11-16T02:45:22.181612+00:00",
+  "baselineCommit": "0e9d1bce53e96bdd0e84fe0d5d8a55bf59fd3bec",
   "environment": {
     "os": "Linux",
     "maven": "3.9.11",
@@ -17,18 +17,14 @@
   },
   "sourceSnapshot": {
     "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-    "digest": "32e4d1b62eb0cd0eec3757339e6b66b26599b2909e1c562dc56e2c495f1be7ca",
-    "excludedReports": [
-      "evidence/runtime-check-results.json",
-      "evidence/runtime-review.md"
-    ],
-    "fileCount": 316,
+    "digest": "e3cf9318129b127add12e9553506f79317406dee49e3f8a956606dce83e1378b",
+    "fileCount": 374,
     "files": {
       ".gitattributes": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c",
-      ".github/workflows/baseline.yml": "ee38a76d8b1dfe7954c4bdaf73fa68f03c9c4b948083b0058cc46d5feab59ed4",
+      ".github/workflows/baseline.yml": "587141a4141dd281e7bc7b885d30c7f6146a8127ada1ccbd7d2504f9d5caca69",
       ".gitignore": "d667d736976b016d4745c43271700e0ed6551610c8bddd5bca08cb407f12460b",
-      "AGENTS.md": "6fee43ff5b025b6aebd1ff5e9256d97ae5e04ba5e1df72440495fea2868ac1e5",
-      "README.md": "b78102bea4ca541f3139f454f04ba7e0b56a47ff8440df35b900c60c3c2ea6c2",
+      "AGENTS.md": "b32af3275ed2d7da72dae9bd78833e1755f2c7fe6b44f8acb3598ff4798cd644",
+      "README.md": "3adc849b36dbb552b9b5a06c49908cb03b8417c0159a670e9fa61ebcb97886a0",
       "agent/README.md": "135acdb095bfc86146d1630576a57731393e290af37b270703b7ab766387de7d",
       "agent/artifact-examples.json": "658422e9efa5fb481866785d90ca852f3fa7a394e62a208c82732c35996c71d9",
       "agent/capability-matrix.json": "32c99259a7f3f7a498b48dd92297314b5e0b31d7de4b50dd00c8d28d9aa82250",
@@ -40,8 +36,8 @@
       "agent/run-policy.json": "c00433c894ce85fdfdd563f915fb99277afc6c4235933d7b5b7c3c591f8228b6",
       "agent/system-prompt.md": "90ed866cd6be0054d3a75ccac28b0e87a6634b15ebe4f3bb045cb77e9816c87a",
       "agent/tools.json": "13cd68bf1546aecac4bbe50095913a9f6b3571113267f131d3b8d6cb5516e067",
-      "backend/README.md": "a5bfcdc1bdc72465a8968d2f6d45cefa46e7e0172ca90357fb672602a1c76d20",
-      "backend/pom.xml": "ad1d1a361880bb8da9c28e7fba029eb57fc5c18f08033094a14be872fa59f427",
+      "backend/README.md": "1647c541d956ebe203b531f92e439096ac3f07a867d84f6c47178db2e2c6dcd6",
+      "backend/pom.xml": "333cff6e8bcd1905bcb8ef44459016b597c353e139306aaa2cc043c21ed8f246",
       "backend/src/main/java/io/typeforge/TypeForgeApplication.java": "3554363b1b9a6990b0bced041770fe934a2a858a24dd2c5ac501c3a966cdb890",
       "backend/src/main/java/io/typeforge/artifacts/ArtifactAccountClosureParticipant.java": "2fcb1dea9ebc0b9411ba111cd98039b41e67b993dc7e63db37732fed6994212d",
       "backend/src/main/java/io/typeforge/artifacts/ArtifactController.java": "82bc65e208d2d5ee7312f9cf53493a0b98d6d605d21c0e802bdc006b85a235d2",
@@ -49,7 +45,7 @@
       "backend/src/main/java/io/typeforge/artifacts/ArtifactExportService.java": "2ea29333f2d3005953b32a229b353a48c8467d8086cfdc9c087730afe808b77d",
       "backend/src/main/java/io/typeforge/artifacts/ArtifactFileRenderer.java": "7b996d7e51215b622db12c152549b1e690c0ec90c35e43ceb667021ee6c43212",
       "backend/src/main/java/io/typeforge/artifacts/ArtifactInvalidation.java": "23854de035a8c3aac2c2271ba04ac50ac569818258105bd06672c01fb85c615c",
-      "backend/src/main/java/io/typeforge/artifacts/ArtifactService.java": "c9f75d1cb16bad3b94f45808daa123ed5e55b05674174e38b95ed6b49134096f",
+      "backend/src/main/java/io/typeforge/artifacts/ArtifactService.java": "44dc8df4023c65eb0fd113df0669d8646c5ca4505015ab8c30bbdb218f771500",
       "backend/src/main/java/io/typeforge/artifacts/ArtifactStudio.java": "b99e6939292413e7fa32910f8c84cc7a6bdf30b7edac30caad0391da83bdc062",
       "backend/src/main/java/io/typeforge/artifacts/AssetController.java": "29af5494fd12f5844bb4469630ccd12836d635fde285f719e45e59dfef64ce7d",
       "backend/src/main/java/io/typeforge/artifacts/AssetService.java": "38d3d5fb329bd95e8e2cd15af07b05238f5c8e24fe2c42936ed90c0b6fb2a104",
@@ -67,15 +63,21 @@
       "backend/src/main/java/io/typeforge/compiler/HttpCompileProvider.java": "7453d3946653feb9d36e68a2c225c692034910a3b08e8917ab214749b2554a6f",
       "backend/src/main/java/io/typeforge/compiler/package-info.java": "44161af9918ff1e41787ddca6a6a145bb61988a92d6e485e5439540a1ec335af",
       "backend/src/main/java/io/typeforge/curriculum/ConceptCatalog.java": "b6289eb3e16dfedd96720ded5bf2c413623b60e276247bd9393058b9454e419a",
-      "backend/src/main/java/io/typeforge/curriculum/CurriculumService.java": "450a64969cf6c2ec207444ebd9f774c6ed512725b28306569c7504bb34d90174",
+      "backend/src/main/java/io/typeforge/curriculum/CurriculumService.java": "de5312acf51d3c24c33c1f594ff42f2aa5f7c94af83c18de1164061954a8c557",
       "backend/src/main/java/io/typeforge/curriculum/KnowledgeController.java": "26547ce579c32d316c554618eff6da72dc7b26436ec5699c7f5cd36694a09569",
       "backend/src/main/java/io/typeforge/curriculum/package-info.java": "37c47c7ecdee2808d50fc01e31a2ec1afd06a3403fc718c17422f644366bc405",
-      "backend/src/main/java/io/typeforge/evidence/package-info.java": "da8bb8ff603c42c623dd1341f9499cf6f0b375aeb323acadc83c1a3573905893",
+      "backend/src/main/java/io/typeforge/evidence/EvaluationAccountClosureParticipant.java": "35957e8496a0436a9044292e12f68fbdb816b3789f833a6f49eaa8dd4f31670a",
+      "backend/src/main/java/io/typeforge/evidence/EvaluationController.java": "2eeaddcb40b8f1a884544ce98d0b2a65c97a9198aea64f420484781565e6e871",
+      "backend/src/main/java/io/typeforge/evidence/EvaluationModels.java": "5fd91611668ac34587968dbb4240e3fb7cb09837e5e0e2ac2f18d01bd6823665",
+      "backend/src/main/java/io/typeforge/evidence/EvaluationService.java": "79a6f976a7b5044d095d326ad042c54d9f700169f247bbc96f5119b4d10741c1",
+      "backend/src/main/java/io/typeforge/evidence/EvaluationWorker.java": "29592ea3db3933db23bd64dbcebc1e0f9557d7a4c93e9aa5d3f978a8bde9c08d",
+      "backend/src/main/java/io/typeforge/evidence/package-info.java": "73b54d617dd13a6615255c2525ca4775c0df8a6de6515d10a8d79956a33db4af",
       "backend/src/main/java/io/typeforge/exercise/CodeGradeConsumer.java": "605be8ea706e25b8cc7c13073f3d4fd4f6b5f46692692b531784631a18c26f5c",
       "backend/src/main/java/io/typeforge/exercise/ExerciseGrader.java": "ba435899dba84f0c67a9bb3a218dd12791c97161bad325cdf46d38498da362ba",
       "backend/src/main/java/io/typeforge/exercise/LearningController.java": "20e0ce02ea3b0e62aeffc595d908d7ada9b0a6555ba68c6dc0611a4b2cd09ba3",
-      "backend/src/main/java/io/typeforge/exercise/LearningService.java": "d28ab97547c7e7e9ef0aa7ac1653371c9d57fa6771da94b19cf91d04acf7c3bc",
-      "backend/src/main/java/io/typeforge/exercise/package-info.java": "62cc70c4ff65e53bdad14fb00d20c1312edebe5e790ca3845ef9de6186957ef9",
+      "backend/src/main/java/io/typeforge/exercise/LearningService.java": "aae8d9f93c9f273d26f918bc489e13c0166f48d0f4a71ebc2eb8f5beb8086388",
+      "backend/src/main/java/io/typeforge/exercise/TextRubric.java": "df76213df20a36097f79306e896222d2b0407949f82bf375c64c322ae6d3313f",
+      "backend/src/main/java/io/typeforge/exercise/package-info.java": "ffb6213fd0ed4e870a5a64e24a2ed2f1f6fd8a2b251a27ec5486f3bd58704912",
       "backend/src/main/java/io/typeforge/identity/AccountClosureParticipant.java": "2ca4d2679ebeacaa82926c3a63df28bf79614586cd5bb320c84e283ac45f0962",
       "backend/src/main/java/io/typeforge/identity/AccountClosureService.java": "acd4d86f0d76f747abc532513c8d3ee6b8f2881cfbed0dfd2304285805672c54",
       "backend/src/main/java/io/typeforge/identity/AccountController.java": "06fd5fb9bc2705b6c8ef9fdd159b785a9eb1b55f8f3004b7bd46b82d8bcbae1f",
@@ -91,6 +93,10 @@
       "backend/src/main/java/io/typeforge/identity/PreferenceService.java": "1032189ab054ffb58fd089f220e12413caf55bac214aea8028b6a6334083fdf8",
       "backend/src/main/java/io/typeforge/identity/SessionValidityFilter.java": "7310c07e1100034a1d2f795372b32b1e2b4e63e8072541515acd996316b41499",
       "backend/src/main/java/io/typeforge/identity/package-info.java": "af8f6a02225db769e6cdc89a95b19e45f383d3caf8973243a7f0586978d623c5",
+      "backend/src/main/java/io/typeforge/ingestion/BatchImportController.java": "3f5c18f95e65200c79283cd4049d6d74ad6ae0ba9c3bd00d2903c92ae112bf41",
+      "backend/src/main/java/io/typeforge/ingestion/BatchImportModels.java": "385697070c377e1601f25fdb98086ce08c984f629f945e5e2dbc95951c3faaff",
+      "backend/src/main/java/io/typeforge/ingestion/BatchImportService.java": "43ac33ad501a1f66c949dab5e72ca6668ed0c3611d1818ab3dcc3557b8440fae",
+      "backend/src/main/java/io/typeforge/ingestion/BoundedDocumentText.java": "4cf8d67f1fdcc04613eba43735a5f820919e6b0c1c108370451ba7c0b142b137",
       "backend/src/main/java/io/typeforge/ingestion/IngestionController.java": "3afed4d858b73a87d1997889d3c5bc2c242066c76b4bf474e15a1f2a7dfc8df1",
       "backend/src/main/java/io/typeforge/ingestion/IngestionModels.java": "4e43dae816a3f30724389a1173ef59f0c3a25b75055ac7ae228fb1c4c1f2f1a8",
       "backend/src/main/java/io/typeforge/ingestion/KnowledgeIngestion.java": "f7ffdd62c5bfa0474b6527f43e0bc2d5497dbd3cfcc19892b10f3dfaa40d6bc8",
@@ -108,15 +114,16 @@
       "backend/src/main/java/io/typeforge/learning/ReadingIndexInitializer.java": "73d211b88f59afc88a406ae5578d5094bb8bb19da94239ceaa0af71944244156",
       "backend/src/main/java/io/typeforge/learning/ReadingService.java": "f938349341776413c423a30e2751befa3e715e2e8c144a811a19c33ba486f696",
       "backend/src/main/java/io/typeforge/learning/package-info.java": "0236d4903e43ca69e833e0e4a27000a1131f8362564fa33d724d39abcb376b49",
-      "backend/src/main/java/io/typeforge/notebook/NotebookActions.java": "d48cad585eadee43249ccf43ad051bf7cff3678e83c5a73e41feb8516956fa60",
+      "backend/src/main/java/io/typeforge/notebook/NotebookActions.java": "ee36a809eea6104571a1d33b3f9f11487d5b4c851e1d46a1733f2e8eef28b1cd",
       "backend/src/main/java/io/typeforge/notebook/NotebookCompiler.java": "8a523d3467fab6c555e592725cc3ba175fbde47e16c748afdda3461a680841ad",
-      "backend/src/main/java/io/typeforge/notebook/NotebookController.java": "4ec6c5a8f41cc99caa62926810a14b48962468d1d224b65cd5e1707c95755872",
-      "backend/src/main/java/io/typeforge/notebook/NotebookService.java": "eb5555b9c78c4aded4e400c98a69d98ade375084129cac74826bb59083a0b8ca",
+      "backend/src/main/java/io/typeforge/notebook/NotebookController.java": "40cc6debf5f09039bac5367fe452e7d8d8bc21e7ad6aa240545acf03351c3dd2",
+      "backend/src/main/java/io/typeforge/notebook/NotebookInteractionService.java": "75bd4f77ad3acc13f6e63f4eaa80dfa2a6331d877395ea540bf2200f9a66f1d9",
+      "backend/src/main/java/io/typeforge/notebook/NotebookService.java": "1dcf546f0d63d59051cbbb733d8ca636668ee9ce1ffdb9840375c344ce8ee7b9",
       "backend/src/main/java/io/typeforge/notebook/package-info.java": "59742096175a9225621d1c316b9ec58e8e869814924e27447dd058b10b510a4b",
       "backend/src/main/java/io/typeforge/operations/DemoContentInitializer.java": "d9191b33d00488f1a9cf232a6b7a8e64cf338ccf7d950faa2ada867ca1f6d19f",
-      "backend/src/main/java/io/typeforge/operations/FrameworkController.java": "e02a205faa493d033ca90f160a59600b3aeb5c17e02c414f462cba7e046873b8",
+      "backend/src/main/java/io/typeforge/operations/FrameworkController.java": "e90dee52692fe8c8ca735fe7db5b965dfa74d7bcbffafd9e2f776596a14a6834",
       "backend/src/main/java/io/typeforge/operations/LearningAnalyticsService.java": "ccc9af7397c38a3758b7f65463ad535cd1e429c3a311f87fd4e363417c5e4451",
-      "backend/src/main/java/io/typeforge/operations/OperationsController.java": "215a4c31d0195049d3293792027797b893fbb4df44ea455058e7de2d3adf7d77",
+      "backend/src/main/java/io/typeforge/operations/OperationsController.java": "38551ef0de5709dacb86d3800556fc6bd9bab996d6d06338652be2f0a44f809a",
       "backend/src/main/java/io/typeforge/operations/ProblemHandler.java": "9efc973f4161972a7bc8f542a4a52e259d7b346dc158e25d883330867c498815",
       "backend/src/main/java/io/typeforge/operations/RequestBodyLimit.java": "4a2dd6b8d860169ddac856212e3c492a454e553f1fdda80fbaa9f2fe264cae0d",
       "backend/src/main/java/io/typeforge/operations/RequestMetrics.java": "4b5430e84fcf653ddf5aa9af3c77c3ef6a9d73896b2ecffaf2ae51e5b840745c",
@@ -140,6 +147,9 @@
       "backend/src/main/java/io/typeforge/operations/migrations/h2/V009__artifact_files.java": "162d8a755cde4a8b634eda0c76b0daf77954410224474b2cbd7abd97047a2cdc",
       "backend/src/main/java/io/typeforge/operations/migrations/h2/V010__study_workflow.java": "4586f840064e04ce17bff8938fee4198258b39b2b4dd181e01b28c785801c8bb",
       "backend/src/main/java/io/typeforge/operations/migrations/h2/V011__private_assets.java": "ef7dbc97ebecd51e1a121e74e957774fd007841daa6547b2e05a300d1d11efff",
+      "backend/src/main/java/io/typeforge/operations/migrations/h2/V012__evaluation_workbench.java": "d1b02633d3c4354121f85916705458dddcbdfcbf3e2c31bee014508e1ebe2fc5",
+      "backend/src/main/java/io/typeforge/operations/migrations/h2/V013__text_and_notebook_interactions.java": "a1c4c7c1bdb0bfd5a3eecac8d3ed72482ad5de9d873e57c49a0dcee83d5fac7b",
+      "backend/src/main/java/io/typeforge/operations/migrations/h2/V014__batch_ingestion.java": "382aecf8a363cfbce7570195377f98068fc2407251c627f68e670ee8d1b7fd8d",
       "backend/src/main/java/io/typeforge/operations/package-info.java": "7e02654fd773ff359f849571ca576269b892733d60f72583a7feced533c43243",
       "backend/src/main/java/io/typeforge/orchestration/AgentAccountClosureParticipant.java": "a9b66060dfce8001299ef415e2f656182d6749e92766d93941a3169a0477b2c6",
       "backend/src/main/java/io/typeforge/orchestration/AgentTool.java": "858c103342bbe01412b81b8192e070318a6eb913166f40b19e6a4dc8441d727c",
@@ -148,10 +158,12 @@
       "backend/src/main/java/io/typeforge/orchestration/PlanValidator.java": "3ddd6d2c979e45f8ac3a1b90a8115efa3f46d7399c181fffc7082a9c489f8004",
       "backend/src/main/java/io/typeforge/orchestration/TaskPlan.java": "8239ca8949037758482c87a5d928bb9712287c702c0cfe59bc3b2213edd900d4",
       "backend/src/main/java/io/typeforge/orchestration/package-info.java": "3c07be3ffa95bca12508efd061fc6b284009a348ce25c359539a0873567d9adf",
-      "backend/src/main/java/io/typeforge/publishing/ContentDraftService.java": "9f25f8857c14d1418f1adee40bb55c210dc6718313949376b6d52c386cccb3cf",
+      "backend/src/main/java/io/typeforge/publishing/ContentComparisonController.java": "e4f21bd6bbb77c49de5e958aaaf6a37a697211fdf2c3874d81a8e41a70bc184e",
+      "backend/src/main/java/io/typeforge/publishing/ContentComparisonService.java": "3f4898a31f8f280e201640a0615694597a8fa55f07de821f631e1a7f19f14da8",
+      "backend/src/main/java/io/typeforge/publishing/ContentDraftService.java": "180260dc24fc20e6a8a112c57d954c009a02bb87f42a542b9edda6352e9c9d59",
       "backend/src/main/java/io/typeforge/publishing/ContentPublisher.java": "806e76ccbcd33670144451360a86b7f17d9d746794278f7459da3b5fba3809b8",
       "backend/src/main/java/io/typeforge/publishing/ContentWorkbenchController.java": "b7c78522ebab46017121edbb4e573fa6d6c9a8e54c9171cdea5ef8e653caab30",
-      "backend/src/main/java/io/typeforge/publishing/ContentWorkbenchModels.java": "fe282dcafc6f32e56c24c27dea8032acde952e0cb0db216cddaba3806d6605b2",
+      "backend/src/main/java/io/typeforge/publishing/ContentWorkbenchModels.java": "1347e502dde733aa9522a78d8b3c649d11afff37c83a1da6e0802b8e31f7b750",
       "backend/src/main/java/io/typeforge/publishing/ReleaseWorkbenchService.java": "6b783c511e5a82688f486d96731d0abdaedf5ef49fe65da5e127914f1dedda65",
       "backend/src/main/java/io/typeforge/publishing/package-info.java": "83e1bd5858a78deeb7f1faf8f090b6b99c82de12aac0a8a20b511e477a3d0822",
       "backend/src/main/java/io/typeforge/retrieval/KnowledgeRetriever.java": "02c9470edc154c00c8b91d4035dc12493e8bf5fd6f390d8406fe41e8e1c62d92",
@@ -185,18 +197,21 @@
       "backend/src/main/java/io/typeforge/workspace/WorkspaceService.java": "1b47eb9215edd52873aad1c68d11eecad85fc7c55e849de1a5c1785b67f759b4",
       "backend/src/main/java/io/typeforge/workspace/package-info.java": "0ffe1b4bec1ddca76b36bbea20556aecbeb6d701f7784335831f85a04292a5a1",
       "backend/src/main/resources/application-mysql.properties": "dd56728bcfd182ea09ee8af05ba25bfc9cdfd3d269d890374f7cc14dca6e5240",
-      "backend/src/main/resources/application-test.properties": "3026f13852fcd9aed864b38235b68ac14fe02c94f6b16ebcf6db0c4e05947c7a",
-      "backend/src/main/resources/application.properties": "15f3d0623940b6973c538c91007baf971708ac33593251b2a309cb073ff4d61d",
+      "backend/src/main/resources/application-test.properties": "cadcae581694b1693699f635418965e791278ab959bcb78a4abd04dcaba8fd97",
+      "backend/src/main/resources/application.properties": "e6e8753e846507a547c9f1590100d4385f9ddf8cd0b6a953cfe24426137bd287",
       "backend/src/main/resources/fonts/OFL.txt": "babcfe66c8a098b2fa279bc724a3a342f8124f77ce18941fbcc1bbb39823cded",
       "backend/src/main/resources/fonts/README.txt": "3d1d0152ec27330fc4e722be5a0638c4554383b722e58538ae04ff0162c642d5",
       "backend/src/main/resources/fonts/TypeForgeCJK.ttf": "9afc508b09e2cd3448d8a345b87a3919c94cd4220818ddb8cc613f825557c420",
       "backend/src/test/java/io/typeforge/AccountLifecycleIntegrationTest.java": "7e01aa16d66065c1a672d751bc351de167b8644fb3dd2e72069ea7f5d8326d0f",
       "backend/src/test/java/io/typeforge/AgentPlanTest.java": "30534f099cf7c2ec75ba351bfb7c029a452574a0c7daf2e6e0ca214284bba8b1",
       "backend/src/test/java/io/typeforge/ArtifactFileExportTest.java": "25c844cdfa6c6690c8c499ba990da50b27584f9b1b1f9ad069e91b9f731d0ec0",
+      "backend/src/test/java/io/typeforge/BatchImportIntegrationTest.java": "790c926aaada8e5d3a6f62b1d53e81186a7102532c6e6f2a98fc1a2b4797365a",
       "backend/src/test/java/io/typeforge/CodeRubricSemanticsTest.java": "89b2b2e033350084406e82eb1f94b2c9ee310bc933190ad1b6ab0fb16e02759c",
       "backend/src/test/java/io/typeforge/CompileHttpProtocolTest.java": "929bdb9841f915cdd01c70127b97d59fd74e2d932484bc205d7a7ece82201919",
       "backend/src/test/java/io/typeforge/CompileQueueTest.java": "889812e859e0e68f1f1ab87d2d6d5426ca937f278189812c5bec4066ac760d43",
+      "backend/src/test/java/io/typeforge/ContentComparisonIntegrationTest.java": "9dff32a8a82eb17d5e4131d7ea35f2e4bfceaa5829cc84ce5aa5c24bb5ac7ca7",
       "backend/src/test/java/io/typeforge/DurableAgentRuntimeTest.java": "1a968f4202069f03eea435a5412a463872f28b33a21cbb8b21d4048def1236f9",
+      "backend/src/test/java/io/typeforge/EvaluationWorkbenchIntegrationTest.java": "43d8986abbb46b78635f533b34cdd6d4adf72633250d6b08524d7d287765743f",
       "backend/src/test/java/io/typeforge/EvidenceWorkflowRecoveryTest.java": "9e84547cddd76e647e7cfbec6c821b444a3d0c17f1270c7b09411f456306aebb",
       "backend/src/test/java/io/typeforge/ExerciseHintCapabilityIntegrationTest.java": "cd77dc1648da2997b3d3b4b551c07e15637c32b48b152797148ae79615c7a724",
       "backend/src/test/java/io/typeforge/FiniteTypeEvaluatorTest.java": "b20553f34e4685614cc30d97a2ddb19094c5a65711877ef29a0416f4e124b2e3",
@@ -207,27 +222,32 @@
       "backend/src/test/java/io/typeforge/HttpSessionFixture.java": "1225c4505d6e21c36d4f120a324567df4f4df4915a51ba25e6cc25e293d74af3",
       "backend/src/test/java/io/typeforge/InteractiveLearningTest.java": "3fad757c98f5893145cba1ce21aa1131be58d0ff924ccf4717f4bb1afe1c0505",
       "backend/src/test/java/io/typeforge/KnowledgeRuntimeTest.java": "dfb15e3ba693115a189cd951f3797308ea96dd1e2be269d281fa6af5b882aecf",
+      "backend/src/test/java/io/typeforge/LearningEditorialFixture.java": "67d5107b39b4e5450bb17ea91eee8c4d4a331898dad572c58fdcb141f0e50178",
       "backend/src/test/java/io/typeforge/LocalLearningToolsTest.java": "44a30e9ae5c384fda9bb3c7a5b4a935b6fcb9f56a6cc999d5b6e4685a9547edc",
+      "backend/src/test/java/io/typeforge/NotebookInteractionIntegrationTest.java": "b8d4c429ed8772d9e4cf8cd0543b39e43e780153416d14176038dc6f7bc3d976",
       "backend/src/test/java/io/typeforge/PrivateAssetsIntegrationTest.java": "df76bf5c5c2aa02d01269da08fa18a1453b4c0488b20185608a828a175ed62a8",
-      "backend/src/test/java/io/typeforge/PrivateModuleDatabaseFixture.java": "81251db6917007a29da7339705bb03bf2e0bc476b3085db264cf740042d2ad25",
+      "backend/src/test/java/io/typeforge/PrivateModuleDatabaseFixture.java": "4f5b924a19e97c858c719c373d3ccd5957815380782cf2b9d5cc0c51c3c00c44",
       "backend/src/test/java/io/typeforge/RootArchitectureInvariantsTest.java": "88950ad57c42812eb1ff126ab3f37d706dfa38193be75e8592eeeca25be8ee35",
       "backend/src/test/java/io/typeforge/StudyModelWorkflowTest.java": "a7d21847ce250434b0cc96fd89d792c29ce170e523a5018d4d6a4344b2acdcac",
       "backend/src/test/java/io/typeforge/StudyWorkflowIntegrationTest.java": "6b518bddbf7fc6a4a178fbb38c2cc105c0db361bc67b4624dff532629b83f81e",
+      "backend/src/test/java/io/typeforge/TextLearningIntegrationTest.java": "ba25112c4f66671000f4c9d5aa1153795d23f28c29bae59d7553ef3848d6e2f6",
       "backend/src/test/java/io/typeforge/TransactionIsolationTest.java": "b0b4385f5032b645138d9d27c88aa2555edf204db792682e26b8a5cb60f1f003",
       "backend/src/test/java/io/typeforge/TutorHttpBoundaryTest.java": "9874a27842181456f20750f272e89ee241cd7b325dc2a132bbc56eb0b9bc62ab",
       "backend/src/test/java/io/typeforge/TutorHttpProviderTest.java": "4b16d5391ecb5a6edc6d75e2a03f751a5d53d7d5b70063851be823c4d530a9f6",
       "backend/src/test/java/io/typeforge/TutorRuntimeTest.java": "83cdfb61be34ca7a6017b361f133ae15127d26bf44375bea917ba1786641975d",
       "backend/src/test/java/io/typeforge/WorkspaceArtifactReferenceTest.java": "8f88075f588fccc7cb95a4cce89765316919596c397a36b801900522170c66c1",
       "backend/src/test/java/io/typeforge/WorkspaceContextSelectionTest.java": "7bd13061d6d5d48a5b47f64ce7427a8ad8ff8903ff07043e8274b0a6b34e61a3",
+      "backend/src/test/java/io/typeforge/exercise/TextRubricTest.java": "de23dae4bd14074461e6b95af095dc3b7dec6b2c28b166aa365b02a372b63864",
+      "backend/src/test/java/io/typeforge/ingestion/BoundedDocumentTextTest.java": "4dc92b659285bf3e97b05b9ca610546fe801d8c1596b67a34eea659e2ce7a15f",
       "backend/src/test/java/io/typeforge/publishing/ContentWorkbenchIntegrationTest.java": "a602c7ca924bab0d1f57afbb52e3f4d33ce7a36ac1a76e70141b67736120cf9a",
       "backend/src/test/resources/media/README.md": "94de1d18b9fd6c0cc44fb7b66db27d855def01d4d36d78d9cde9290198dc7f5e",
       "backend/src/test/resources/media/clip.mp4": "65775ccadb76fb8a20ee01adeefe1678dc94a671c6a461e5f4311087ee5079f9",
       "backend/src/test/resources/media/tone.mp3": "639197b10c6ae9e98b9337c1f8ec9083f38bada45fe0cee3c58487d610be3421",
       "backend/src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker": "8eca853a5a457f17e0479b71dfbe95f2a13aff9eeff250261ecdc8ca9b847a6a",
-      "contracts/README.md": "14ea4f18e3ad25cc403a2ee5d1392330ded4145826bcdf0cbd4b38af4cd8ca68",
-      "contracts/modules.json": "ef3ecfc82904d16417de9068d33bf1562c5655939a74f77782e83262bd59ffe0",
-      "contracts/openapi.json": "0a7beef692302793fe3b40ac07296f7922b0843228195fa0b318afe4d14a6fe9",
-      "database/README.md": "ac98beefe7fdc22c951a614fc4657d2cf97442d5f1e8804326876c55a4ddfc10",
+      "contracts/README.md": "dd4f1dac405b0b4a83fdc4ad5c0409e1885758d944b8a78675dd9d8dd7cfbbc5",
+      "contracts/modules.json": "62895d20f98e67f1d40165febaeecb6b226408f60a4e68eeaca65ebef5b036ca",
+      "contracts/openapi.json": "1fe9e9406c37b564dc4ae204919cf2f74b6d9b914686db023e288aba42c0f2c1",
+      "database/README.md": "a227cd5cfb0ff87c07ad74e0dc6bef73aa75588c9bda96fca1d04f9e0b76e874",
       "database/V001__baseline.sql": "e1a1cbb328f092f3b7788cfd57d846d526e0cd8a3de3fefde42cf11879b47896",
       "database/V002__agent_workspace.sql": "1c13efbb02105da2daa8b38898fba87185bb5751c2992fe00c7c501b13abe730",
       "database/V003__runtime_integrity.sql": "7270c47cb6d93910ce6d9e6da390fc9608454493296272676e7248bd9ef426fa",
@@ -239,117 +259,1684 @@
       "database/V009__artifact_files.sql": "0d3867dcf895c9b79f74833da2fc10f946211f8da11f6eaf6b76720b36584fa2",
       "database/V010__study_workflow.sql": "879e3913a2c32137e08a7ebb3dc52054f5e5f9446c771db49cffb48a4d45e87a",
       "database/V011__private_assets.sql": "1bf9c34c1471ac54913308966c7caba13ae920493adc5b3d7e8738a03a6a7d28",
-      "database/data-dictionary.md": "3d4bbb7555ef442013f651f2395288adabdf9c30e4fbb9a76501483dc3b225b3",
-      "database/migrations.lock.json": "120800c917515acab87b555ca00cc46a8891e4e2bc635a43b943301b24129732",
+      "database/V012__evaluation_workbench.sql": "1fa820ff538f991c3120f31fd15028a70d921187226e4dae30ef8aa6034dcab7",
+      "database/V013__text_and_notebook_interactions.sql": "00bf9f9299d92f2c59f2ace372edebfcfe8b84c6f992e8fc65e4e33d3bf0f32f",
+      "database/V014__batch_ingestion.sql": "6205d51a25f15fa41d60fb9e77069f0f4f9f3d8215940c438653aa31e32f8efe",
+      "database/data-dictionary.md": "fe73dc8f0c5984351d62b75479221144ff1bb21c1535b6ee5197254a6495fed9",
+      "database/migrations.lock.json": "e095bc4e57b07d2dd9fb336e34a3af3c1a99c14f8dfc082bb449188b95f00b25",
       "database/seed-demo.sql": "640dd344bbaabcc81491e720c5e2a6e47ba1687f9cdef31c7c6ed71fdf52953f",
-      "docs/00-blueprint.md": "f37079b840d4c65b552e07ad964c1a62eda743e8ef9b9661373704f79c975f3e",
-      "docs/01-architecture.md": "71271cd86bd8ae2a9d9ea4e067d8894345808d99c5e626e2fb42f61ae02bdbfb",
-      "docs/02-modules.md": "23f311cc4eade55eead37b0861128e1789d71eaa15a20c28984d3b2c968a2d63",
-      "docs/03-data.md": "1ef390cc374d9a4d284ee29881cef58378b2450eb8d01802c61f6e77c0799eff",
-      "docs/04-api.md": "d3de7027d0ceb4316c54d4ba8b2cff8cbf1c9a00958d42e88a3f7fa877f61d70",
-      "docs/05-knowledge.md": "a54c8f90ad7307e97f6ed880e266c207bfcf714e69ad5eb3702c95e6a8a57694",
-      "docs/06-agent.md": "fd4de8a2ca5d4c1e446486f59b4a8b04c2c154ff36ff9517e8a8d514d4f2ae9f",
-      "docs/07-frontend.md": "24132be877b37d024affa7c946e20457e0643e9ce2165d153308d3e6fc2d665f",
-      "docs/08-quality.md": "c518dfe913126c566d4368d1eae8b6971cfd1e36f77871bf5a800623ae4cbb06",
-      "docs/09-team-plan.md": "a4e2bfc44e852ae17671d44c1c11731e91f31db1e8292ea95269b5c520b8d706",
-      "docs/10-agent-cluster.md": "27c4438a5debd69e0ad734f992a195b58bab7e3738aea56c7ff081f942747cc3",
-      "docs/11-learning-artifacts.md": "b97c9f964e4c714ccec3f43c561685197a4fde1f0b56aefde40e0b5740ac30ca",
-      "docs/13-architecture-upgrade.md": "6eaa92b26c1562f285e2942e594c76500fd25134ddf88fae9610ae51a684c9cf",
-      "docs/14-research-decisions.md": "3dae82c886ce1e732275270530e96d7f221e0d20c27f24df08b89094bf8ae8df",
-      "docs/15-frontend-state-network.md": "c6029b004e53f32ee91766b902c40fe923af4d885523e8a87359ce14d4efd761",
+      "docs/00-blueprint.md": "4bcdba155e07878ef48dbca9b76dc417ec896750f3195f0c4996fac06efcd193",
+      "docs/01-architecture.md": "7d79ed65dbaecc11732b6df6675a92e7a02fad38bcb2e847af3897758bf58cf4",
+      "docs/02-modules.md": "7218b013f8a905cec608a8b792745f89de90a4887fb5b3c4ce3ff971e6f3afdc",
+      "docs/03-data.md": "29b6dfc2f4871900729e452398488a44319cfa156a8fcaef188c023d429748d9",
+      "docs/04-api.md": "4a3910d63bc866a2be3c620d175ade4e1900bc944a576fe7c927d4404a71b354",
+      "docs/05-knowledge.md": "41501dd76588f24f83320ff9e1cb07f75753293c0e48ef64848754161adcabae",
+      "docs/06-agent.md": "342f2ed858669cde291bfe58c6744688f7606d84736ea1b594f13e27b06a443e",
+      "docs/07-frontend.md": "a2129e17df7b0153e9817ce15195fc28179128a54055916118a6657183cde8c6",
+      "docs/08-quality.md": "568e77cce056510459f454ac2bc3dfe76a06049c9a5fd06c1d5c6f08a1104dcf",
+      "docs/09-team-plan.md": "ee323f42b34135a9da1fd60b29807024476d52d4be2cb4b53fb8161b92db1072",
+      "docs/10-agent-cluster.md": "1c16e7807c8847ed2b1e2bd4dc99f6a7d840277e54779b49c55b66beac8500bb",
+      "docs/11-learning-artifacts.md": "a2091f1054e7854c95b10f9acf19d18bfb4dd6051a62e32cffaba37e13502877",
+      "docs/13-architecture-upgrade.md": "d289e8ad0e47dc9973f44f62dc9ad6d67be956a9125aa07b95b6af516ef059cb",
+      "docs/14-research-decisions.md": "d1f7c4f9ad09486543ba726173cd07ebaa4ad684ee6110abbd0da93cb61ce3e8",
+      "docs/15-frontend-state-network.md": "37f0acb4014156276c48014ea91cf113e8cc0aedf8f7f5d6ce8b8738d0068648",
       "docs/16-course-delivery.md": "32c54461bf6a06b164315a3502556ac618720de358dc2ad42eee957c227f811c",
-      "docs/22-account-assets-operations.md": "fffbbf4e6dc212070c6ff390430e6f273442a8081615b3ddd64f51c06920dd15",
+      "docs/22-account-assets-operations.md": "0c610a1919b51578ee03d8a4b6884d552c405783768c18066f01643ddbcf33b9",
       "docs/23-study-and-exports.md": "e77cef75c8c9632c64191f82a22a8013ae8b4c08b75582f30f3fc3c7add51998",
-      "evidence/ai-context.md": "f90768a364793759fe994f5f5f9f9e33c157d4ae4351b5c47fe33d5555b58e01",
+      "docs/24-evaluation-import-and-notebook.md": "86f36281573e2607342284013667013c97e0d3f988000af88630b7618dff1a7e",
+      "evidence/ai-context.md": "f8734508c4ac6bbb0cc8aa512c8545ab5582dd70b3f269889311100791ac8809",
       "evidence/course-acceptance-matrix.csv": "e814ab7719b5cf61ac70438d04d0b362c84c4ef7312dae38bbb2f0fdff8ea233",
       "evidence/development-review-v05.md": "35e901030919e6a644264ae2df3c9d407d2bc448a24373e75cf6dc6956682b14",
+      "evidence/development-review-v06.md": "8c95f67b056b8463870826f9f4f880240c32bdb5e855aed6f62f3851f79d3198",
+      "evidence/h2-shutdown-regression.json": "19df217fae6b4e472500cebb92140738ffb6a24b937320731c6e8dd543eea941",
       "evidence/inputs.md": "20c063334e5fc20674442a7f3ecd3193e6b36e4058c0c471c36d13cdec62ac0b",
-      "evidence/traceability.csv": "642c76f09b24df17bceff7d154e4ffa025e587a948bdc751c5227c434714e824",
+      "evidence/traceability.csv": "4b631e0efc7dd4a65cdf2b5cf6f3565906de92cd63e610f2fe7c9019c6b444ec",
       "frontend/.gitignore": "63fa8234cc9d77ae1d515140848ec1abc485a8f99c34a0c9281d52574bed2226",
       "frontend/.prettierignore": "a82980327d097840983733fad3a308da13b28d62fdab3415ebcd0efe49e39e7f",
       "frontend/.prettierrc.json": "d7fa1c1dee12b930b45e1f8c465b07da95fa519cfd9e3e503c76dc762617b1fb",
-      "frontend/README.md": "054c875caf69cc576dd3b41f707ed05cef98952530d24e28889c90864256c9a6",
+      "frontend/README.md": "4fadf6e02db9b7395ba41523bea601a33a1b0f1f5eb881e199efbecd2cb8709e",
       "frontend/design-tokens.json": "cd74ee3904a10200313e81fb15be9828c5dcc87f837466691b6233686e563468",
       "frontend/index.html": "3917c24c66a4a30f1f7a18fe4f2726d6656b7d1a1f3a8d3132374cab82dc5c38",
-      "frontend/interaction-implementation.md": "0db87b4482031f3e622977e3876875b74ddcd3376b3ce29aa14c7e90956eda5f",
-      "frontend/package-lock.json": "734629fd6046151eb5bfa1dad02870d298de9a57aa8bfb78948f192f7abd9dce",
-      "frontend/package.json": "1c7b464582b57fed2938a49a0fbccf042418c47e746902592e79a8e4923aaa7b",
+      "frontend/interaction-implementation.md": "c1c671a86a92bed353e761d5c53f13ca6cd5f19ae6deb097677b8ba7a9d2e37d",
+      "frontend/package-lock.json": "999b19efe5cbe23401b349f99fb70114bd344d661a88ddd6983d1e8682bb44ca",
+      "frontend/package.json": "de0ae9fbece1b3d90fe2b94baa44a667d98ee228c9069932050d32bfc9446111",
       "frontend/public/favicon.svg": "17a3c0a9906ea2d9a9cc3c63e176900582188df917bdd158ecc5f1bebccbd78a",
       "frontend/reference-ledger.csv": "0b7d54a915a30c71dd1036f9f84634290ce60b7f5670e3bd6bed98b81f825afd",
-      "frontend/src/App.tsx": "f033883700b8a36374cf29d900d5092c6e082ca7641ff73209c95849e3992c8a",
+      "frontend/src/App.tsx": "abec4518924e260444a6188a0f2c868897718a1c818c6bd768f330914cc8e65a",
+      "frontend/src/answers.ts": "3b0ee842f0a08c63d13a7d64742aca23072c0860fd52af60a82259e930018bef",
       "frontend/src/api.test.ts": "cf4525ec2e4a3460a96aa9dca53a4b3e76adc57be22416b7371706620d1ae9b6",
       "frontend/src/api.ts": "d501a946bcd36368ef0b510126cf64920540fdced01842de6be195303f997ae7",
       "frontend/src/components/Assets.tsx": "12728847e0073492b55f56a07a6002dab2b86c52cf2fdb3edd0b727a2beefe11",
+      "frontend/src/components/BatchImports.test.tsx": "f1d1a9a7ca9fe0fbcfd0a1fb0e621380b37ef5ac3ff11f4b96193b78073bb813",
+      "frontend/src/components/BatchImports.tsx": "57dea4b8e8949de03ec0aaab44e5559b2aa7206d30c8d17b2c55327b12a8e3ff",
       "frontend/src/components/Compiler.tsx": "9fdcb27fd72f93d8f4250201877300577290d93a354a5984d88156040562db26",
+      "frontend/src/components/ConceptMap.test.tsx": "8d78d6fe17c4f7c3211fe0b036289558077b2099dc38731191f28b0cc1959fe2",
+      "frontend/src/components/ConceptMap.tsx": "f19943e312e68f7333b96d0b14395c6d422799f1364aeff9d52de88572c924c1",
+      "frontend/src/components/ContentDiff.tsx": "a9b07483cbffdc3f0716959a7b502e6ce51975de320554c0e9961e100ccf1cec",
       "frontend/src/components/ErrorBoundary.tsx": "bfa25d2e8639f581911e59d162ae172d632622dde8707b7b8e7fd876231ddd89",
       "frontend/src/components/LearningAnalytics.tsx": "0276d106364d4ed36b6c50ad8329fcf8af419bd66b9a9e14d2970a912d7436f1",
+      "frontend/src/components/Notebook.test.tsx": "d3691ecfd1bd863737ff85b4204700d6f22de733cf5d779f350c78ed85e0208d",
+      "frontend/src/components/Notebook.tsx": "7ca4b91cc9d8a634ec5ca071b2d51aa55b4b08581bb1be4aa597002c93b38ce7",
       "frontend/src/components/SlideEditor.test.tsx": "68a5d90ff75785f5e2c2fb634fd7174d78aafbb7aaff6a3731debc3ce4cbbc12",
       "frontend/src/components/SlideEditor.tsx": "e0eab30b2f4da742eecedb254ed63966403862c5ee90b95d282902cea0113888",
       "frontend/src/components/SourcePreview.test.tsx": "c2d3cbeed77e605ff96682deff7df2142df0cc1957d47b9887485b5aee6d68fb",
       "frontend/src/components/SourcePreview.tsx": "722abf048d45e5308df489def7cc52e3af8c24f6ea02c0d6d1a358a158b3f7aa",
+      "frontend/src/components/TextAnswer.tsx": "0fd87ec4f993c080551464e07313983ff65f10883abde0be7f1f9d4460af86c1",
+      "frontend/src/components/TextRuleEditor.tsx": "53155dbe54779a518cd9a889560735ee5c029448b75fed804459bc9e093c9eb2",
       "frontend/src/components/ui.tsx": "9ce9ccf729738c53d26d0791941ece39deedd342f68789de0f01f65ca33220a7",
-      "frontend/src/context.tsx": "971f16fc6f78b61e3cbe6b699230f1401c24538ab405586b737cc28b182e34fb",
+      "frontend/src/context.tsx": "9d48293936ee2f916275c82b4531c255e5ee785c77865961544bace18e7ff385",
+      "frontend/src/evaluation-types.ts": "881105e2af50a0aab4249e79a39cc8db0dccb9bcc0da00bfec0bec9534ca008d",
       "frontend/src/experience.css": "1b08c73d222b7fbf01cd71d8b3a24a5a5cf44405e0780b80bfbadc338551a4bc",
       "frontend/src/hooks.test.tsx": "a943a541d6d5e0b60d5f8850335f1656664cffb584f1e3cd5ff93572819da4f1",
       "frontend/src/hooks.ts": "ecfd4fdac158bb17baee2dd3ed26a3971bdf7013e83a870b45bf1c90de92c352",
-      "frontend/src/main.tsx": "887fd00dea562611c598cc2ec5b5ef55193401b05cb481c3baed3f35a966a20c",
+      "frontend/src/main.tsx": "57cf6f29d9abb5cafce75ef9580baa1b7121d5e1c8317d53cd33ed298789091e",
+      "frontend/src/notebook-types.ts": "cb51092ea31610a9c4ffd9ef8d2b5669e83dceacf679691b819fce7ec83f4e0f",
       "frontend/src/pages/Account.test.tsx": "1daad25beb9b6596d8f6b568f17fa983563e930313bf3f937ccb57ee38975c09",
       "frontend/src/pages/Account.tsx": "336038b04df8e72238c1fc63767c6b229895067a084abffc032ae9fb3ca70ed8",
       "frontend/src/pages/Agents.tsx": "48731e2f257cd7dd120c29246022d98c998bff29841d8ced4dd7542249c495ef",
       "frontend/src/pages/Auth.tsx": "4eb340ad5fa253e0f624f045bd36162996cc1b35159739c61d524c62927c5ec5",
-      "frontend/src/pages/Content.test.tsx": "858648ab942422043703ef10a61c041e5664dddc2a4ef7b7164609bd2e35e03d",
-      "frontend/src/pages/Content.tsx": "bd6b900736a16a4f98791d06b262504fc2cd6b89531ab148a435c207ca483f7b",
-      "frontend/src/pages/Lab.tsx": "0af58e4383023d2683fa78fc030b07774cff31023f8a7415d9a073eface403e2",
-      "frontend/src/pages/Learning.tsx": "ebc8fdac92c7255d6be3953521b5447124828963b4cbb87bfa7ce109ad93bfc1",
+      "frontend/src/pages/Content.test.tsx": "d89707571601e5fcc4eb2a5702ca107292936736062081593697f711bd32d5b4",
+      "frontend/src/pages/Content.tsx": "b61499f43c90c3112ad52418fec6a203e47b9bebb4bd74ba82ce2d1532dae827",
+      "frontend/src/pages/Evaluation.test.tsx": "baefba4e658715f83c129d214c69249c4c6cca7f8e2f0f014f922fba80b3be85",
+      "frontend/src/pages/Evaluation.tsx": "a960e6816079775892fea449bc41b4e0d49ca54ed30dea80ca2d733ff7c6bc09",
+      "frontend/src/pages/Lab.test.tsx": "228ab35f31fb7a23e180f4644124d1de8d16f7b69c9148ac699af3e76f7cec58",
+      "frontend/src/pages/Lab.tsx": "03593224b0e8aac4c90c51a8cb74ccf7fb87408c9ad28dcb0a421ad849b0142c",
+      "frontend/src/pages/Learning.tsx": "b04aba9cf9cd522a6731f8bfae83a0a127e5f36e7a83da768f374049c91214aa",
+      "frontend/src/pages/Operations.test.tsx": "3bcf580280171d5f871c454ea81b92731b4358c1b72897dfb0859994c8edbc3d",
+      "frontend/src/pages/Operations.tsx": "d9ca4f172249aaac3e925cc2a027db1ee03944adc415cb6f7d187dacbd50c0f4",
       "frontend/src/pages/Personal.test.tsx": "7eed684728f813f04ca3a68c50f23e6b3209f2e475da8549a76eaf25841f7552",
       "frontend/src/pages/Personal.tsx": "a26e2dff1cd91bec20c7e36a90e67a057b2185957deaf581b95389a81788067f",
-      "frontend/src/pages/Practice.test.tsx": "86251d583c6bcbf739a64238d6df7c5bae95d83d32bb40deee900e6289bcb399",
-      "frontend/src/pages/Practice.tsx": "91d1903c258d462a62320dff25608f9faabc1d3a86e700ec14cb100e53e9343b",
+      "frontend/src/pages/Practice.test.tsx": "fbfff4123d44c739e2ce3b9151498007c9fdc6df8dc0721759f0211526b6e8e8",
+      "frontend/src/pages/Practice.tsx": "7a37ebc24cfbe800934aa0c4f78980e0dc1f55bce155deeb9c06d9502a369cc1",
       "frontend/src/pages/Progress.tsx": "1471f2ac76527426b2b64545378a25ca2a93b17befb2a13fa00e4021da2ab59b",
       "frontend/src/pages/Studio.test.tsx": "4b6e9000eb5ad155076c77df746ed21d267928efa4fd67e070772d422f0cd0b6",
-      "frontend/src/pages/Studio.tsx": "813676d2b6e5dc1635f37e18eb7b2086bced2fc110281702e3995cd882e6bcdd",
+      "frontend/src/pages/Studio.tsx": "8cca7761e4880cd9772d59d8e7d5882659ea61475dc91dbd846b7e8962e32afe",
       "frontend/src/pages/Tutor.tsx": "2506b1edd4d593041f36d080bcc5a576fedc9af4dc9f83bf68d4d8ac3a5f5364",
+      "frontend/src/pages/operations.css": "3848d8720447525364c086f6b489b247d2ab4cf0e9fde0786a09b28e098ee936",
       "frontend/src/state.test.ts": "14e92c7485bea17fd152e5e89630f2fb1e7c20d6449dc4a900054de8279ebabc",
       "frontend/src/state.ts": "58c66e1b9421e60ef9ff8913bbf7e0ff6142c6c27e02cfc965ebde200633e354",
       "frontend/src/styles.css": "9aaac68b852a747828e8f6624ee15d1407626362b246ba665a713c5b8ea919f4",
       "frontend/src/test/setup.ts": "7c35a2e906e7da3a429c42158474e37bb5fab80a4c727907a3779884de4c83a6",
-      "frontend/src/types.ts": "9fd5c47745f96c12717343d3c2b5d43e4e246235b1209c35765f1a72088e2200",
+      "frontend/src/test/workspace.tsx": "5b00305d2f4842a8d656b62b4b92fd93d7c3766120dbbb97badcd17eb3cc9a6e",
+      "frontend/src/types.ts": "ee613767bb601ed9a17947fca88c00a5a7c4182ad55a37b5dfe001f024260225",
+      "frontend/src/workbench.css": "b88721a8d11723774a754b50b1f081cc10b33b30cba4449b07bc58b4b6e3b274",
       "frontend/state-contract.json": "b406aba79bc6aaae3dbf850b5731a91516a71bb99d169084c4768de8d3c44a6e",
-      "frontend/tests/browser.mjs": "f7d0561b3e7823edeb909411472249aa987cc5019b94ecb0e5c32a68d5911a62",
-      "frontend/tests/live-dom.test.tsx": "621a7430bfbc9962ef3157243ecbcafcbecf685f7bdfc68b3e032ab03e355a75",
+      "frontend/tests/browser.mjs": "b449e16e6cd81a63b4275b9bb5c4547b5e203eaf767cb577392a6e3f4829be6b",
+      "frontend/tests/live-dom.test.tsx": "6b5d592908ee4bfce8e627957ffef934769554f04780ad9074888d087f0c99fe",
+      "frontend/tests/workbench-journey.d.mts": "89a5c8f200a0e33fcfc996951f6396d3fe80156ad4a2cbe4a87e7058882d573a",
+      "frontend/tests/workbench-journey.mjs": "73ffd0437cf517b429460cfd60daa17b82728659bc989d7c54eda3994829eb91",
       "frontend/tsconfig.json": "47561f3f27d357589d429c1b6304e006b097f8483fa6ad54e3def0b7bce4f385",
       "frontend/vite.config.ts": "e30502cb1e7cf251dd9c728b8f2ba89436c1cf70c1b233a881c216e31448465b",
-      "frontend/vite.live.config.ts": "b2237f57d62900888f03bad006d0dec9fa56c0d793f04c3c74eb399e7e61cc34",
+      "frontend/vite.live.config.ts": "5fe2554471e9497be3ccdcbaee1ef9fca0c95936adfb0fba96265df0f2557241",
       "knowledge/concepts.json": "ef9d54f094b461df3a8611936f44a4417b2f57c8376964b0b44da12ed3fdab80",
       "knowledge/runtime-lessons.json": "c54679c7cf3417b7025551fa0f0790dc56f66580f99dde9b3eaa79b53a2dea9b",
       "knowledge/sources.json": "9dd3d387d1870a4b9cc2f817d9fba87765da3d65b04b080553992a15885ff355",
       "requirements-dev.txt": "f05b125ce5fe722d3b07c7d39216074421794588c88c31b8d21c11275b84d960",
-      "scripts/browser_runtime.py": "5fd4b4933770c079a7e8c32568594dcbf94f5a0d4d05d67ecd6150088a9cb5d8",
+      "scripts/browser_runtime.py": "017b1bf4820f8d8f09f107402afdad7ae44f1fc560dc32f2ea2bc879cf69a741",
       "scripts/prepare_ci_mysql.py": "0b33d95b72966d47003c794ed663f0c5fdafa821b3e9ab88f8e7568791fedc0d",
-      "scripts/record_verification.py": "a579f4eac797aa23b6adea14644f2d51ca5fd82246f76357faadb0f7d44bd1af",
-      "scripts/smoke_runtime.py": "dbd298aa37591552003b565208976bfd1ed6564a77b264247ff26edc84008da5",
+      "scripts/record_verification.py": "074f576704b6cc3015ec365a2a6b45a84c829b12e15b1f5e3fc3f0c2f8de3169",
+      "scripts/smoke_runtime.py": "be8eb941c65d14cc304327d13be0993bf4c5a09d8dbe96d77f9e51f5d78239a3",
       "scripts/sync_contract_index.py": "88ea5b03862ef1fd153edccb16640d4a393a3554fc9002066c6525551ce3578d",
-      "scripts/verify.py": "a64a2f579f3a564b8c0963813670fa05edc1f4a3e015e89e781126603d862417",
-      "scripts/verify_content_mysql.py": "d536f2f00ba69a8abdc3414edff70f4c827b96596de1a76988c25dc053cef4cf",
-      "scripts/verify_mysql.py": "7e6b6ad2dc37b924ed1718f74bc2d6d25e99ced72a98fce0251e2170c75cd3ce",
-      "scripts/verify_private_modules_mysql.py": "b0632c875f5b597f140142c12c15dd5c3a9d6dc83a1803015feaef2d60820297",
-      "scripts/verify_transaction_isolation.py": "7bb6409f45f8983746bfe6b478a8e897144360cde078661710fbdb8fa09c6f8b",
+      "scripts/test_browser_runtime.py": "fd979deaa6cd39a85015da2b40cdfe923780fcadeeb94f9962354694da81601f",
+      "scripts/test_verification_inputs.py": "336e91da56e33c8dc2913cd0a7e744a42f8a118baeaa1b6c7166aa1708ce8fb7",
+      "scripts/verification_inputs.py": "0aa9387807931e13d4f77b7d640c9ecac937085d51b837d5631136c3fc595c91",
+      "scripts/verify.py": "fa1fad1a8388e9de63c1d7d137756879df5d12bafdf2dad990e8d1784fff8775",
+      "scripts/verify_content_mysql.py": "20e8aca8e01f49372b1def752e16f066e532a1f53f107c7ffb16367d1bb468ea",
+      "scripts/verify_frontend.py": "b3e1a9040448ae7604ead859dd9fd557726f1eee52a68a2fc3a48ad388541c82",
+      "scripts/verify_java.py": "316f94e7ca946e11d278078751476d33ad89bdfcc4ae3861d3bbae57e302a26a",
+      "scripts/verify_mysql.py": "27e97e83506513df9f4d70af0416e995c57d6b57a29da3f511cc2da4ed05cd2f",
+      "scripts/verify_private_modules_mysql.py": "9a50f487d8506e2d5e9540cbf62c9849e1ba856cd2f5f2903b848f3a80d0b81c",
+      "scripts/verify_transaction_isolation.py": "affec0f21bb9c0af3bd1a10108cb701cb78951a88ab83b2ea20bb30b296bace4",
+      "scripts/verify_v06_modules_mysql.py": "1164e60e1b0fe1001d90bc8a12ae0f823c4d44f9ba22645149ab4ffb7b03a95b",
       "workers/compiler/Dockerfile": "6017d5e00563641bd3172407282a93e417cb0b5cdd89144ebd3b7e5ba9b800a6",
       "workers/compiler/README.md": "7a29d89179f7754ef30f3a71e92d13a6e6f318b4a3f92205e96c22e863721971",
       "workers/compiler/server.py": "6d1bbcc43f57cfec0be86245240f6f6a9fb930c9bceec4f0a0d98366a7741667",
       "workers/compiler/test_verifier.py": "84a5e18880dcbafc2ed0fecaaf8bccd7a910bdba537328fe1dce9f93ba8f938b",
       "workers/compiler/test_worker.py": "c5620d2e29fe0c8a548122b43f9e5225667ed71607b9f4e95677833b4e120b1a",
       "workers/compiler/verify_docker.py": "95e211c39d72fb40013f2a54a7b9ac3436e8976c0e93dd5085103365b5cd8043"
-    }
+    },
+    "excludedReports": [
+      "evidence/runtime-check-results.json",
+      "evidence/runtime-review.md"
+    ]
   },
   "java": {
-    "command": "mvn -B -ntp -f backend/pom.xml clean verify",
     "result": "PASS",
-    "tests": 359,
+    "generatedAt": "2026-11-16T02:36:23.834607+00:00",
+    "command": "mvn -B -ntp -f backend/pom.xml clean verify",
+    "scope": "Actual complete clean build; current JUnit source methods and every finite parameter invocation required",
+    "verificationInputs": {
+      "schemaVersion": 1,
+      "scope": "backend",
+      "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+      "digest": "4e4a79afe06d04cd8c2439d111aa670d99426b7e4ade04d163ca41464ea97ec6",
+      "fileCount": 232,
+      "extraFiles": [
+        "scripts/verify_java.py"
+      ]
+    },
+    "mavenExitCode": 0,
+    "inputsUnchanged": true,
+    "tests": 455,
     "failures": 0,
     "errors": 0,
     "skipped": 0,
-    "jarSha256": "c3b35a2f0ef19124a101f49e2bc793f9c0f96349af7b6e1417c701f6de06dd98",
+    "testInventory": {
+      "io.typeforge.AccountLifecycleIntegrationTest": {
+        "profileCompareAndSwapKeepsLoginIdentitySeparateAndRejectsUnexpectedFields": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "changingPasswordRevokesEverySessionAndInFlightOldAuthentication": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "sessionsArePrivateRevocableAndNeverExposeCookieOrAddress": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "logoutPersistsRevocationAndNoForgedMockPrincipalCanAccessPrivateApi": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "closingAccountKeepsHistoricalFactsAndCannotTransferThemThroughReRegistration": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "accountClosureIsAtomicOnWrongConfirmationAndDoesNotEraseConcurrentPasswordChange": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "authenticationLimitsAreAtomicAcrossConcurrentAdmission": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "readingsPersistPerWorkspaceBackfillRealFactsAndNeverManufactureMastery": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "analyticsUseAuthoritativeOwnerFactsAndZeroFillEmptyDays": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "operationsRequireCurrentAdministratorRoleAndExposeOnlyAggregateMetrics": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "analyticsKeepsUtcDayBoundariesWhenJdbcRunsInAnotherLocalTimezone": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "aPreviouslyPrivilegedLoginNameCannotBeReRegisteredAndInheritBootstrapRoles": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "admittedRequestIdentityCannotBecomeAReRegisteredNamesakeOrSurvivePasswordEpochChange": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "passwordLengthCountsUnicodeCharactersAndPreservesTheBcryptByteBoundary": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.AgentPlanTest": {
+        "ordersDependenciesDeterministically": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsDuplicateStepIds": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsMissingDependency": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsSelfDependency": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsCycleEvenInDisconnectedSubgraph": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsDuplicateDependency": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsUnknownRole": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsUnadmittedToolEvenForKnownRole": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsEmptyPlan": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsOversizedPlan": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "acceptsTwentyFourStepBoundary": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsUnboundedConcurrency": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsNonpositiveBudget": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsMissingAcceptanceAndTooManyModelIterations": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "requiredWorkCannotDependOnSkippableWork": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "onlyOptionalOutputsCannotCompleteGoal": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "readyBatchRespectsFanInAndParallelLimit": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "sameArtifactWritesAreSerialized": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "writerWaitsForActiveReader": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "readerWaitsForActiveWriter": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "multipleReadersCanRunTogether": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsUnknownOrOverlappingSchedulerState": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsInconsistentRecoveryState": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsAlreadyConflictingLeases": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "inputCollectionsCannotMutatePlan": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.ArtifactFileExportTest": {
+        "docxRoundTripKeepsEditableChineseTextAndSourceMetadata": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "pdfRoundTripIsSearchableWithEmbeddedChineseFont": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "pptxAndPdfAndHtmlActuallyEmbedAdmittedImages": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "revokedImageInvalidatesExistingExportAndCannotBeReattached": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "cancelWhileRendererIsRunningWinsWithoutHoldingTheWorkspaceLock": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "abandonedRenderLeaseFailsDurablyWithoutInventingFile": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "editedSourceDuringRenderingRejectsLateOutput": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "identicalExportsReuseBytesAndObsoleteCacheIsReclaimed": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "editedDocumentTitleAppearsInActualNativeFile": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "repeatedEmbeddedImagesAreRejectedBeforeUnboundedHtmlAllocation": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.BatchImportIntegrationTest": {
+        "previewReportsIndependentFailuresAndDoesNotCreateOrPublishCaptures": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "selectedCommitIsImmutableIdempotentAndClearsOnlyTransientPreviewText": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "sameFilesAcrossBatchesReuseVerifiedCaptureWithoutDuplicatingProvenance": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "previewReplayChecksBytesSourceAndMetadataBeforeReusingResult": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "learnerAndForeignEditorCannotReadOrMutatePrivatePreview": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "staleRevisionFailedForeignOrDuplicateSelectionsDoNotWriteAnyCapture": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "secondCaptureIntegrityFailureRollsBackFirstCaptureAndWholeBatch": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "cancelIsIdempotentAndCannotBeFollowedByCommit": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "expiredPreviewsClearPayloadBeforeReadAndNeverCommit": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "activePreviewQuotaCanBeRecoveredByCancellationButNotByReplay": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "uploadCountByteSizeAndCleanedTextAreBoundedBeforePersistence": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "previewHashTamperingStopsReadsAndCommit": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "accountClosureCancelsPendingImportsButPreservesAttributedCommittedCaptures": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "commitAndCancelRaceHaveExactlyOneTerminalWinner": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "busyAdmissionRejectsBeforeReadingOrCopyingAnotherUploadedPayload": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "realMultipartSessionRequiresCsrfAndEditorialRoleThenConfirmsSeparately": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.CodeRubricSemanticsTest": {
+        "fixedGenericSignaturePassesPositiveAndFailsOnlyTheExpectedNegativeCheck": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "emptyCompilableAndRawUnsafeProgramsDoNotPassTheTypeContract": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "unrelatedNegativeErrorsMissingChecksAndDuplicateResultsCannotPass": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "everyPublishedCodeLabExampleHasVerifiedPositiveAndNegativeFixedSource": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.CompileHttpProtocolTest": {
+        "sendsOnlyFixedProtocolAndReturnsAuthoritativeStructuredOutcome": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "mismatchedHashLeaseAndIsolationPolicyFailClosed": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "partialCheckResultsCannotBeAcceptedAsSuccessfulCompilation": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "oversizedResponseIsStoppedAtTheTransportBoundary": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "escapedCredentialInADiagnosticNeverReachesTheLearner": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "durableCancellationInterruptsWaitingAndTargetsTheSameLease": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "timeoutDoesNotRetryTheCompileRequest": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "endpointCredentialsAndLimitsComeOnlyFromServerConfiguration": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.CompileQueueTest": {
+        "boundedQueueReplaysExactlyAndIsPrivate": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "cancellingAnActiveJobRejectsLateLeaseAndDoesNotInventAnAttempt": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "expiredLeaseAndQueueDeadlineArePersistedAsInfrastructureFailures": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "unsupportedExecutionOversizedUtf8AndCrossReleaseNeverEnterQueue": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "codeAttemptWaitsForAllChecksAndOnlyThenProducesLearningEvidence": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "compilingAProgramDoesNotPassAnExerciseWithFailingPositiveChecks": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "cancellationAndResourceFailureNeverCountAsWrongAnswers": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "hintsAreDurableIdempotentAndCannotFarmIndependentMastery": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "concurrentPendingAnswersReserveIndependentFamilyOnce": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "genericSuccessOnlyRubricIsRejectedWithoutPersistingAnAttempt": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "actualAuthenticatedHttpRejectsCsrfForgeryAndPrivateAttemptLinkage": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "codeLabsExposeActualQueueStateWithoutCreatingMastery": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "largeCodeCorrectionNotebookPreservesSourceAndRoutesHintAndCompileToRealServices": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "closingAccountFencesPendingCompilationAndRetainsCompletedHistory": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.ContentComparisonIntegrationTest": {
+        "comparesImmutableFieldsWithStablePathsAndRetainsHashHeaders": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "metadataOnlyRevisionProducesNoInventedContentChange": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "reverseComparisonReversesBeforeAndAfterWithoutMutatingTheHistory": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "privateAnswerChangesAreVisibleOnlyToCurrentEditors": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsUnknownKindMissingRevisionAndSingleRevisionComparison": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "integrityFailureCannotBeRenderedAsAnOrdinaryContentDiff": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "realHttpSessionCanReadDiffAndLearnerCannotProbeIt": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.DurableAgentRuntimeTest": {
+        "planAndReceiptsSurviveReconstructingRuntimeWithSameDatabase": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "idempotencyReplaysSameRunAndRejectsDifferentPayloadWithoutWriting": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "graphAndRoleValidationCannotGrantAnUnregisteredCapability": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "anotherOwnerCannotReadOrControlRunEvenWhenAllIdentifiersAreKnown": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "crossWorkspaceResourceScopeIsRejectedBeforeCreatingAnyRun": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "concurrentSchedulersCannotClaimTheSamePersistedStep": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "ancestorWorkspaceWriteBlocksArtifactReadAcrossDifferentRuns": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "expiredLeaseCanBeReclaimedButOldWorkerCannotCommit": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "pauseRevokesEpochAndResumeDoesNotExtendDeadline": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "concurrentReservationsCannotOversellTheRunBudget": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "stableExecutionKeysAndSettlementPreventDuplicateCharges": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "unknownExternalEffectRetainsReservationAcrossCrashAndCannotBeBlindlyRetried": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "cancellationReleasesOnlyUndispatchedReservationsAndKeepsLateBillingAccountable": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "observedProviderOverrunIsNotDiscardedOrSilentlyAdjustedDown": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "failedRequiredBranchSkipsDependentsAndPreservesCompletedPartialWork": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "retriesAreBoundedAndFailedNodesDoNotStarveRemainingIndependentSteps": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "withdrawnContextStopsBothNewClaimsAndPreviouslyIssuedCompletions": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "invalidatedContextFencesLeasesButRetainsUnknownProviderReservations": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "overdueRunTerminatesEvenWhenItsSnapshotHasAlsoBeenRevoked": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "snapshotServiceFailureIsNotSilentlyReportedAsAnEmptySuccessfulClaim": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "forgedAndRetiredEvidenceCannotCompleteRequiredWork": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "deadlineProducesFailureAndFencesLateCallbacks": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "replanRetainsHistoryReusesOnlyVerifiedUnchangedWorkAndDoesNotResetLimits": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "differentSnapshotPreventsReusingOtherwiseIdenticalCompletedSteps": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "aChangedDependencyInvalidatesItsPreviouslyCompletedSuccessors": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "replanCannotIncreaseBudgetOrEvadeUnknownExternalEffects": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.EvaluationWorkbenchIntegrationTest": {
+        "suitePinsPublishedContentVersionsWithoutWritingLearningGrades": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "realHttpCompletesExportsAndValidatesEveryResponseWithoutEditorPrivilege": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "authenticationCsrfUnknownFieldsAndCrossOwnerNeverBypassPrivateScope": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "actualBm25RanksProduceExactlyDefinedMatchAndNoResultMetrics": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "absentMetricGroupsStayNullRatherThanInventingZeroScores": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "versionCasAndRetryKeepOldDefinitionAndRunsImmutable": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "reusedIdempotencyKeysCannotChangeSuiteOrRunInputs": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "concurrentEditorsHaveOneWinnerAndNeverOverwriteHistoricalCases": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "concurrentSameKeyRunAdmissionCommitsOnlyOneActualJob": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "cancellationPreservesPartialEvidenceWithoutMetricsAndFencesLateWorker": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "archiveCancelsPendingButRetainsFrozenCompletedReports": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "expiredLeaseCannotWriteAndRecoveryRecordsFailureRatherThanAFalseScore": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "queuedDeadlineAndChangedEvaluatorNeverBecomeCompleted": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "closedAccountRevokesQueuedAndLeasedWorkWithoutTouchingAnotherOwner": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "archivedWorkspaceIsCancelledByWorkerInsteadOfBlockingOtherWork": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "corpusTitleMutationIsDetectedEvenWhenBodyHashStillMatches": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "corruptionOfBodyOrSavedSuiteIsRejectedBeforeReportingSuccess": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "reportAndCaseBytesAreVerifiedOnPrivateReads": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "identicalFrozenInputsHaveStableSemanticHashAcrossActualRuns": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "ownerPendingAndDailyQuotasCountActualAdmissionsAndAllowReplay": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "caseBoundsAmbiguityForeignMembershipAndConceptMismatchRejectAtomically": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "cursorPagesNeverDuplicateAndBadBoundsDoNotScanHistory": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "databasePreventsFalseCompletedRunsAndCrossOwnerWorkspaceReferences": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "completedRunCannotBeCancelledAndItsDownloadedBytesRemainStable": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "operationsRequireCurrentAdministratorAndRejectARevokedCachedAdminSession": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "operationsCountActualEvaluationStatesAndStoredUtf8PayloadWithoutDisclosingPrivateLabels": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "operationsSeparateOverduePreviewBacklogAndMeasureActualRetainedChineseText": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.EvidenceWorkflowRecoveryTest": {
+        "aFullBatchOfRevokedSnapshotsCannotPermanentlyStarveAHealthyWorkspace": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "aReconstructedWorkerResumesAnExpiredClaimWithoutRepeatingCommittedSteps": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.ExerciseHintCapabilityIntegrationTest": {
+        "capabilityContractIncludesHintsIndependentlyOfCompilerAndModel": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "threeLevelHintsAndNotebookActionsRemainAvailableAndAssistedWithoutAWorker": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "advertisedHintsStillEnforceOwnershipVersionAndLevel": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.FiniteTypeEvaluatorTest": {
+        "assignmentSubsetAgreesWithRealJavac": {
+          "kind": "ParameterizedTest",
+          "invocations": 26
+        },
+        "readWriteSubsetAgreesWithRealJavac": {
+          "kind": "ParameterizedTest",
+          "invocations": 15
+        },
+        "unsupportedSyntaxIsNeverGuessedOrCompiled": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.FrameworkHttpTest": {
+        "exposesHonestPartialRuntimeStatus": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "healthActuallyQueriesDatabaseWithoutClaimingProviderReadiness": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "noBusinessOrAdminRouteIsAccidentallyPublic": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.FullLearningLoopIntegrationTest": {
+        "realLearningJourneyKeepsGradesEvidenceArtifactsAndRunsConnected": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "absentEvidenceCannotBecomeAFabricatedAnswerOrCompletedRun": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "ownershipCsrfAndServerFactsAreEnforcedAtHttpBoundary": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "codeAnswerForASelectionExerciseCreatesNoLearningFactOrOutboxEvent": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "persistedEventsReplayBySequenceAndRevisionConflictsDoNotLoseTheDraft": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "pauseResumeCancelUseEpochFencingAndSteeringRequiresAnActualPlanner": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "jsonSizeAndIntegerBoundsApplyBeforeNarrowingOrObjectMaterialization": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "bodyLimitAlsoRejectsUnknownLengthStreamingRequests": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "actualSpringMappingsMatchImplementedContractExactly": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.GenericEdgeCasesTest": {
+        "verifiesTeachingClaimUsingPinnedLanguageRelease": {
+          "kind": "ParameterizedTest",
+          "invocations": 20
+        },
+        "compileTimeWildcardPermissionDoesNotGuaranteeCollectionMutability": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "arraysAreCovariantButValidateTheirActualComponentTypeAtRuntime": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "differentGenericArgumentsDoNotCreateDifferentRuntimeClasses": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "anInterfaceCanBeTheLeftmostErasureBound": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.GenericSemanticsTest": {
+        "validatesWithRealJavac": {
+          "kind": "ParameterizedTest",
+          "invocations": 28
+        },
+        "pecsCopiesIntoBroaderContainer": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "extendsIsNotImmutable": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "compilerGeneratesBridgeForErasedOverride": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "declarationSignatureCanRetainTypeArguments": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "boundedTypeParameterErasesToItsLeftmostBound": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rawAliasCanCauseRuntimeCastFailure": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.InteractiveLearningTest": {
+        "preferencesUseRealIdentityQuotedEtagAndCompareAndSwap": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "labsPersistReplayAuthorizeAndNeverIncreaseMastery": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "readingReceiptIsServerTimedAndNotMasteryEvidence": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "notebookBlockSubmissionGradesRealExerciseAndRepeatedFamilyDoesNotFarmMastery": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "realExportPersistsEscapedBytesPrivateDownloadAndRejectsStaleSources": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "queuedExportCanCancelAndOldSourceFailsWithoutFile": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "operatorRolesRequireExistingAccountsAndAreAuditedWithoutCreatingCredentials": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "operatorBootstrapWaitsForEditorialAdmissionBeforeLockingAnyAccount": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "goalEditInvalidatesDerivedArtifactsAndSnapshotsAtomically": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "passiveTransitiveMemoryExpiryBlocksDownloadsAndNotebookActions": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "missingAncestorIndexCannotBypassMemoryRevalidation": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "oldRendererAndTamperedSourceFailWithoutRenderingUnderFalseIdentity": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "svgExportContainsNoExecutableMarkupAndRetainsFullLabels": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "svgExportRejectsJsonLegalButXmlForbiddenTextWithoutPublishingBrokenBytes": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.KnowledgeRuntimeTest": {
+        "demoInitializerIsOptInAndCreatesNoPretendStudentsOrHumanReview": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "publishedSqlContentHasSixteenConceptsCardsAndTwelveExercises": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "reinitializationDoesNotDuplicateOrOverwritePublishedFixtures": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "exerciseResponseDoesNotLeakAnswerSpecificationOrNestedOptionSecrets": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "exercisePaginationHasNoDuplicatesOrSkippedItems": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "lexicalRetrievalHasRealScoresAndReturnsNoMatchWithoutFabricatingEvidence": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "englishIdentifiersRemainSearchableWhenAdjacentToChineseWithoutWhitespace": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "chineseBigramQueriesAndConceptFilterUseOnlyMatchingPublishedCards": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "releaseFilterCannotSeeAnotherReleasesCardsOrExercises": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "tamperedPublishedBodyFailsIntegrityInsteadOfReturningStaleHashEvidence": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "invalidQueryAndLimitAreRejectedAtTheServiceBoundary": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.LocalLearningToolsTest": {
+        "contextToolReturnsTheExistingValidatedSnapshotWithoutCreatingState": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "searchToolReturnsSchemaValidatedRealSourceHashesWithinTheFixedRelease": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "zeroEvidenceRemainsAnExplicitEmptyToolResult": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "anotherPublishedReleaseIsRejectedEvenWithARealAdmittedExecution": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "privateOrUnadmittedSnapshotsCannotBeReadByKnowingTheirIds": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "inputHashAndRunEpochMustMatchTheActualAdmittedToolExecution": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "toolInputAndOutputSchemasRejectInvalidValuesBeforeReturningData": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "workflowPersistsHashesOfTheRealSchemaInputsForBothTypedTools": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.NotebookInteractionIntegrationTest": {
+        "optionsExposeOnlyPublishedFamilyVariantsAndActualReviewSources": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "typeFlowUsesRealLabResultsAndDurableCasWithoutMasteryInflation": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "concurrentStateChangesAdmitExactlyOneRealLabSession": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "counterfactualSelectionIsVersionedAndActuallyGradesSelectedReviewedQuestion": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "switchingComparisonRestoresEachQuestionHintReceiptWithoutErasingFamilyAssistance": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "expertHelpUsesThreeDurableHintsAndCannotClaimModelExecution": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "reviewNavigationUsesAdmittedOwnerSourcesAndRejectsRevokedOrChangedVersions": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "appendHasSourceCasIdempotencyAndRejectsForeignArtifactClosure": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "repairDiffQueuesTwoIndependentSourceJobsAndNeverTurnsCompileSuccessIntoCorrectness": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "repairPairRollsBackFirstAdmissionWhenOnlyOneQueueSlotRemains": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "realHttpOptionsAppendAndStateEnforceAuthenticationCsrfAndResponseSchemas": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "oldTypeFlowSourceRemainsReadableButDoesNotGainUndeclaredParameterSemantics": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "contextualFirstAnswerCannotFabricateIndependentEvidenceThroughAuthoredBlock": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "invalidActionFieldsAndDisallowedTypesDoNotWriteStateOrRealLabEvents": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "sixteenConceptsUseExactAuthoredEvidenceWithoutOverflowOrUnrelatedChunks": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.PrivateAssetsIntegrationTest": {
+        "decodesImagesAndParsesActualGeneratedAudioVideoFixtures": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rejectsScriptImagesTruncatedFilesAndFalseMimeBeforeAnyPersistentWrite": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "privateUploadsReplayExactBytesAndRejectKeyReuseOrForeignScopes": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "quotaUsesStoredBytesAndRevocationFreesActualPayload": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "assetRevocationInvalidatesDirectAndTransitiveSourceRevisions": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "browserUploadDownloadsRangesWithSafeHeadersAndCannotBypassCsrf": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "paginationAndIntegrityChecksRetainNoRevokedDownloadPath": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "closingAccountRemovesItsUploadedBytesIncludingArchivedSpacesAndPreservesOtherUsers": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.RootArchitectureInvariantsTest": {
+        "memoryRevocationInvalidatesTransitiveArtifactsAndOldSnapshotInTheSameTransaction": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "cyclicDerivationIsRejectedWithoutCreatingAnImmediatelyStaleRevision": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "directFanoutAdmissionStopsBeforeAStoredMemoryCanBecomeUnrevocable": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "indirectFanoutCannotEvadeTheAncestorBoundAndReplacingItsRootFreesCapacity": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "mergedAncestorPathsDeduplicateSourcesAndRejectConflictingVersionsExplicitly": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "incompleteLegacyIndexIsRejectedWithoutClaimingPartialRevocationSucceeded": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "oversizedLegacyGraphRequiresExplicitRepairInsteadOfUnboundedOrPartialMutation": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "concurrentEditsPreserveTheLosingDraftInsteadOfOverwritingTheWinner": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "sourceHashChecksTheActualSourceAndDoesNotAcceptPlausibleLookingHex": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "embeddedArtifactAndReviewLinksCannotBypassTheTypedInputManifest": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "actualOtherLearnerReviewCannotBeLinkedByKnowingItsUuid": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "counterfactualCandidatesMustBeCurrentMembersOfTheWorkspaceRelease": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "unavailablePrivateDiagnosticAndSolutionAdaptersDoNotPretendToValidateIds": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "notebookAttemptMustMatchTheLinkedExerciseVersion": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "repeatedCorrectAnswersInSameFamilyDoNotEraseTheFirstIndependentFailure": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "delayedEarlierMistakeFindsTheLaterIndependentCorrectionAcrossWorkspaces": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "delayedEarlierSuccessCannotCloseANewerMistakeFromAnotherWorkspace": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "equalTimestampEvidenceDoesNotInventAnOrderFromRandomIds": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "duplicateOutboxDeliveryDoesNotDoubleLearningEvidenceOrActivity": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "sameOwnerAcrossWorkspacesUsesOneParentFirstOrderForWritesAndProjection": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "timestampTiesAndReverseUuidOrderCannotStarveTheWorkspaceHead": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "aRetryingWorkspaceDoesNotStarveUnrelatedWorkspaceStreams": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "aConsumerFailureRollsBackItsProjectionAndReceiptTogether": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "snapshotIndirectionCannotBypassRevocableArtifactLineage": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.StudyModelWorkflowTest": {
+        "realModelProtocolTraversesPlannerSpecialistsReviewAndEditableOutputs": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "invalidTeachingPlanSettlesKnownProviderUsageWithoutCreatingExperts": {
+          "kind": "ParameterizedTest",
+          "invocations": 3
+        },
+        "unknownModelUsageCommitsItsHoldAndNeverAutomaticallyRetries": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "insufficientRemainingBudgetStopsBeforeTheNextModelDispatch": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "pauseDuringActualHttpFencesLateContentButSettlesUsageBeforeResuming": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "editedPlannerAtDurableCheckpointCannotBeSilentlyReplannedOrOverwritten": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.StudyWorkflowIntegrationTest": {
+        "localWorkflowReallyPlansReviewsAndExportsEditableArtifacts": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "retryKeyReusesRunAndChangedOutputsConflict": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "modelModeDoesNotPretendToWorkWithoutConfiguredProvider": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "notebookNeedsRealGradedAttempt": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "pauseCancelResumeFencesQueuedRequestAndKeepsAuditHistory": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "manualExpertEditDuringReviewInvalidatesOldResultsWithoutOverwrite": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "cancellationCannotCreateLateArtifacts": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "expiredWorkerLeaseCanBeAccountedThenExplicitlyResumed": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "wrongOwnerAndChangedGoalCannotAdmitOldWork": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "notebookSelectionIsPersistedExactlyAndCannotExpandOnIdempotentReplay": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "notebookRejectsForeignUnselectedCorrectAndDuplicateAttemptsBeforeCreatingAnyRun": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.TextLearningIntegrationTest": {
+        "textCapabilityAndPublicPolicyAreAvailableWithoutCompilerAndNeverExposeExamples": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "realHttpNormalizedAnswerPinsGraderReceiptAndExactlyOneOutboxProjection": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "plausibleLongerMeaningIsNotInventedAsExactCorrectnessAndCreatesRealNotebook": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "threeHintsMarkFirstAnswerAssistedAndSurviveCrossWorkspaceSameFamily": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "malformedAndMismatchedAnswersCreateNeitherAttemptsNorMasteryEvents": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "idempotencyRejectsChangedTextAndPrivateAttemptCannotCrossAccounts": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "independentApprovalAndCalibrationAreRequiredBeforePublication": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "changedReviewedRuleCannotGradeOrPublishUnderItsOldAttestation": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rubricRevisionNeverRegradesHistoricalAnswerOrMigratesPinnedWorkspace": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "validLongPublishedPromptRemainsCompleteInTheCorrectionNotebook": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.TransactionIsolationTest": {
+        "transactionTemplateUsesReadCommittedJdbcConnection": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "readAfterOwnerLockSeesCommittedWorkspaceChange": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.TutorHttpBoundaryTest": {
+        "completeHttpJourneyIncludesConversationRequestEvidenceAndDraftDocument": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "authCsrfUnknownFieldsAndUnavailableProviderAreControlledBeforeMutation": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "cancelUsesExpectedEpochAndForeignRequestIdsRemainPrivate": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.TutorHttpProviderTest": {
+        "configuredProtocolIsActuallyCalledAndOnlyAuthorizedLearnerDataIsSent": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "cancellationDoesNotWaitForHttpAndLateOutputOnlySettlesUsage": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "sourceRevocationDuringHttpWinsOverAValidProviderResponse": {
+          "kind": "ParameterizedTest",
+          "invocations": 2
+        },
+        "timeoutKeepsUnknownReservationAndDoesNotBlindlyReplay": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "dispatchedCrashIsUnknownButLossOfConfigurationBeforeDispatchReleasesQuota": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "tokenReservationIsAtomicAndQueuedCancellationReleasesOnlyItsOwnAmount": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "invalidOutputsCannotCreateAnAnswerAndKnownUsageStillSettles": {
+          "kind": "ParameterizedTest",
+          "invocations": 7
+        },
+        "redirectsNeverForwardTheCredentialAndOversizedResponsesAreBounded": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "providerConfigurationRejectsRemotePlaintextAndCredentialBearingUrls": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "disabledScopeClosesDispatchedWorkAndKeepsItsUnknownReservation": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.TutorRuntimeTest": {
+        "evidenceAnswerIsPersistentExplicitlyNonModelAndCanResumeWithNewObjects": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "identicalKeysReplayAndDifferentRequestsConflictWithoutChargingTwice": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "fixedScopePreventsForeignRequestsSnapshotsReleasesAndCursors": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "unavailableModelIs503AndDoesNotCreateOrReserveARequest": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "zeroEvidenceIsTerminalWithoutInventingAnAnswer": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "queuedAndClaimedCancellationAreIdempotentAndRejectOldResults": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "expiredUndispatchedLeaseCanRecoverButOriginalEpochCannotOverwrite": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "deadlinesAndRetryBoundsConvergeInsteadOfKeepingAQueueHeadForever": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "revokedContextStopsQueuedWorkAndHidesPreviouslyCompletedAnswers": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "quotaCountsArePerOwnerAcrossWorkspacesAndCancellationDoesNotRefundRequestRate": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "duplicateCompletionWithDifferentTextIsNotSilentlyAccepted": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "answerToDocumentRetainsAllSourcesIsIdempotentAndBecomesStaleOnRevocation": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "documentNeverDropsExcessDependenciesToFitTheManifestLimit": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "historyPaginationUsesOwnerScopedStableCursors": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "disabledAndArchivedQueueHeadsCloseWithoutStarvingAHealthyLearner": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "expiredDeadlineAndLeaseAreDistinguishedFromChangedContext": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.WorkspaceArtifactReferenceTest": {
+        "oldArtifactOnlyContextCannotBypassNaturallyExpiredTransitiveMemory": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.WorkspaceContextSelectionTest": {
+        "explicitSelectionIncludesOlderGradedAttemptsInExactCallerOrder": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "privateWrongWorkspaceUnfinishedAndInvalidSelectionsNeverPersistASnapshot": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "authenticatedHttpAcceptsOptionalSelectionAndKeepsSchemaAndCsrfStrict": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.exercise.TextRubricTest": {
+        "declaredNormalizationIsWholeAnswerNfkcWhitespaceAndOptionalRootCase": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "caseSensitiveJavaNamesRemainDifferent": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "normalizationCannotMergePositiveAndNegativeCalibration": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "rubricRequiresBoundedPositiveAndNegativeAuthoredExamples": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "invisibleControlsAndInvalidUnicodeCannotBeSmuggledIntoMatching": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "normalizationExpansionIsBoundedAfterCanonicalization": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "acceptedTextIsLiteralAndNotRegexOrExecutableInstructions": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.ingestion.BoundedDocumentTextTest": {
+        "utf8NormalizationPreservesCodeIndentationAndSupplementaryCharacters": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "actualWordDocumentExtractsParagraphsTablesAndLiteralJavaSymbols": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "strictWordNamespaceAndTabsRemainReadable": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "unsupportedFormatsAndFalseExtensionsNeverCreateFakeText": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "emptyBinaryAndInvalidUtf8AreRejectedWithoutReplacementCharacters": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "limitsRejectInsteadOfSilentlyTruncating": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "xmlEntitiesCannotReadFilesOrContactExternalEndpoints": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "contentTypesMustBeStructuredAndDeclareTheActualWordPart": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "embeddedProgramsAndArchiveTraversalAreRejected": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "expansionAndXmlDepthAreBounded": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "overpopulatedArchivesAndMalformedXmlAreRejected": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "alternateCompatibilityBranchesAreNeverImportedTwiceAsBodyText": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "trackedMovesAndUnresolvedEditsCannotSilentlyDuplicateOrReinterpretTheSource": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "filenamesCannotCarryHostPathsControlsOrUnlimitedMetadata": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      },
+      "io.typeforge.publishing.ContentWorkbenchIntegrationTest": {
+        "actualSessionsPublishAndLearnersReadSearchAndGradeWithoutAnswerLeak": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "registrationAndBodyFieldsCannotGrantEditorialPrivilegeAndCsrfIsRequired": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "codeRubricsRequireIndependentReviewAndNeverLeakFromPublicExercise": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "staleAuthenticatedEditorSessionCannotIgnoreRoleRevocation": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "manualCaptureComputesHashesPreservesCodeIndentationAndDeduplicates": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "aCapturedReceiptCannotBeReboundToADifferentSource": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "authorCannotApproveOwnExerciseAndRejectedRevisionRequiresNewVersion": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "reviewPinsTitleAndPrivateAnswerInsteadOfOnlyTheKnowledgeBody": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "demoReviewedFlagsDoNotSatisfyFormalIndependentReview": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "malformedStoredAnswerFailsAsAControlledEditorialConflict": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "buildingRequiresApprovedContentAndCompletePrerequisiteKnowledge": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "publicationCasHistoryAndRetryPreserveExistingPersonalReleasePins": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "indexAndManifestIntegrityFailuresDoNotPartiallyPublish": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "concurrentPublishersWithSameActiveRevisionHaveExactlyOneWinner": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "editingPublishedKnowledgeAppendsAndDoesNotChangeAnExistingCourse": {
+          "kind": "Test",
+          "invocations": 1
+        }
+      }
+    },
     "suites": [
       {
         "name": "io.typeforge.AccountLifecycleIntegrationTest",
@@ -357,7 +1944,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 28.415,
+        "seconds": 14.146,
         "testCases": [
           "accountClosureIsAtomicOnWrongConfirmationAndDoesNotEraseConcurrentPasswordChange",
           "sessionsArePrivateRevocableAndNeverExposeCookieOrAddress",
@@ -381,7 +1968,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.024,
+        "seconds": 0.016,
         "testCases": [
           "rejectsDuplicateDependency",
           "writerWaitsForActiveReader",
@@ -416,7 +2003,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 2.013,
+        "seconds": 2.606,
         "testCases": [
           "identicalExportsReuseBytesAndObsoleteCacheIsReclaimed",
           "docxRoundTripKeepsEditableChineseTextAndSourceMetadata",
@@ -431,12 +2018,38 @@
         ]
       },
       {
+        "name": "io.typeforge.BatchImportIntegrationTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 8.413,
+        "testCases": [
+          "realMultipartSessionRequiresCsrfAndEditorialRoleThenConfirmsSeparately",
+          "sameFilesAcrossBatchesReuseVerifiedCaptureWithoutDuplicatingProvenance",
+          "selectedCommitIsImmutableIdempotentAndClearsOnlyTransientPreviewText",
+          "uploadCountByteSizeAndCleanedTextAreBoundedBeforePersistence",
+          "cancelIsIdempotentAndCannotBeFollowedByCommit",
+          "activePreviewQuotaCanBeRecoveredByCancellationButNotByReplay",
+          "previewHashTamperingStopsReadsAndCommit",
+          "commitAndCancelRaceHaveExactlyOneTerminalWinner",
+          "secondCaptureIntegrityFailureRollsBackFirstCaptureAndWholeBatch",
+          "learnerAndForeignEditorCannotReadOrMutatePrivatePreview",
+          "staleRevisionFailedForeignOrDuplicateSelectionsDoNotWriteAnyCapture",
+          "previewReportsIndependentFailuresAndDoesNotCreateOrPublishCaptures",
+          "accountClosureCancelsPendingImportsButPreservesAttributedCommittedCaptures",
+          "busyAdmissionRejectsBeforeReadingOrCopyingAnotherUploadedPayload",
+          "previewReplayChecksBytesSourceAndMetadataBeforeReusingResult",
+          "expiredPreviewsClearPayloadBeforeReadAndNeverCommit"
+        ]
+      },
+      {
         "name": "io.typeforge.CodeRubricSemanticsTest",
         "tests": 4,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 2.752,
+        "seconds": 1.341,
         "testCases": [
           "everyPublishedCodeLabExampleHasVerifiedPositiveAndNegativeFixedSource",
           "emptyCompilableAndRawUnsafeProgramsDoNotPassTheTypeContract",
@@ -450,7 +2063,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.576,
+        "seconds": 1.561,
         "testCases": [
           "mismatchedHashLeaseAndIsolationPolicyFailClosed",
           "oversizedResponseIsStoppedAtTheTransportBoundary",
@@ -468,7 +2081,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 6.608,
+        "seconds": 6.698,
         "testCases": [
           "cancellingAnActiveJobRejectsLateLeaseAndDoesNotInventAnAttempt",
           "expiredLeaseAndQueueDeadlineArePersistedAsInfrastructureFailures",
@@ -487,12 +2100,29 @@
         ]
       },
       {
+        "name": "io.typeforge.ContentComparisonIntegrationTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 3.831,
+        "testCases": [
+          "comparesImmutableFieldsWithStablePathsAndRetainsHashHeaders",
+          "realHttpSessionCanReadDiffAndLearnerCannotProbeIt",
+          "privateAnswerChangesAreVisibleOnlyToCurrentEditors",
+          "rejectsUnknownKindMissingRevisionAndSingleRevisionComparison",
+          "reverseComparisonReversesBeforeAndAfterWithoutMutatingTheHistory",
+          "metadataOnlyRevisionProducesNoInventedContentChange",
+          "integrityFailureCannotBeRenderedAsAnOrdinaryContentDiff"
+        ]
+      },
+      {
         "name": "io.typeforge.DurableAgentRuntimeTest",
         "tests": 26,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.475,
+        "seconds": 0.701,
         "testCases": [
           "stableExecutionKeysAndSettlementPreventDuplicateCharges",
           "unknownExternalEffectRetainsReservationAcrossCrashAndCannotBeBlindlyRetried",
@@ -523,12 +2153,49 @@
         ]
       },
       {
+        "name": "io.typeforge.EvaluationWorkbenchIntegrationTest",
+        "tests": 27,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 4.316,
+        "testCases": [
+          "cursorPagesNeverDuplicateAndBadBoundsDoNotScanHistory",
+          "caseBoundsAmbiguityForeignMembershipAndConceptMismatchRejectAtomically",
+          "versionCasAndRetryKeepOldDefinitionAndRunsImmutable",
+          "corruptionOfBodyOrSavedSuiteIsRejectedBeforeReportingSuccess",
+          "operationsRequireCurrentAdministratorAndRejectARevokedCachedAdminSession",
+          "completedRunCannotBeCancelledAndItsDownloadedBytesRemainStable",
+          "archiveCancelsPendingButRetainsFrozenCompletedReports",
+          "operationsSeparateOverduePreviewBacklogAndMeasureActualRetainedChineseText",
+          "cancellationPreservesPartialEvidenceWithoutMetricsAndFencesLateWorker",
+          "actualBm25RanksProduceExactlyDefinedMatchAndNoResultMetrics",
+          "authenticationCsrfUnknownFieldsAndCrossOwnerNeverBypassPrivateScope",
+          "databasePreventsFalseCompletedRunsAndCrossOwnerWorkspaceReferences",
+          "reportAndCaseBytesAreVerifiedOnPrivateReads",
+          "concurrentSameKeyRunAdmissionCommitsOnlyOneActualJob",
+          "operationsCountActualEvaluationStatesAndStoredUtf8PayloadWithoutDisclosingPrivateLabels",
+          "queuedDeadlineAndChangedEvaluatorNeverBecomeCompleted",
+          "ownerPendingAndDailyQuotasCountActualAdmissionsAndAllowReplay",
+          "absentMetricGroupsStayNullRatherThanInventingZeroScores",
+          "closedAccountRevokesQueuedAndLeasedWorkWithoutTouchingAnotherOwner",
+          "archivedWorkspaceIsCancelledByWorkerInsteadOfBlockingOtherWork",
+          "reusedIdempotencyKeysCannotChangeSuiteOrRunInputs",
+          "expiredLeaseCannotWriteAndRecoveryRecordsFailureRatherThanAFalseScore",
+          "realHttpCompletesExportsAndValidatesEveryResponseWithoutEditorPrivilege",
+          "identicalFrozenInputsHaveStableSemanticHashAcrossActualRuns",
+          "suitePinsPublishedContentVersionsWithoutWritingLearningGrades",
+          "concurrentEditorsHaveOneWinnerAndNeverOverwriteHistoricalCases",
+          "corpusTitleMutationIsDetectedEvenWhenBodyHashStillMatches"
+        ]
+      },
+      {
         "name": "io.typeforge.EvidenceWorkflowRecoveryTest",
         "tests": 2,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.459,
+        "seconds": 0.488,
         "testCases": [
           "aReconstructedWorkerResumesAnExpiredClaimWithoutRepeatingCommittedSteps",
           "aFullBatchOfRevokedSnapshotsCannotPermanentlyStarveAHealthyWorkspace"
@@ -540,7 +2207,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 3.332,
+        "seconds": 2.929,
         "testCases": [
           "advertisedHintsStillEnforceOwnershipVersionAndLevel",
           "threeLevelHintsAndNotebookActionsRemainAvailableAndAssistedWithoutAWorker",
@@ -553,7 +2220,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 2.54,
+        "seconds": 2.931,
         "testCases": [
           "assignmentSubsetAgreesWithRealJavac(String, String)[1]",
           "assignmentSubsetAgreesWithRealJavac(String, String)[2]",
@@ -605,7 +2272,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.393,
+        "seconds": 0.6,
         "testCases": [
           "healthActuallyQueriesDatabaseWithoutClaimingProviderReadiness",
           "noBusinessOrAdminRouteIsAccidentallyPublic",
@@ -618,7 +2285,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 5.295,
+        "seconds": 6.204,
         "testCases": [
           "jsonSizeAndIntegerBoundsApplyBeforeNarrowingOrObjectMaterialization",
           "pauseResumeCancelUseEpochFencingAndSteeringRequiresAnActualPlanner",
@@ -637,7 +2304,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.444,
+        "seconds": 1.403,
         "testCases": [
           "anInterfaceCanBeTheLeftmostErasureBound",
           "arraysAreCovariantButValidateTheirActualComponentTypeAtRuntime",
@@ -671,7 +2338,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.73,
+        "seconds": 2.707,
         "testCases": [
           "validatesWithRealJavac(String, String, boolean, boolean)[1]",
           "validatesWithRealJavac(String, String, boolean, boolean)[2]",
@@ -715,7 +2382,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 6.962,
+        "seconds": 6.945,
         "testCases": [
           "readingReceiptIsServerTimedAndNotMasteryEvidence",
           "oldRendererAndTamperedSourceFailWithoutRenderingUnderFalseIdentity",
@@ -739,7 +2406,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.455,
+        "seconds": 0.363,
         "testCases": [
           "tamperedPublishedBodyFailsIntegrityInsteadOfReturningStaleHashEvidence",
           "reinitializationDoesNotDuplicateOrOverwritePublishedFixtures",
@@ -760,7 +2427,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.5,
+        "seconds": 0.397,
         "testCases": [
           "workflowPersistsHashesOfTheRealSchemaInputsForBothTypedTools",
           "contextToolReturnsTheExistingValidatedSnapshotWithoutCreatingState",
@@ -773,12 +2440,37 @@
         ]
       },
       {
+        "name": "io.typeforge.NotebookInteractionIntegrationTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 22.662,
+        "testCases": [
+          "reviewNavigationUsesAdmittedOwnerSourcesAndRejectsRevokedOrChangedVersions",
+          "typeFlowUsesRealLabResultsAndDurableCasWithoutMasteryInflation",
+          "sixteenConceptsUseExactAuthoredEvidenceWithoutOverflowOrUnrelatedChunks",
+          "expertHelpUsesThreeDurableHintsAndCannotClaimModelExecution",
+          "contextualFirstAnswerCannotFabricateIndependentEvidenceThroughAuthoredBlock",
+          "appendHasSourceCasIdempotencyAndRejectsForeignArtifactClosure",
+          "switchingComparisonRestoresEachQuestionHintReceiptWithoutErasingFamilyAssistance",
+          "repairDiffQueuesTwoIndependentSourceJobsAndNeverTurnsCompileSuccessIntoCorrectness",
+          "oldTypeFlowSourceRemainsReadableButDoesNotGainUndeclaredParameterSemantics",
+          "realHttpOptionsAppendAndStateEnforceAuthenticationCsrfAndResponseSchemas",
+          "repairPairRollsBackFirstAdmissionWhenOnlyOneQueueSlotRemains",
+          "optionsExposeOnlyPublishedFamilyVariantsAndActualReviewSources",
+          "concurrentStateChangesAdmitExactlyOneRealLabSession",
+          "counterfactualSelectionIsVersionedAndActuallyGradesSelectedReviewedQuestion",
+          "invalidActionFieldsAndDisallowedTypesDoNotWriteStateOrRealLabEvents"
+        ]
+      },
+      {
         "name": "io.typeforge.PrivateAssetsIntegrationTest",
         "tests": 8,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 4.574,
+        "seconds": 4.038,
         "testCases": [
           "quotaUsesStoredBytesAndRevocationFreesActualPayload",
           "assetRevocationInvalidatesDirectAndTransitiveSourceRevisions",
@@ -796,7 +2488,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 10.163,
+        "seconds": 9.975,
         "testCases": [
           "embeddedArtifactAndReviewLinksCannotBypassTheTypedInputManifest",
           "timestampTiesAndReverseUuidOrderCannotStarveTheWorkspaceHead",
@@ -830,7 +2522,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.447,
+        "seconds": 1.741,
         "testCases": [
           "unknownModelUsageCommitsItsHoldAndNeverAutomaticallyRetries",
           "insufficientRemainingBudgetStopsBeforeTheNextModelDispatch",
@@ -848,7 +2540,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 2.176,
+        "seconds": 0.892,
         "testCases": [
           "modelModeDoesNotPretendToWorkWithoutConfiguredProvider",
           "localWorkflowReallyPlansReviewsAndExportsEditableArtifacts",
@@ -864,12 +2556,32 @@
         ]
       },
       {
+        "name": "io.typeforge.TextLearningIntegrationTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 5.191,
+        "testCases": [
+          "idempotencyRejectsChangedTextAndPrivateAttemptCannotCrossAccounts",
+          "threeHintsMarkFirstAnswerAssistedAndSurviveCrossWorkspaceSameFamily",
+          "rubricRevisionNeverRegradesHistoricalAnswerOrMigratesPinnedWorkspace",
+          "independentApprovalAndCalibrationAreRequiredBeforePublication",
+          "realHttpNormalizedAnswerPinsGraderReceiptAndExactlyOneOutboxProjection",
+          "plausibleLongerMeaningIsNotInventedAsExactCorrectnessAndCreatesRealNotebook",
+          "changedReviewedRuleCannotGradeOrPublishUnderItsOldAttestation",
+          "textCapabilityAndPublicPolicyAreAvailableWithoutCompilerAndNeverExposeExamples",
+          "malformedAndMismatchedAnswersCreateNeitherAttemptsNorMasteryEvents",
+          "validLongPublishedPromptRemainsCompleteInTheCorrectionNotebook"
+        ]
+      },
+      {
         "name": "io.typeforge.TransactionIsolationTest",
         "tests": 2,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 14.326,
+        "seconds": 0.363,
         "testCases": [
           "transactionTemplateUsesReadCommittedJdbcConnection",
           "readAfterOwnerLockSeesCommittedWorkspaceChange"
@@ -881,7 +2593,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 2.937,
+        "seconds": 3.056,
         "testCases": [
           "completeHttpJourneyIncludesConversationRequestEvidenceAndDraftDocument",
           "cancelUsesExpectedEpochAndForeignRequestIdsRemainPrivate",
@@ -894,7 +2606,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.772,
+        "seconds": 0.88,
         "testCases": [
           "timeoutKeepsUnknownReservationAndDoesNotBlindlyReplay",
           "redirectsNeverForwardTheCredentialAndOversizedResponsesAreBounded",
@@ -921,7 +2633,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.864,
+        "seconds": 0.613,
         "testCases": [
           "expiredUndispatchedLeaseCanRecoverButOriginalEpochCannotOverwrite",
           "expiredDeadlineAndLeaseAreDistinguishedFromChangedContext",
@@ -947,7 +2659,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.709,
+        "seconds": 0.6,
         "testCases": [
           "oldArtifactOnlyContextCannotBypassNaturallyExpiredTransitiveMemory"
         ]
@@ -958,11 +2670,52 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.933,
+        "seconds": 2.259,
         "testCases": [
           "explicitSelectionIncludesOlderGradedAttemptsInExactCallerOrder",
           "privateWrongWorkspaceUnfinishedAndInvalidSelectionsNeverPersistASnapshot",
           "authenticatedHttpAcceptsOptionalSelectionAndKeepsSchemaAndCsrfStrict"
+        ]
+      },
+      {
+        "name": "io.typeforge.exercise.TextRubricTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.014,
+        "testCases": [
+          "acceptedTextIsLiteralAndNotRegexOrExecutableInstructions",
+          "caseSensitiveJavaNamesRemainDifferent",
+          "invisibleControlsAndInvalidUnicodeCannotBeSmuggledIntoMatching",
+          "rubricRequiresBoundedPositiveAndNegativeAuthoredExamples",
+          "normalizationExpansionIsBoundedAfterCanonicalization",
+          "declaredNormalizationIsWholeAnswerNfkcWhitespaceAndOptionalRootCase",
+          "normalizationCannotMergePositiveAndNegativeCalibration"
+        ]
+      },
+      {
+        "name": "io.typeforge.ingestion.BoundedDocumentTextTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.1,
+        "testCases": [
+          "embeddedProgramsAndArchiveTraversalAreRejected",
+          "trackedMovesAndUnresolvedEditsCannotSilentlyDuplicateOrReinterpretTheSource",
+          "overpopulatedArchivesAndMalformedXmlAreRejected",
+          "filenamesCannotCarryHostPathsControlsOrUnlimitedMetadata",
+          "utf8NormalizationPreservesCodeIndentationAndSupplementaryCharacters",
+          "unsupportedFormatsAndFalseExtensionsNeverCreateFakeText",
+          "alternateCompatibilityBranchesAreNeverImportedTwiceAsBodyText",
+          "strictWordNamespaceAndTabsRemainReadable",
+          "actualWordDocumentExtractsParagraphsTablesAndLiteralJavaSymbols",
+          "contentTypesMustBeStructuredAndDeclareTheActualWordPart",
+          "xmlEntitiesCannotReadFilesOrContactExternalEndpoints",
+          "expansionAndXmlDepthAreBounded",
+          "emptyBinaryAndInvalidUtf8AreRejectedWithoutReplacementCharacters",
+          "limitsRejectInsteadOfSilentlyTruncating"
         ]
       },
       {
@@ -971,7 +2724,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 31.269,
+        "seconds": 16.015,
         "testCases": [
           "editingPublishedKnowledgeAppendsAndDoesNotChangeAnExistingCourse",
           "reviewPinsTitleAndPrivateAnswerInsteadOfOnlyTheKnowledgeBody",
@@ -990,21 +2743,386 @@
           "publicationCasHistoryAndRetryPreserveExistingPersonalReleasePins"
         ]
       }
-    ]
+    ],
+    "jar": "backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar",
+    "jarSha256": "89a43a6d84c758e1b11fca6eb629fc6d05e5df0b9bf17f9338bf56bbbf078882",
+    "frontendDist": {
+      "schemaVersion": 1,
+      "scope": "frontend-dist",
+      "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+      "digest": "fd48b5dbdfa35bdee27822470b80e29e15ad2b1e70e31c58a675d1ae95cb3576",
+      "fileCount": 14
+    },
+    "frontendInputDigest": "7a83cffaede438a78adccb142cdc1b2d063c219356397a84188ef63a58b46424",
+    "durationSeconds": 149.276
   },
   "frontend": {
-    "numTotalTestSuites": 14,
-    "numPassedTestSuites": 14,
+    "numTotalTestSuites": 20,
+    "numPassedTestSuites": 20,
     "numFailedTestSuites": 0,
-    "numTotalTests": 42,
-    "numPassedTests": 42,
+    "numTotalTests": 60,
+    "numPassedTests": 60,
     "numFailedTests": 0,
     "numPendingTests": 0,
     "success": true,
+    "build": {
+      "result": "PASS",
+      "generatedAt": "2026-11-16T02:27:04.092229+00:00",
+      "scope": "Actual npm run check followed by npm run build; prior reports/dist cannot be reused",
+      "verificationInputs": {
+        "schemaVersion": 1,
+        "scope": "frontend",
+        "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+        "digest": "7a83cffaede438a78adccb142cdc1b2d063c219356397a84188ef63a58b46424",
+        "fileCount": 77,
+        "extraFiles": [
+          "scripts/verify_frontend.py"
+        ]
+      },
+      "inputsUnchanged": true,
+      "unitSummary": {
+        "numTotalTestSuites": 20,
+        "numPassedTestSuites": 20,
+        "numFailedTestSuites": 0,
+        "numTotalTests": 60,
+        "numPassedTests": 60,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "success": true
+      },
+      "unitFiles": [
+        {
+          "name": "frontend/src/api.test.ts",
+          "tests": 12,
+          "caseNames": [
+            "real request boundary attaches the server CSRF header and replaces it after session rotation",
+            "real request boundary reuses one idempotency key after an unknown network outcome without automatic resubmission",
+            "real request boundary preserves structured conflict errors and clears private state on demand",
+            "real request boundary rejects executable and malformed source URLs",
+            "real request boundary does not let a late old-session 401 log out a newly established session",
+            "real request boundary discards a late CSRF response after reset and retains the new session token",
+            "real request boundary never dispatches a waiting old-session mutation or recreates its private key after logout",
+            "real request boundary keeps the idempotency key after a truncated successful response",
+            "real request boundary ignores a late successful private read after the account changed",
+            "real request boundary keeps retry keys in memory when browser storage is blocked and still allows logout",
+            "real request boundary bounds a waiting request without automatically repeating a write",
+            "real request boundary sends multipart bytes unchanged and distinguishes same-named files by their actual content"
+          ]
+        },
+        {
+          "name": "frontend/src/hooks.test.tsx",
+          "tests": 5,
+          "caseNames": [
+            "late responses never cross workspace scopes aborts the old read and ignores a transport that resolves it late",
+            "late responses never cross workspace scopes does not invoke a mutation commit after its workspace unmounts",
+            "late responses never cross workspace scopes accepts one write when two input events arrive before React disables the button",
+            "does not poll over a slow read and resumes only after that read settles",
+            "rearms polling for immediate reads and stops while the tab is hidden"
+          ]
+        },
+        {
+          "name": "frontend/src/state.test.ts",
+          "tests": 8,
+          "caseNames": [
+            "workspace state invariants deduplicates replay, rejects a different workspace and advances contiguous sequence only",
+            "workspace state invariants never acknowledges past an event gap",
+            "workspace state invariants invalidates older workspace and mutation generations",
+            "workspace state invariants keeps the local dirty source and baseline when a newer remote version arrives",
+            "workspace state invariants accepts a newer server source when there are no local edits",
+            "workspace state invariants ignores a late older revision without rollback or false conflict (dirty=false)",
+            "workspace state invariants ignores a late older revision without rollback or false conflict (dirty=true)",
+            "workspace state invariants does not submit while composing Chinese or inserting a newline"
+          ]
+        },
+        {
+          "name": "frontend/src/components/BatchImports.test.tsx",
+          "tests": 2,
+          "caseNames": [
+            "commits only selected successfully parsed files and replaces terminal preview editors with retained capture links",
+            "retains separate cleaning text and notes after a real conflict or failed cancellation"
+          ]
+        },
+        {
+          "name": "frontend/src/components/ConceptMap.test.tsx",
+          "tests": 2,
+          "caseNames": [
+            "retains missing or cyclic published concepts without inventing an acyclic path",
+            "offers keyboard list navigation, separates reading from evidence and opens the selected real concept"
+          ]
+        },
+        {
+          "name": "frontend/src/components/Notebook.test.tsx",
+          "tests": 5,
+          "caseNames": [
+            "waits for actual state, preserves type drafts after a conflict and sends the newly confirmed CAS revision on deliberate retry",
+            "switches only after a confirmed variant and restores each question draft and actual hint level independently",
+            "reads real evidence errors explicitly and never renders a success placeholder as a citation",
+            "does not present executable typed actions for legacy blocks that never admitted those actions",
+            "keeps the fixed repair source separate, waits for both job results and never treats compilation as a graded answer"
+          ]
+        },
+        {
+          "name": "frontend/src/components/SlideEditor.test.tsx",
+          "tests": 1,
+          "caseNames": [
+            "keeps keyboard layout changes within the slide and preserves evidence and immutable source values"
+          ]
+        },
+        {
+          "name": "frontend/src/components/SourcePreview.test.tsx",
+          "tests": 2,
+          "caseNames": [
+            "safe source preview renders untrusted HTML and script as literal text, without executable elements",
+            "safe source preview renders code as code and slide notes as text"
+          ]
+        },
+        {
+          "name": "frontend/src/pages/Account.test.tsx",
+          "tests": 1,
+          "caseNames": [
+            "retains password input and session after wrong current password, and ends the session only after confirmed success"
+          ]
+        },
+        {
+          "name": "frontend/src/pages/Content.test.tsx",
+          "tests": 4,
+          "caseNames": [
+            "preserves every citation on revision and saving knowledge does not clear another form draft",
+            "requires a deliberate discard before loading another revision over an edited knowledge draft",
+            "sends the independently reviewed hash and the exact APPROVED protocol decision",
+            "authors bounded TEXT rules privately and can derive a new published-family candidate without changing the original id"
+          ]
+        },
+        {
+          "name": "frontend/src/pages/Evaluation.test.tsx",
+          "tests": 3,
+          "caseNames": [
+            "does not invent expected evidence after a read failure and preserves a rejected save with controls locked while pending",
+            "requires an explicit rebase after a concurrent suite update and keeps the complete local annotation",
+            "waits for confirmed cancellation and never shows complete metrics or a report for an interrupted run"
+          ]
+        },
+        {
+          "name": "frontend/src/pages/Lab.test.tsx",
+          "tests": 1,
+          "caseNames": [
+            "submits lower-bound writes with the container and value in the actual evaluator order"
+          ]
+        },
+        {
+          "name": "frontend/src/pages/Operations.test.tsx",
+          "tests": 3,
+          "caseNames": [
+            "never requests administrator snapshots for an ordinary learner",
+            "keeps unavailable latency samples distinct from zero and describes actual stored bytes",
+            "labels a retained snapshot after a network failure and removes it after privilege revocation"
+          ]
+        },
+        {
+          "name": "frontend/src/pages/Personal.test.tsx",
+          "tests": 4,
+          "caseNames": [
+            "preserves two saved preference revisions despite the stale initial query",
+            "ignores same-owner older and equal revisions from late preference reads",
+            "clears the old owner and media listener while accepting a new account with a lower revision",
+            "initializes the confirmed preference owner after StrictMode bootstrap replay and clears it on unmount"
+          ]
+        },
+        {
+          "name": "frontend/src/pages/Practice.test.tsx",
+          "tests": 3,
+          "caseNames": [
+            "renders the published SINGLE kind as radio and sends one CHOICE option id",
+            "sends the exact bounded TEXT input to the server and keeps it after a failed request",
+            "submits a real code kind and keeps a pending result ungraded until the server supplies evidence"
+          ]
+        },
+        {
+          "name": "frontend/src/pages/Studio.test.tsx",
+          "tests": 4,
+          "caseNames": [
+            "keeps failed notebook hints retryable and stops requesting after the third confirmed hint",
+            "locks source edits and references until a save completes, and retains edits after a failed save",
+            "ignores a pre-save GET arriving after success, including its obsolete input references",
+            "locks conflict resolution during a save and requires explicit rebasing after a real CAS conflict"
+          ]
+        }
+      ],
+      "dist": {
+        "schemaVersion": 1,
+        "scope": "frontend-dist",
+        "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+        "digest": "fd48b5dbdfa35bdee27822470b80e29e15ad2b1e70e31c58a675d1ae95cb3576",
+        "fileCount": 14
+      },
+      "commands": [
+        "npm run check",
+        "npm run build"
+      ],
+      "durationSeconds": 10.032
+    },
+    "unitFiles": [
+      {
+        "name": "frontend/src/api.test.ts",
+        "tests": 12,
+        "caseNames": [
+          "real request boundary attaches the server CSRF header and replaces it after session rotation",
+          "real request boundary reuses one idempotency key after an unknown network outcome without automatic resubmission",
+          "real request boundary preserves structured conflict errors and clears private state on demand",
+          "real request boundary rejects executable and malformed source URLs",
+          "real request boundary does not let a late old-session 401 log out a newly established session",
+          "real request boundary discards a late CSRF response after reset and retains the new session token",
+          "real request boundary never dispatches a waiting old-session mutation or recreates its private key after logout",
+          "real request boundary keeps the idempotency key after a truncated successful response",
+          "real request boundary ignores a late successful private read after the account changed",
+          "real request boundary keeps retry keys in memory when browser storage is blocked and still allows logout",
+          "real request boundary bounds a waiting request without automatically repeating a write",
+          "real request boundary sends multipart bytes unchanged and distinguishes same-named files by their actual content"
+        ]
+      },
+      {
+        "name": "frontend/src/hooks.test.tsx",
+        "tests": 5,
+        "caseNames": [
+          "late responses never cross workspace scopes aborts the old read and ignores a transport that resolves it late",
+          "late responses never cross workspace scopes does not invoke a mutation commit after its workspace unmounts",
+          "late responses never cross workspace scopes accepts one write when two input events arrive before React disables the button",
+          "does not poll over a slow read and resumes only after that read settles",
+          "rearms polling for immediate reads and stops while the tab is hidden"
+        ]
+      },
+      {
+        "name": "frontend/src/state.test.ts",
+        "tests": 8,
+        "caseNames": [
+          "workspace state invariants deduplicates replay, rejects a different workspace and advances contiguous sequence only",
+          "workspace state invariants never acknowledges past an event gap",
+          "workspace state invariants invalidates older workspace and mutation generations",
+          "workspace state invariants keeps the local dirty source and baseline when a newer remote version arrives",
+          "workspace state invariants accepts a newer server source when there are no local edits",
+          "workspace state invariants ignores a late older revision without rollback or false conflict (dirty=false)",
+          "workspace state invariants ignores a late older revision without rollback or false conflict (dirty=true)",
+          "workspace state invariants does not submit while composing Chinese or inserting a newline"
+        ]
+      },
+      {
+        "name": "frontend/src/components/BatchImports.test.tsx",
+        "tests": 2,
+        "caseNames": [
+          "commits only selected successfully parsed files and replaces terminal preview editors with retained capture links",
+          "retains separate cleaning text and notes after a real conflict or failed cancellation"
+        ]
+      },
+      {
+        "name": "frontend/src/components/ConceptMap.test.tsx",
+        "tests": 2,
+        "caseNames": [
+          "retains missing or cyclic published concepts without inventing an acyclic path",
+          "offers keyboard list navigation, separates reading from evidence and opens the selected real concept"
+        ]
+      },
+      {
+        "name": "frontend/src/components/Notebook.test.tsx",
+        "tests": 5,
+        "caseNames": [
+          "waits for actual state, preserves type drafts after a conflict and sends the newly confirmed CAS revision on deliberate retry",
+          "switches only after a confirmed variant and restores each question draft and actual hint level independently",
+          "reads real evidence errors explicitly and never renders a success placeholder as a citation",
+          "does not present executable typed actions for legacy blocks that never admitted those actions",
+          "keeps the fixed repair source separate, waits for both job results and never treats compilation as a graded answer"
+        ]
+      },
+      {
+        "name": "frontend/src/components/SlideEditor.test.tsx",
+        "tests": 1,
+        "caseNames": [
+          "keeps keyboard layout changes within the slide and preserves evidence and immutable source values"
+        ]
+      },
+      {
+        "name": "frontend/src/components/SourcePreview.test.tsx",
+        "tests": 2,
+        "caseNames": [
+          "safe source preview renders untrusted HTML and script as literal text, without executable elements",
+          "safe source preview renders code as code and slide notes as text"
+        ]
+      },
+      {
+        "name": "frontend/src/pages/Account.test.tsx",
+        "tests": 1,
+        "caseNames": [
+          "retains password input and session after wrong current password, and ends the session only after confirmed success"
+        ]
+      },
+      {
+        "name": "frontend/src/pages/Content.test.tsx",
+        "tests": 4,
+        "caseNames": [
+          "preserves every citation on revision and saving knowledge does not clear another form draft",
+          "requires a deliberate discard before loading another revision over an edited knowledge draft",
+          "sends the independently reviewed hash and the exact APPROVED protocol decision",
+          "authors bounded TEXT rules privately and can derive a new published-family candidate without changing the original id"
+        ]
+      },
+      {
+        "name": "frontend/src/pages/Evaluation.test.tsx",
+        "tests": 3,
+        "caseNames": [
+          "does not invent expected evidence after a read failure and preserves a rejected save with controls locked while pending",
+          "requires an explicit rebase after a concurrent suite update and keeps the complete local annotation",
+          "waits for confirmed cancellation and never shows complete metrics or a report for an interrupted run"
+        ]
+      },
+      {
+        "name": "frontend/src/pages/Lab.test.tsx",
+        "tests": 1,
+        "caseNames": [
+          "submits lower-bound writes with the container and value in the actual evaluator order"
+        ]
+      },
+      {
+        "name": "frontend/src/pages/Operations.test.tsx",
+        "tests": 3,
+        "caseNames": [
+          "never requests administrator snapshots for an ordinary learner",
+          "keeps unavailable latency samples distinct from zero and describes actual stored bytes",
+          "labels a retained snapshot after a network failure and removes it after privilege revocation"
+        ]
+      },
+      {
+        "name": "frontend/src/pages/Personal.test.tsx",
+        "tests": 4,
+        "caseNames": [
+          "preserves two saved preference revisions despite the stale initial query",
+          "ignores same-owner older and equal revisions from late preference reads",
+          "clears the old owner and media listener while accepting a new account with a lower revision",
+          "initializes the confirmed preference owner after StrictMode bootstrap replay and clears it on unmount"
+        ]
+      },
+      {
+        "name": "frontend/src/pages/Practice.test.tsx",
+        "tests": 3,
+        "caseNames": [
+          "renders the published SINGLE kind as radio and sends one CHOICE option id",
+          "sends the exact bounded TEXT input to the server and keeps it after a failed request",
+          "submits a real code kind and keeps a pending result ungraded until the server supplies evidence"
+        ]
+      },
+      {
+        "name": "frontend/src/pages/Studio.test.tsx",
+        "tests": 4,
+        "caseNames": [
+          "keeps failed notebook hints retryable and stops requesting after the third confirmed hint",
+          "locks source edits and references until a save completes, and retains edits after a failed save",
+          "ignores a pre-save GET arriving after success, including its obsolete input references",
+          "locks conflict resolution during a save and requires explicit rebasing after a real CAS conflict"
+        ]
+      }
+    ],
     "integration": {
       "driver": "jsdom with real HTTP; not a graphical browser",
       "status": "PASS",
-      "jarSha256": "c3b35a2f0ef19124a101f49e2bc793f9c0f96349af7b6e1417c701f6de06dd98",
+      "jarSha256": "89a43a6d84c758e1b11fca6eb629fc6d05e5df0b9bf17f9338bf56bbbf078882",
       "steps": [
         {
           "name": "register/login/CSRF and workspace creation",
@@ -1061,12 +3179,78 @@
         {
           "name": "logout clears private client caches",
           "status": "PASS"
+        },
+        {
+          "name": "editor signs in, parses real Markdown and DOCX, exposes a broken file and atomically retains selected captures",
+          "status": "PASS"
+        },
+        {
+          "name": "editor constructs real prerequisite concepts and compares immutable knowledge revisions",
+          "status": "PASS"
+        },
+        {
+          "name": "editor authors finite TEXT rules and derives an actual same-family variant while self-review stays disabled",
+          "status": "PASS"
+        },
+        {
+          "name": "a distinct real editor reviews source captures and revision differences, then publishes the frozen course",
+          "status": "PASS"
+        },
+        {
+          "name": "learner sees the exact published prerequisite graph and server-graded TEXT answers without private rubric leakage",
+          "status": "PASS"
+        },
+        {
+          "name": "notebook persists real type evaluation, admitted same-family variants and deterministic guidance as separate source-backed activities",
+          "status": "PASS"
+        },
+        {
+          "name": "notebook links only explicitly admitted current private artifact revisions and opens the confirmed source",
+          "status": "PASS"
+        },
+        {
+          "name": "private evaluation runs measure real Recall and retain downloadable reports for fixed annotations and K values",
+          "status": "PASS"
+        },
+        {
+          "name": "evaluation keeps edited cases while a separately saved server revision is deliberately reconciled",
+          "status": "PASS"
+        },
+        {
+          "name": "a real administrator reads aggregate evaluation and import capacity without exposing personal payloads",
+          "status": "PASS"
         }
       ],
       "limits": [
         "Does not verify layout, screenshots, native downloads or real keyboard/touch rendering.",
-        "Cookie and multipart encoding adapt DOM requests to Node fetch; no server response is mocked."
-      ]
+        "Cookie and multipart encoding adapt DOM requests to Node fetch; no server response is mocked.",
+        "jsdom cannot validate its internal file list after user-event upload; this driver verifies the selected bytes and adapts only that required attribute. Chromium retains native file validation."
+      ],
+      "runtime": {
+        "driver": "dom",
+        "jar": "typeforge-backend-0.6.0-SNAPSHOT.jar",
+        "jarSha256": "89a43a6d84c758e1b11fca6eb629fc6d05e5df0b9bf17f9338bf56bbbf078882",
+        "baseUrl": "http://127.0.0.1:54777",
+        "status": "PASS",
+        "log": "dom-server.log",
+        "verificationInputs": {
+          "schemaVersion": 1,
+          "scope": "frontend",
+          "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+          "digest": "84d9bad4d47bc97128f17742ba1287b33e9b6edbc1f9dca8eee39a273181a310",
+          "fileCount": 77,
+          "extraFiles": [
+            "scripts/browser_runtime.py"
+          ]
+        },
+        "editorialFixture": "Two random editors and one separate administrator, real registration/session/startup authorization, disposable database; no production review or student contribution claim",
+        "editorialFixtureRegistered": 2,
+        "administratorFixtureRegistered": 1,
+        "driverReportSha256": "00d530c017b67475ba745bba7bbb1c9838acb3d309250db155ca16ebf93eb174",
+        "jarUnchanged": true,
+        "inputsUnchanged": true,
+        "exitCode": 0
+      }
     },
     "graphicalBrowser": {
       "localStatus": "BLOCKED_BY_ENVIRONMENT",
@@ -1076,23 +3260,30 @@
   },
   "contractsAndArchitecture": {
     "result": "PASS",
-    "checksPassed": 669,
+    "verificationInputs": {
+      "schemaVersion": 1,
+      "scope": "static",
+      "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+      "digest": "e3cf9318129b127add12e9553506f79317406dee49e3f8a956606dce83e1378b",
+      "fileCount": 374,
+      "extraFiles": []
+    },
+    "inputsUnchanged": true,
+    "checksPassed": 755,
     "errors": [],
-    "operations": 109,
-    "implementedOperations": 109,
+    "operations": 129,
+    "implementedOperations": 129,
     "plannedOperations": 0,
-    "schemas": 181,
+    "schemas": 218,
     "conceptSeeds": 16,
     "frontendReferences": 209,
-    "sqlTables": 79,
+    "sqlTables": 88,
     "expertRoles": 14,
     "toolCapabilities": 18
   },
   "mysqlSchema": {
     "result": "PASS",
-    "engine": "MySQL 8.4.13",
     "mode": "external-isolated-server",
-    "tables": 79,
     "checks": [
       {
         "check": "query actual database engine version",
@@ -1100,6 +3291,10 @@
       },
       {
         "check": "inspect isolated verification schema",
+        "result": "PASS"
+      },
+      {
+        "check": "reset explicitly marked task-owned verification schema only",
         "result": "PASS"
       },
       {
@@ -1144,6 +3339,18 @@
       },
       {
         "check": "V011__private_assets.sql applies on MySQL 8.4.13",
+        "result": "PASS"
+      },
+      {
+        "check": "V012__evaluation_workbench.sql applies on MySQL 8.4.13",
+        "result": "PASS"
+      },
+      {
+        "check": "V013__text_and_notebook_interactions.sql applies on MySQL 8.4.13",
+        "result": "PASS"
+      },
+      {
+        "check": "V014__batch_ingestion.sql applies on MySQL 8.4.13",
         "result": "PASS"
       },
       {
@@ -1579,6 +3786,278 @@
         "result": "PASS"
       },
       {
+        "check": "evaluation ownership negative fixture is an existing separate account",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation suite cannot claim another workspace owner",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation suite release must match its workspace release",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation suite binds actual owner workspace and release",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation current revision must be positive",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation history has a finite revision bound",
+        "result": "PASS"
+      },
+      {
+        "check": "a private evaluation suite cannot claim course publication",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation definition stores a concrete immutable version and bounded manifest bytes",
+        "result": "PASS"
+      },
+      {
+        "check": "empty evaluation definitions are rejected",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation definitions enforce forty-case limit",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation snapshot bytes cannot be empty",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation snapshot storage is capped at 256 KiB",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation run requires an existing suite revision",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation run cannot impersonate a different suite owner",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation run cannot cross suite workspace",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation run cannot replace its frozen release",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation retrieval depth must be positive",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation retrieval depth cannot exceed eight",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation run retains bounded inputs without premature metrics",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation cannot complete without actual report and aggregate evidence",
+        "result": "PASS"
+      },
+      {
+        "check": "queued evaluation cannot claim a score",
+        "result": "PASS"
+      },
+      {
+        "check": "queued evaluation cannot claim deterministic result hash",
+        "result": "PASS"
+      },
+      {
+        "check": "queued evaluation cannot carry a running worker lease",
+        "result": "PASS"
+      },
+      {
+        "check": "running evaluation requires token and deadline",
+        "result": "PASS"
+      },
+      {
+        "check": "queued evaluation cannot claim completed cases",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation worker state has an explicit bounded lease",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation completed count cannot exceed admitted cases",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation evidence bytes require a completed case",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation partial evidence cannot exceed one MiB",
+        "result": "PASS"
+      },
+      {
+        "check": "partial running results cannot claim complete aggregate scores",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation case evidence requires its real run",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation case position cannot exceed forty-case bound",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation case byte accounting cannot be zero",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation individual result is bounded at 64 KiB",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation result has stable case identity position and byte accounting",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation cannot write the same case result twice",
+        "result": "PASS"
+      },
+      {
+        "check": "partial evaluation progress records actual stored byte capacity",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation report cannot exceed two MiB",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation aggregate evidence requires all admitted cases completed",
+        "result": "PASS"
+      },
+      {
+        "check": "complete evaluation state must carry all bounded evidence fields",
+        "result": "PASS"
+      },
+      {
+        "check": "failed evaluation cannot keep complete-score fields",
+        "result": "PASS"
+      },
+      {
+        "check": "evaluation global queue admission lock has one fixed identity",
+        "result": "PASS"
+      },
+      {
+        "check": "TEXT grading has an actual independent exercise review",
+        "result": "PASS"
+      },
+      {
+        "check": "TEXT review receipt cannot pin nonexistent exercise revision",
+        "result": "PASS"
+      },
+      {
+        "check": "TEXT review receipt requires actual review identity",
+        "result": "PASS"
+      },
+      {
+        "check": "TEXT exact rubric receipt stores reviewed answer hash and algorithm version",
+        "result": "PASS"
+      },
+      {
+        "check": "TEXT rubric version cannot acquire a second mutable review receipt",
+        "result": "PASS"
+      },
+      {
+        "check": "Notebook state requires a real immutable artifact version",
+        "result": "PASS"
+      },
+      {
+        "check": "Notebook durable state revision must be positive",
+        "result": "PASS"
+      },
+      {
+        "check": "Notebook state requires native valid JSON",
+        "result": "PASS"
+      },
+      {
+        "check": "Notebook state persists an actual source-version-bound JSON value",
+        "result": "PASS"
+      },
+      {
+        "check": "Notebook typed action receipt accepts selectType",
+        "result": "PASS"
+      },
+      {
+        "check": "Notebook typed action receipt accepts setParameter",
+        "result": "PASS"
+      },
+      {
+        "check": "Notebook typed action receipt accepts navigateArtifact",
+        "result": "PASS"
+      },
+      {
+        "check": "Notebook typed action receipt accepts appendBlock",
+        "result": "PASS"
+      },
+      {
+        "check": "bounded import binds actual source and authenticated owner",
+        "result": "PASS"
+      },
+      {
+        "check": "import revision must be positive",
+        "result": "PASS"
+      },
+      {
+        "check": "import preview cannot claim content publication",
+        "result": "PASS"
+      },
+      {
+        "check": "import preview expiration must follow creation",
+        "result": "PASS"
+      },
+      {
+        "check": "import item cannot claim source from another batch",
+        "result": "PASS"
+      },
+      {
+        "check": "import item ordinal enforces eight-file limit",
+        "result": "PASS"
+      },
+      {
+        "check": "valid import item retains exact upload and extracted text hashes",
+        "result": "PASS"
+      },
+      {
+        "check": "import file size exceeds one MiB",
+        "result": "PASS"
+      },
+      {
+        "check": "committed import requires an actual capture receipt",
+        "result": "PASS"
+      },
+      {
+        "check": "failed import requires a stable parser error",
+        "result": "PASS"
+      },
+      {
+        "check": "import cannot invent its capture result",
+        "result": "PASS"
+      },
+      {
+        "check": "committed import pins an existing capture from its registered source",
+        "result": "PASS"
+      },
+      {
+        "check": "skipped import cannot retain a committed capture identity",
+        "result": "PASS"
+      },
+      {
         "check": "native JSON answer remains structured object",
         "result": "PASS"
       },
@@ -1587,6 +4066,18 @@
         "result": "PASS"
       }
     ],
+    "verificationInputs": {
+      "schemaVersion": 1,
+      "scope": "schema",
+      "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+      "digest": "2a8f9d044f0f15041409020562eb1f213f8d266f0081169bb672d7f778fada09",
+      "fileCount": 18,
+      "extraFiles": [
+        "scripts/verify_mysql.py"
+      ]
+    },
+    "engine": "MySQL 8.4.13",
+    "tables": 88,
     "schemaSha256": {
       "V001__baseline.sql": "e1a1cbb328f092f3b7788cfd57d846d526e0cd8a3de3fefde42cf11879b47896",
       "V002__agent_workspace.sql": "1c13efbb02105da2daa8b38898fba87185bb5751c2992fe00c7c501b13abe730",
@@ -1598,10 +4089,14 @@
       "V008__compiler_learning.sql": "d5177b9fba09fca995f4b6f3eee1bc704c934e18c508a089123c63bb503a62cc",
       "V009__artifact_files.sql": "0d3867dcf895c9b79f74833da2fc10f946211f8da11f6eaf6b76720b36584fa2",
       "V010__study_workflow.sql": "879e3913a2c32137e08a7ebb3dc52054f5e5f9446c771db49cffb48a4d45e87a",
-      "V011__private_assets.sql": "1bf9c34c1471ac54913308966c7caba13ae920493adc5b3d7e8738a03a6a7d28"
+      "V011__private_assets.sql": "1bf9c34c1471ac54913308966c7caba13ae920493adc5b3d7e8738a03a6a7d28",
+      "V012__evaluation_workbench.sql": "1fa820ff538f991c3120f31fd15028a70d921187226e4dae30ef8aa6034dcab7",
+      "V013__text_and_notebook_interactions.sql": "00bf9f9299d92f2c59f2ace372edebfcfe8b84c6f992e8fc65e4e33d3bf0f32f",
+      "V014__batch_ingestion.sql": "6205d51a25f15fa41d60fb9e77069f0f4f9f3d8215940c438653aa31e32f8efe"
     },
     "seedSha256": "640dd344bbaabcc81491e720c5e2a6e47ba1687f9cdef31c7c6ed71fdf52953f",
-    "scope": "All current forward migrations and schema integrity on real MySQL; application HTTP and transaction smoke tests run separately"
+    "scope": "All current forward migrations and schema integrity on real MySQL; application HTTP and transaction smoke tests run separately",
+    "inputsUnchanged": true
   },
   "mysqlIsolation": {
     "result": "PASS",
@@ -1616,6 +4111,16 @@
       "transactionTemplateUsesReadCommittedJdbcConnection",
       "readAfterOwnerLockSeesCommittedWorkspaceChange"
     ],
+    "verificationInputs": {
+      "schemaVersion": 1,
+      "scope": "backend",
+      "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+      "digest": "081cb0c78fb2a65f4e4aa32562f3f2372507a410d103fc78882829a593c3b486",
+      "fileCount": 232,
+      "extraFiles": [
+        "scripts/verify_transaction_isolation.py"
+      ]
+    },
     "mavenExitCode": 0,
     "engineVersion": "8.4.13",
     "evidence": {
@@ -1627,7 +4132,8 @@
       "repeatableReadControl": "before",
       "writerCommitted": true
     },
-    "durationSeconds": 17.598
+    "inputsUnchanged": true,
+    "durationSeconds": 18.6
   },
   "mysqlEditorial": {
     "result": "PASS",
@@ -1635,6 +4141,17 @@
     "testClass": "io.typeforge.publishing.ContentWorkbenchIntegrationTest",
     "engine": "MySQL",
     "tests": 15,
+    "verificationInputs": {
+      "schemaVersion": 1,
+      "scope": "backend",
+      "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+      "digest": "5f27a909e387ea7b65f3b8f7c13b705968f91fb218f0cf5aea73e1a2045b2ff3",
+      "fileCount": 233,
+      "extraFiles": [
+        "scripts/verify_content_mysql.py",
+        "scripts/verify_transaction_isolation.py"
+      ]
+    },
     "mavenExitCode": 0,
     "failures": 0,
     "errors": 0,
@@ -1657,13 +4174,26 @@
       "publicationCasHistoryAndRetryPreserveExistingPersonalReleasePins"
     ],
     "engineVersion": "8.4.13",
-    "durationSeconds": 34.309
+    "inputsUnchanged": true,
+    "durationSeconds": 37.216
   },
   "mysqlAccountsAndAssets": {
     "result": "PASS",
-    "generatedAt": "2026-11-15T17:51:11.820774+00:00",
+    "generatedAt": "2026-11-16T02:41:08.264392+00:00",
     "scope": "Explicit real-MySQL account lifecycle and private asset HTTP/SQL regression; no external media or model provider claim",
+    "verificationInputs": {
+      "schemaVersion": 1,
+      "scope": "backend",
+      "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+      "digest": "70e7fb734254d54e39665552b8120ea25336ab5f91a7b21f3e68507eedf330db",
+      "fileCount": 233,
+      "extraFiles": [
+        "scripts/verify_private_modules_mysql.py",
+        "scripts/verify_transaction_isolation.py"
+      ]
+    },
     "mavenExitCode": 0,
+    "inputsUnchanged": true,
     "tests": 22,
     "suites": [
       {
@@ -1674,10 +4204,10 @@
         "skipped": 0,
         "engineProof": [
           {
-            "database": "typeforge_runtime",
-            "engine": "MySQL",
             "suite": "AccountLifecycleIntegrationTest",
-            "version": "8.4.13"
+            "engine": "MySQL",
+            "version": "8.4.13",
+            "database": "typeforge_runtime"
           }
         ],
         "caseNames": [
@@ -1705,10 +4235,10 @@
         "skipped": 0,
         "engineProof": [
           {
-            "database": "typeforge_runtime",
-            "engine": "MySQL",
             "suite": "PrivateAssetsIntegrationTest",
-            "version": "8.4.13"
+            "engine": "MySQL",
+            "version": "8.4.13",
+            "database": "typeforge_runtime"
           }
         ],
         "caseNames": [
@@ -1724,13 +4254,225 @@
       }
     ]
   },
+  "mysqlV06Modules": {
+    "result": "PASS",
+    "generatedAt": "2026-11-16T02:41:45.123344+00:00",
+    "scope": "Actual MySQL 8.4 service, SQL and authenticated HTTP regression for bounded imports, revision diffs, private evaluations, TEXT grading, six Notebook blocks and admin aggregates; compiler replies in this gate are protocol fixtures, not Docker execution evidence",
+    "verificationInputs": {
+      "schemaVersion": 1,
+      "scope": "backend",
+      "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+      "digest": "2dc4a6859a618bdcd5e04a75c5eb30f46e5ddebc4e8a07678027858a112a1340",
+      "fileCount": 233,
+      "extraFiles": [
+        "scripts/verify_transaction_isolation.py",
+        "scripts/verify_v06_modules_mysql.py"
+      ]
+    },
+    "mavenExitCode": 0,
+    "inputsUnchanged": true,
+    "tests": 75,
+    "suites": [
+      {
+        "suite": "BatchImportIntegrationTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "engineProof": [
+          {
+            "suite": "BatchImportIntegrationTest",
+            "engine": "MySQL",
+            "version": "8.4.13",
+            "database": "typeforge_runtime"
+          }
+        ],
+        "caseNames": [
+          "realMultipartSessionRequiresCsrfAndEditorialRoleThenConfirmsSeparately",
+          "sameFilesAcrossBatchesReuseVerifiedCaptureWithoutDuplicatingProvenance",
+          "selectedCommitIsImmutableIdempotentAndClearsOnlyTransientPreviewText",
+          "uploadCountByteSizeAndCleanedTextAreBoundedBeforePersistence",
+          "cancelIsIdempotentAndCannotBeFollowedByCommit",
+          "activePreviewQuotaCanBeRecoveredByCancellationButNotByReplay",
+          "previewHashTamperingStopsReadsAndCommit",
+          "commitAndCancelRaceHaveExactlyOneTerminalWinner",
+          "secondCaptureIntegrityFailureRollsBackFirstCaptureAndWholeBatch",
+          "learnerAndForeignEditorCannotReadOrMutatePrivatePreview",
+          "staleRevisionFailedForeignOrDuplicateSelectionsDoNotWriteAnyCapture",
+          "previewReportsIndependentFailuresAndDoesNotCreateOrPublishCaptures",
+          "accountClosureCancelsPendingImportsButPreservesAttributedCommittedCaptures",
+          "busyAdmissionRejectsBeforeReadingOrCopyingAnotherUploadedPayload",
+          "previewReplayChecksBytesSourceAndMetadataBeforeReusingResult",
+          "expiredPreviewsClearPayloadBeforeReadAndNeverCommit"
+        ]
+      },
+      {
+        "suite": "ContentComparisonIntegrationTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "engineProof": [
+          {
+            "suite": "ContentComparisonIntegrationTest",
+            "engine": "MySQL",
+            "version": "8.4.13",
+            "database": "typeforge_runtime"
+          }
+        ],
+        "caseNames": [
+          "comparesImmutableFieldsWithStablePathsAndRetainsHashHeaders",
+          "realHttpSessionCanReadDiffAndLearnerCannotProbeIt",
+          "privateAnswerChangesAreVisibleOnlyToCurrentEditors",
+          "rejectsUnknownKindMissingRevisionAndSingleRevisionComparison",
+          "reverseComparisonReversesBeforeAndAfterWithoutMutatingTheHistory",
+          "metadataOnlyRevisionProducesNoInventedContentChange",
+          "integrityFailureCannotBeRenderedAsAnOrdinaryContentDiff"
+        ]
+      },
+      {
+        "suite": "EvaluationWorkbenchIntegrationTest",
+        "tests": 27,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "engineProof": [
+          {
+            "suite": "EvaluationWorkbenchIntegrationTest",
+            "engine": "MySQL",
+            "version": "8.4.13",
+            "database": "typeforge_runtime"
+          }
+        ],
+        "caseNames": [
+          "cursorPagesNeverDuplicateAndBadBoundsDoNotScanHistory",
+          "caseBoundsAmbiguityForeignMembershipAndConceptMismatchRejectAtomically",
+          "versionCasAndRetryKeepOldDefinitionAndRunsImmutable",
+          "corruptionOfBodyOrSavedSuiteIsRejectedBeforeReportingSuccess",
+          "operationsRequireCurrentAdministratorAndRejectARevokedCachedAdminSession",
+          "completedRunCannotBeCancelledAndItsDownloadedBytesRemainStable",
+          "archiveCancelsPendingButRetainsFrozenCompletedReports",
+          "operationsSeparateOverduePreviewBacklogAndMeasureActualRetainedChineseText",
+          "cancellationPreservesPartialEvidenceWithoutMetricsAndFencesLateWorker",
+          "actualBm25RanksProduceExactlyDefinedMatchAndNoResultMetrics",
+          "authenticationCsrfUnknownFieldsAndCrossOwnerNeverBypassPrivateScope",
+          "databasePreventsFalseCompletedRunsAndCrossOwnerWorkspaceReferences",
+          "reportAndCaseBytesAreVerifiedOnPrivateReads",
+          "concurrentSameKeyRunAdmissionCommitsOnlyOneActualJob",
+          "operationsCountActualEvaluationStatesAndStoredUtf8PayloadWithoutDisclosingPrivateLabels",
+          "queuedDeadlineAndChangedEvaluatorNeverBecomeCompleted",
+          "ownerPendingAndDailyQuotasCountActualAdmissionsAndAllowReplay",
+          "absentMetricGroupsStayNullRatherThanInventingZeroScores",
+          "closedAccountRevokesQueuedAndLeasedWorkWithoutTouchingAnotherOwner",
+          "archivedWorkspaceIsCancelledByWorkerInsteadOfBlockingOtherWork",
+          "reusedIdempotencyKeysCannotChangeSuiteOrRunInputs",
+          "expiredLeaseCannotWriteAndRecoveryRecordsFailureRatherThanAFalseScore",
+          "realHttpCompletesExportsAndValidatesEveryResponseWithoutEditorPrivilege",
+          "identicalFrozenInputsHaveStableSemanticHashAcrossActualRuns",
+          "suitePinsPublishedContentVersionsWithoutWritingLearningGrades",
+          "concurrentEditorsHaveOneWinnerAndNeverOverwriteHistoricalCases",
+          "corpusTitleMutationIsDetectedEvenWhenBodyHashStillMatches"
+        ]
+      },
+      {
+        "suite": "TextLearningIntegrationTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "engineProof": [
+          {
+            "suite": "TextLearningIntegrationTest",
+            "engine": "MySQL",
+            "version": "8.4.13",
+            "database": "typeforge_runtime"
+          }
+        ],
+        "caseNames": [
+          "idempotencyRejectsChangedTextAndPrivateAttemptCannotCrossAccounts",
+          "threeHintsMarkFirstAnswerAssistedAndSurviveCrossWorkspaceSameFamily",
+          "rubricRevisionNeverRegradesHistoricalAnswerOrMigratesPinnedWorkspace",
+          "independentApprovalAndCalibrationAreRequiredBeforePublication",
+          "realHttpNormalizedAnswerPinsGraderReceiptAndExactlyOneOutboxProjection",
+          "plausibleLongerMeaningIsNotInventedAsExactCorrectnessAndCreatesRealNotebook",
+          "changedReviewedRuleCannotGradeOrPublishUnderItsOldAttestation",
+          "textCapabilityAndPublicPolicyAreAvailableWithoutCompilerAndNeverExposeExamples",
+          "malformedAndMismatchedAnswersCreateNeitherAttemptsNorMasteryEvents",
+          "validLongPublishedPromptRemainsCompleteInTheCorrectionNotebook"
+        ]
+      },
+      {
+        "suite": "NotebookInteractionIntegrationTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "engineProof": [
+          {
+            "suite": "NotebookInteractionIntegrationTest",
+            "engine": "MySQL",
+            "version": "8.4.13",
+            "database": "typeforge_runtime"
+          }
+        ],
+        "caseNames": [
+          "reviewNavigationUsesAdmittedOwnerSourcesAndRejectsRevokedOrChangedVersions",
+          "typeFlowUsesRealLabResultsAndDurableCasWithoutMasteryInflation",
+          "sixteenConceptsUseExactAuthoredEvidenceWithoutOverflowOrUnrelatedChunks",
+          "expertHelpUsesThreeDurableHintsAndCannotClaimModelExecution",
+          "contextualFirstAnswerCannotFabricateIndependentEvidenceThroughAuthoredBlock",
+          "appendHasSourceCasIdempotencyAndRejectsForeignArtifactClosure",
+          "switchingComparisonRestoresEachQuestionHintReceiptWithoutErasingFamilyAssistance",
+          "repairDiffQueuesTwoIndependentSourceJobsAndNeverTurnsCompileSuccessIntoCorrectness",
+          "oldTypeFlowSourceRemainsReadableButDoesNotGainUndeclaredParameterSemantics",
+          "realHttpOptionsAppendAndStateEnforceAuthenticationCsrfAndResponseSchemas",
+          "repairPairRollsBackFirstAdmissionWhenOnlyOneQueueSlotRemains",
+          "optionsExposeOnlyPublishedFamilyVariantsAndActualReviewSources",
+          "concurrentStateChangesAdmitExactlyOneRealLabSession",
+          "counterfactualSelectionIsVersionedAndActuallyGradesSelectedReviewedQuestion",
+          "invalidActionFieldsAndDisallowedTypesDoNotWriteStateOrRealLabEvents"
+        ]
+      }
+    ],
+    "durationSeconds": 51.509
+  },
   "compilerPython": {
     "result": "PASS",
+    "scope": "Offline compiler broker/verifier behavior; no real container execution claim",
     "tests": 13,
     "failures": 0,
     "errors": 0,
     "skipped": 0,
-    "scope": "Offline compiler broker/verifier behavior; no real container execution claim"
+    "verificationInputs": {
+      "schemaVersion": 1,
+      "scope": "compiler",
+      "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+      "digest": "ab4c8599e361bff9d9401f4ba8a85b5e8ff083e35a1c76d2e87bbfb05d98918c",
+      "fileCount": 8,
+      "extraFiles": [
+        "scripts/record_verification.py"
+      ]
+    },
+    "inputsUnchanged": true
+  },
+  "verificationGuards": {
+    "result": "PASS",
+    "scope": "Offline verification regressions using temporary Git trees and stub subprocesses: stale reports, changed inputs/JAR, missing suites/cases and failed drivers; no actual Maven/browser/MySQL claim",
+    "tests": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "verificationInputs": {
+      "schemaVersion": 1,
+      "scope": "static",
+      "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+      "digest": "e3cf9318129b127add12e9553506f79317406dee49e3f8a956606dce83e1378b",
+      "fileCount": 374,
+      "extraFiles": [
+        "scripts/record_verification.py"
+      ]
+    },
+    "inputsUnchanged": true
   },
   "httpAndRestart": {
     "h2": {
@@ -1844,6 +4586,26 @@
         },
         {
           "phase": "before-restart",
+          "check": "notebook discovers a bounded type activity from its actual source block",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "adding an activity persists a new source revision and preserves the original block",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "notebook type selection persists a real finite laboratory result and increments state",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "notebook type exploration does not manufacture mastery evidence",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
           "check": "local retrieval returns real versioned sources without inventing an answer",
           "result": "PASS"
         },
@@ -1949,12 +4711,52 @@
         },
         {
           "phase": "before-restart",
+          "check": "learning evidence settles before retrieval evaluation",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "evaluation suite freezes the real workspace release and observed knowledge revision",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "durable retrieval evaluation completes with actual case results",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "complete evaluation binds metrics and its report to the fixed suite and corpus",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "evaluation JSON attachment is private, bounded and matches its server byte hash",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "downloaded evaluation contains the actual frozen run results and explicit private scope",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "retrieval evaluation does not manufacture learner mastery evidence",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "notebook state retains selected types and the exact persisted server result",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
           "check": "registration and login resolve the same persisted user",
           "result": "PASS"
         },
         {
           "phase": "before-restart",
-          "check": "another authenticated learner cannot access private workspace/evidence/artifact/run IDs",
+          "check": "another authenticated learner cannot access private workspace, notebook state, evaluation or report IDs",
           "result": "PASS"
         },
         {
@@ -2019,6 +4821,36 @@
         },
         {
           "phase": "after-restart",
+          "check": "current notebook activity source survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "current notebook metadata survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "notebook interaction state and receipt survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "notebook-generated finite type session survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "private retrieval evaluation suite survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "completed retrieval evaluation and metrics survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
           "check": "durable run and output references survives process restart unchanged",
           "result": "PASS"
         },
@@ -2055,6 +4887,21 @@
         {
           "phase": "after-restart",
           "check": "capability honesty survives restart",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "evaluation JSON attachment is private, bounded and matches its server byte hash",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "private evaluation attachment bytes and frozen JSON survive actual process restart",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "private notebook state and evaluation evidence remain inaccessible to another user after restart",
           "result": "PASS"
         },
         {
@@ -2098,13 +4945,24 @@
           "result": "PASS"
         }
       ],
-      "startedAt": "2026-11-15T17:48:46.937660+00:00",
-      "jarSha256": "c3b35a2f0ef19124a101f49e2bc793f9c0f96349af7b6e1417c701f6de06dd98",
+      "startedAt": "2026-11-16T02:40:32.404603+00:00",
+      "verificationInputs": {
+        "schemaVersion": 1,
+        "scope": "backend",
+        "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+        "digest": "8924ef8262bf6a545ccc74747a64d53b9f711f8667536e82f4636ecc0560c595",
+        "fileCount": 232,
+        "extraFiles": [
+          "scripts/smoke_runtime.py"
+        ]
+      },
+      "jarSha256": "89a43a6d84c758e1b11fca6eb629fc6d05e5df0b9bf17f9338bf56bbbf078882",
       "engine": "H2 persistent file (not MySQL)",
       "unexpectedLogErrors": [],
-      "finishedAt": "2026-11-15T17:49:11.033932+00:00",
+      "inputsUnchanged": true,
+      "finishedAt": "2026-11-16T02:40:56.915874+00:00",
       "scope": "Real HTTP authentication, learning/artifact/evidence linkage and process-restart persistence; no model/media/compiler adapters are simulated",
-      "httpRequests": 129,
+      "httpRequests": 170,
       "shutdown": "graceful process termination and restart against the same database"
     },
     "mysql": {
@@ -2223,6 +5081,26 @@
         },
         {
           "phase": "before-restart",
+          "check": "notebook discovers a bounded type activity from its actual source block",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "adding an activity persists a new source revision and preserves the original block",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "notebook type selection persists a real finite laboratory result and increments state",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "notebook type exploration does not manufacture mastery evidence",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
           "check": "local retrieval returns real versioned sources without inventing an answer",
           "result": "PASS"
         },
@@ -2328,12 +5206,52 @@
         },
         {
           "phase": "before-restart",
+          "check": "learning evidence settles before retrieval evaluation",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "evaluation suite freezes the real workspace release and observed knowledge revision",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "durable retrieval evaluation completes with actual case results",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "complete evaluation binds metrics and its report to the fixed suite and corpus",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "evaluation JSON attachment is private, bounded and matches its server byte hash",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "downloaded evaluation contains the actual frozen run results and explicit private scope",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "retrieval evaluation does not manufacture learner mastery evidence",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "notebook state retains selected types and the exact persisted server result",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
           "check": "registration and login resolve the same persisted user",
           "result": "PASS"
         },
         {
           "phase": "before-restart",
-          "check": "another authenticated learner cannot access private workspace/evidence/artifact/run IDs",
+          "check": "another authenticated learner cannot access private workspace, notebook state, evaluation or report IDs",
           "result": "PASS"
         },
         {
@@ -2374,6 +5292,16 @@
         {
           "phase": "before-restart",
           "check": "HTTP-created agent_run row is present in actual MySQL",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "HTTP-created evaluation_suite row is present in actual MySQL",
+          "result": "PASS"
+        },
+        {
+          "phase": "before-restart",
+          "check": "HTTP-created evaluation_run row is present in actual MySQL",
           "result": "PASS"
         },
         {
@@ -2419,6 +5347,36 @@
         {
           "phase": "after-restart",
           "check": "notebook DSL and provenance hash survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "current notebook activity source survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "current notebook metadata survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "notebook interaction state and receipt survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "notebook-generated finite type session survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "private retrieval evaluation suite survives process restart unchanged",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "completed retrieval evaluation and metrics survives process restart unchanged",
           "result": "PASS"
         },
         {
@@ -2488,6 +5446,31 @@
         },
         {
           "phase": "after-restart",
+          "check": "HTTP-created evaluation_suite row is present in actual MySQL",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "HTTP-created evaluation_run row is present in actual MySQL",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "evaluation JSON attachment is private, bounded and matches its server byte hash",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "private evaluation attachment bytes and frozen JSON survive actual process restart",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
+          "check": "private notebook state and evaluation evidence remain inaccessible to another user after restart",
+          "result": "PASS"
+        },
+        {
+          "phase": "after-restart",
           "check": "export bytes survive actual process restart",
           "result": "PASS"
         },
@@ -2527,13 +5510,24 @@
           "result": "PASS"
         }
       ],
-      "startedAt": "2026-11-15T17:48:48.335380+00:00",
-      "jarSha256": "c3b35a2f0ef19124a101f49e2bc793f9c0f96349af7b6e1417c701f6de06dd98",
+      "startedAt": "2026-11-16T02:39:41.719082+00:00",
+      "verificationInputs": {
+        "schemaVersion": 1,
+        "scope": "backend",
+        "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
+        "digest": "8924ef8262bf6a545ccc74747a64d53b9f711f8667536e82f4636ecc0560c595",
+        "fileCount": 232,
+        "extraFiles": [
+          "scripts/smoke_runtime.py"
+        ]
+      },
+      "jarSha256": "89a43a6d84c758e1b11fca6eb629fc6d05e5df0b9bf17f9338bf56bbbf078882",
       "engine": "MySQL 8.4.13",
       "unexpectedLogErrors": [],
-      "finishedAt": "2026-11-15T17:49:14.126090+00:00",
+      "inputsUnchanged": true,
+      "finishedAt": "2026-11-16T02:40:12.278636+00:00",
       "scope": "Real HTTP authentication, learning/artifact/evidence linkage and process-restart persistence; no model/media/compiler adapters are simulated",
-      "httpRequests": 131,
+      "httpRequests": 176,
       "shutdown": "graceful process termination and restart against the same database"
     }
   },

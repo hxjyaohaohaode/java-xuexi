@@ -1,0 +1,47 @@
+{
+  "result": "PASS",
+  "recordedAt": "2026-11-16T02:40:56.932346+00:00",
+  "scope": "Three independent H2 file databases; each run boots twice, verifies persisted evaluation/report/Notebook state and retained learning/export facts, and checks both graceful-shutdown logs. Repeated checks are stability evidence, not additional unique test cases.",
+  "reason": "Regression for the observed H2 90135 JVM-shutdown-hook race; DB_CLOSE_ON_EXIT=FALSE lets Spring own database shutdown. No log exceptions are exempted.",
+  "rounds": [
+    {
+      "round": 1,
+      "result": "PASS",
+      "inputsUnchanged": true,
+      "jarSha256": "89a43a6d84c758e1b11fca6eb629fc6d05e5df0b9bf17f9338bf56bbbf078882",
+      "inputDigest": "8924ef8262bf6a545ccc74747a64d53b9f711f8667536e82f4636ecc0560c595",
+      "startedAt": "2026-11-16T02:39:40.518475+00:00",
+      "finishedAt": "2026-11-16T02:40:07.164767+00:00",
+      "checks": 93,
+      "httpRequests": 171,
+      "unexpectedLogErrors": [],
+      "error": null
+    },
+    {
+      "round": 2,
+      "result": "PASS",
+      "inputsUnchanged": true,
+      "jarSha256": "89a43a6d84c758e1b11fca6eb629fc6d05e5df0b9bf17f9338bf56bbbf078882",
+      "inputDigest": "8924ef8262bf6a545ccc74747a64d53b9f711f8667536e82f4636ecc0560c595",
+      "startedAt": "2026-11-16T02:40:07.263634+00:00",
+      "finishedAt": "2026-11-16T02:40:32.313098+00:00",
+      "checks": 93,
+      "httpRequests": 169,
+      "unexpectedLogErrors": [],
+      "error": null
+    },
+    {
+      "round": 3,
+      "result": "PASS",
+      "inputsUnchanged": true,
+      "jarSha256": "89a43a6d84c758e1b11fca6eb629fc6d05e5df0b9bf17f9338bf56bbbf078882",
+      "inputDigest": "8924ef8262bf6a545ccc74747a64d53b9f711f8667536e82f4636ecc0560c595",
+      "startedAt": "2026-11-16T02:40:32.404603+00:00",
+      "finishedAt": "2026-11-16T02:40:56.915874+00:00",
+      "checks": 93,
+      "httpRequests": 170,
+      "unexpectedLogErrors": [],
+      "error": null
+    }
+  ]
+}

@@ -196,4 +196,4 @@ Content-Type: application/json
 MYSQL_TEST_CONNECTION=/path/to/private/connection.json python scripts/verify_private_modules_mysql.py --maven mvn
 ```
 
-本次第三轮数据库检查已在真实 MySQL 8.4.13 上执行：11 个迁移、79 张表、123 项模式检查通过；账户 14 例与素材 8 例全部通过，无失败、错误或跳过。脱敏结果由 `.work/mysql-verification.json` 和 `.work/mysql-account-assets-verification.json` 记录；最终交付使用最后一次全量运行审查汇总，不用本段替代后续代码变更的复测。
+v0.5 历史第三轮数据库检查在真实 MySQL 8.4.13 上执行：当时11个迁移、79张表、123项模式检查通过；账户 14 例与素材 8 例全部通过，无失败、错误或跳过。脱敏结果由 `.work/mysql-verification.json` 和 `.work/mysql-account-assets-verification.json` 记录；最终交付使用最后一次全量运行审查汇总，不用本段替代后续代码变更的复测。

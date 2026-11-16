@@ -9,5 +9,8 @@
   "V008__compiler_learning.sql": "d5177b9fba09fca995f4b6f3eee1bc704c934e18c508a089123c63bb503a62cc",
   "V009__artifact_files.sql": "0d3867dcf895c9b79f74833da2fc10f946211f8da11f6eaf6b76720b36584fa2",
   "V010__study_workflow.sql": "879e3913a2c32137e08a7ebb3dc52054f5e5f9446c771db49cffb48a4d45e87a",
-  "V011__private_assets.sql": "1bf9c34c1471ac54913308966c7caba13ae920493adc5b3d7e8738a03a6a7d28"
+  "V011__private_assets.sql": "1bf9c34c1471ac54913308966c7caba13ae920493adc5b3d7e8738a03a6a7d28",
+  "V012__evaluation_workbench.sql": "1fa820ff538f991c3120f31fd15028a70d921187226e4dae30ef8aa6034dcab7",
+  "V013__text_and_notebook_interactions.sql": "00bf9f9299d92f2c59f2ace372edebfcfe8b84c6f992e8fc65e4e33d3bf0f32f",
+  "V014__batch_ingestion.sql": "6205d51a25f15fa41d60fb9e77069f0f4f9f3d8215940c438653aa31e32f8efe"
 }

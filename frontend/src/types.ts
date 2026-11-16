@@ -75,6 +75,16 @@ export interface Exercise {
   difficulty: number;
   conceptIds: string[];
   options: { id: string; text: string }[];
+  answerKind?: 'CHOICE' | 'CODE' | 'TEXT';
+  textPolicy?: TextPolicy | null;
+}
+export interface TextPolicy {
+  version: 'text-exact-nfkc-v1';
+  normalization: 'NFKC_WHITESPACE';
+  caseSensitive: boolean;
+  maxCharacters: number;
+  maxUtf8Bytes: number;
+  scope: string;
 }
 export interface Page<T> {
   items: T[];

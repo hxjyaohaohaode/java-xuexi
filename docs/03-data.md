@@ -1,8 +1,8 @@
 # 数据模型、数据库与一致性边界
 
-## 1. 当前结构：v0.5，11 次迁移，79 张业务表
+## 1. 当前结构：v0.6，14 次迁移，88 张业务表
 
-当前后端通过 Spring JDBC 和 Flyway 读写真实数据库；默认使用持久 H2 文件，MySQL Profile 执行原始 MySQL SQL。**V001–V011 累积 79 张业务表，不含 Flyway 元数据表。** 表结构与字段以[唯一字段字典](../database/data-dictionary.md)为准，业务完成度以[模块指南](02-modules.md)、[接口状态](../contracts/README.md)和实际服务为准。账号生命周期、私有素材、编译队列、受限教学工作流及原生文件导出已有业务实现；这不等于任意执行、全部媒体生成或生产容量已验收。
+当前后端通过 Spring JDBC 和 Flyway 读写真实数据库；默认使用持久 H2 文件，MySQL Profile 执行原始 MySQL SQL。**V001–V014 累积 88 张业务表，不含 Flyway 元数据表。** 表结构与字段以[唯一字段字典](../database/data-dictionary.md)为准，业务完成度以[模块指南](02-modules.md)、[接口状态](../contracts/README.md)和实际服务为准。账号生命周期、私有素材、编译队列、受限教学工作流及原生文件导出已有业务实现；这不等于任意执行、全部媒体生成或生产容量已验收。
 
 | 迁移 | 新表数 | 当前作用 |
 |---|---:|---|
@@ -17,6 +17,9 @@
 | [V009](../database/V009__artifact_files.sql) | 1 | 真实二进制导出字节、hash及大小；扩展导出租约 |
 | [V010](../database/V010__study_workflow.sql) | 2 | 受限教学计划及所选作答、步骤和导师/工具执行映射 |
 | [V011](../database/V011__private_assets.sql) | 1 | 私有素材字节及撤回状态；作品来源CHECK增加ASSET |
+| [V012](../database/V012__evaluation_workbench.sql) | 5 | 私有评测套件/修订、持久运行、逐项结果、全局准入锁；限定归属、租约、结果体积 |
+| [V013](../database/V013__text_and_notebook_interactions.sql) | 2 | 独立 TEXT 审核收据、按作品/块版本的持久状态；追加受控动作 |
+| [V014](../database/V014__batch_ingestion.sql) | 2 | 私有批量预览与逐文件结果，绑定来源/采集收据，保留上传 hash 并清理临时正文 |
 
 已执行迁移不得修改或删除。[迁移哈希清单](../database/migrations.lock.json)保护这条升级链；后续结构变化使用新的前向迁移。H2 兼容迁移与 MySQL SQL 是两套实际运行入口，不能用 H2 通过代替 MySQL 行为验证。
 
@@ -32,6 +35,7 @@
 | `content_release` / `release_*` / `release_manifest` / `active_release` / `index_snapshot` | M10 发布 | 成员与概念图冻结；清单复验；活动指针 CAS；旧工作空间不自动迁移 |
 | `exercise_attempt` / `workspace_attempt` | M05 判分 | 本人、同空间、固定 release 与题版本；终态结果不覆盖 |
 | `compile_job` / `workspace_compile` / `compiler_admission` | M04 编译队列 | 固定源码hash及检查清单；队列/租约/取消有界；API JVM不编译用户源码；基础设施失败不生成错误成绩 |
+| `exercise_text_review_receipt` | M10 审核、M05 校验 | 完整私有规则 hash、作者之外的真实审核和固定算法版本，不能只凭 REVIEWED 状态判分 |
 | `exercise_hint_receipt` | M05 提示 | 真实提示回执及题族受助事实；公开接口不泄露隐藏编译检查 |
 | `learning_event` / `learning_family_evidence` / `learner_concept` / `review_item` | M06 学习证据与投影 | 事实和投影分开；同人同概念同题目家族最多一个独立样本 |
 | `workspace_reading` | M02/M06 阅读历史 | 仅索引真实事件、固定空间/知识点/时间；阅读不生成掌握分 |
@@ -44,7 +48,9 @@
 | `conversation` / `workspace_conversation` / `tutor_request*` / `tutor_message` / `message_citation` / `tutor_daily_budget` | M09 导师 | 同人同空间同发布；队列、取消、来源复验；已派发但结果未知的请求保留额度 |
 | `learning_artifact` / `artifact_revision` / `artifact_dependency` / `artifact_input_reference` | M14 作品 | 不可变源版本、显式直接引用与传递闭包；源变更传播过期 |
 | `tutor_artifact_link` | M09 到 M14 的应用编排 | 回答、快照、响应哈希与首次文档版本对应；后续学生编辑不抹除来源 |
-| `notebook_entry` / `notebook_action_receipt` | M16 复练 | 本人真实错题；当前作品/块版本；动作幂等并复用实际判分服务 |
+| `evaluation_suite` / `evaluation_suite_revision` / `evaluation_run` / `evaluation_case_result` / `evaluation_admission_lock` | M11 检索评测 | owner/空间/发布复合外键；定义不可变；租约、分母/指标、真实报告及部分结果容量 |
+| `import_batch` / `import_batch_item` | M07 批量加工 | 预览私人归属、source/capture复合外键、原文hash、提交CAS；终态清除暂存文本 |
+| `notebook_entry` / `notebook_action_receipt` / `notebook_block_state` | M16 复练 | 本人真实错题；当前作品/块版本；动作幂等并复用实际判分服务 |
 | `asset_object` / `asset_payload` / `artifact_asset` | M14 私有素材 | 真实格式、字节、hash与归属；账号总配额；撤回清除字节并同步失效依赖 |
 | `export_job` / `artifact_export_content` / `artifact_export_binary` | M14 本地导出 | 固定源版本、渲染器版本、实际文件字节/hash；租约、单项与总缓存有界，下载再验来源 |
 | `retrieval_log` / `audit_event` / `idempotency_record` | 对应应用服务 | 日志最小化；幂等按用户和操作隔离；同 key 不同请求拒绝 |
@@ -97,6 +103,7 @@ API 中的资源引用为 `kind / id / revision / contentHash`。owner、workspa
 |---|---|
 | 私人空间、学习动作、作品、导出 | 当前用户 → 工作空间 → 具体作品/任务等对象；先锁归属，再复验与写入 |
 | M13 运行控制 | 当前用户 → 工作空间 → run；校验计划 revision、epoch、lease 后改变状态或账本 |
+| M11 评测 | 当前用户 → 工作空间 → suite → run；准入额外取全局排队锁；实际检索不占SQL事务 |
 | M09 导师 | 当前用户 → 工作空间 → request；准入/派发标记/完成各自短事务，外部 HTTP 在事务之外 |
 | M07/M10 编辑 | `content_workbench_lock(1)` → 当前编辑用户 → 目标版本/release → `active_release` |
 | 启动授权配置 | 非空配置先取同一编辑锁，再取待提升的用户行；全空配置无动作 |
@@ -130,7 +137,7 @@ M14 当前真实文件范围包括 Markdown、HTML、SVG、DOCX、PPTX、PDF，�
 
 ## 8. 迁移、保留、删除与测试数据
 
-独立 SQL 验证只使用专用测试数据库；MySQL 服务回归需要显式命名的 loopback 测试连接，不能连接用户的现有业务库。`verify_mysql.py` 检查原始迁移与约束；`verify_transaction_isolation.py` 检查实际隔离语义；`verify_content_mysql.py` 复跑内容事务；`verify_private_modules_mysql.py` 复跑账户/素材，均要求实际 JDBC 引擎证据。HTTP smoke 检查文件库和 MySQL 的真实重启持久化。本轮真实 MySQL 8.4.13 模式门禁为11个迁移、79张表、123项检查，账户/素材为22项全通过。最终运行结果和环境统一记录在[验收记录](../evidence/runtime-review.md)，测试源码或报告文件名不等于执行通过。
+独立 SQL 验证只使用专用测试数据库；MySQL 服务回归需要显式命名的 loopback 测试连接，不能连接用户的现有业务库。`verify_mysql.py` 检查原始迁移与约束；`verify_transaction_isolation.py` 检查实际隔离语义；`verify_content_mysql.py` 复跑内容事务；`verify_private_modules_mysql.py` 复跑账户/素材；`verify_v06_modules_mysql.py` 复跑新增评测、导入、版本比较、TEXT 与 Notebook，均要求实际 JDBC 引擎证据。HTTP smoke 检查文件库和 MySQL 的真实重启持久化。模式门禁验证 V001–V014 的完整升级链，精确的表数、检查数和各服务结果由真实运行报告生成。最终运行结果和环境统一记录在[验收记录](../evidence/runtime-review.md)，测试源码或报告文件名不等于执行通过。
 
 `seed-demo.sql` 用于独立结构检查，只含禁用占位作者、来源索引、概念与草稿，active_release 为空。显式 `demo` Profile 则保存 16 个概念、16 张原创卡、12 道客观题与演示发布，作者不可登录、无默认口令、无学生成绩、无伪造 `content_review`。其 `REVIEWED` 标签不满足正式审核证据；正式构建会拒绝直接把 demo 装成真人审核发布。demo 初始化只在活动指针为空时设置它，不覆盖已有正式课程。
 

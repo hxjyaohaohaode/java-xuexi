@@ -7,6 +7,8 @@ import { starterSource } from '../components/Compiler';
 import { readSaved, writeSaved } from '../state';
 import { Badge, Empty, ErrorNotice, Field, Loading, SectionTitle, Status } from '../components/ui';
 import type { Artifact, Attempt, Concept, Exercise, Page } from '../types';
+import { exerciseAnswerKind, validTextAnswer } from '../answers';
+import { TextAnswer } from '../components/TextAnswer';
 
 export function Practice() {
   const { workspace, selection, tick, events, session, navigate } = useWorkspace();
@@ -169,6 +171,11 @@ function Question({
     `tf.answer-code.${session.userId}.${workspace.id}.${exercise.id}.${exercise.revision}`,
     starterSource,
   );
+  const [textAnswer, setTextAnswer] = useSessionDraft(
+    `tf.answer-text.${session.userId}.${workspace.id}.${exercise.id}.${exercise.revision}`,
+    '',
+  );
+  const answerKind = exerciseAnswerKind(exercise);
   const [hintLevel, setHintLevel] = useSessionDraft(
     `tf.hint-level.${session.userId}.${workspace.id}.${exercise.id}.${exercise.revision}`,
     0,
@@ -208,9 +215,12 @@ function Question({
             releaseId: workspace.releaseId,
             exerciseId: exercise.id,
             exerciseRevision: exercise.revision,
-            answer: ['SIGNATURE', 'REFACTOR', 'FILL'].includes(exercise.kind)
-              ? { kind: 'CODE', source }
-              : { kind: 'CHOICE', optionIds: options },
+            answer:
+              answerKind === 'CODE'
+                ? { kind: 'CODE', source }
+                : answerKind === 'TEXT'
+                  ? { kind: 'TEXT', value: textAnswer }
+                  : { kind: 'CHOICE', optionIds: options },
           },
           { idempotent: true },
         ),
@@ -240,11 +250,13 @@ function Question({
     <article className="question-card">
       <div className="row spread">
         <Badge>
-          {['SIGNATURE', 'REFACTOR', 'FILL'].includes(exercise.kind)
-            ? '代码题 · 按题目规则验证'
-            : exercise.kind === 'SINGLE'
-              ? '单选题 · 请选择一项'
-              : '客观选择题 · 按题意选择'}
+          {answerKind === 'TEXT'
+            ? '文本题 · 按已审核规则核验'
+            : answerKind === 'CODE'
+              ? '代码题 · 按题目规则验证'
+              : exercise.kind === 'SINGLE'
+                ? '单选题 · 请选择一项'
+                : '客观选择题 · 按题意选择'}
         </Badge>
         <small className="muted">题目版本 {exercise.revision}</small>
       </div>
@@ -294,9 +306,37 @@ function Question({
           <ErrorNotice error={hints.error} />
         </section>
       )}
-      {['SINGLE', 'MULTIPLE', 'COMPILE_PREDICTION', 'READING', 'DIAGNOSIS'].includes(
-        exercise.kind,
-      ) ? (
+      {answerKind === 'TEXT' ? (
+        can('TEXT_GRADING') && exercise.textPolicy ? (
+          <form onSubmit={submit}>
+            <TextAnswer
+              policy={exercise.textPolicy}
+              value={textAnswer}
+              onChange={(value) => {
+                setTextAnswer(value);
+                setAttempt(null);
+              }}
+              disabled={mutation.busy || pending}
+            />
+            <ErrorNotice error={mutation.error} />
+            <div className="row spread wrap">
+              <p className="muted small">原文只在服务端提交后进入作答记录。</p>
+              <button
+                className="primary"
+                disabled={
+                  mutation.busy || pending || !validTextAnswer(textAnswer, exercise.textPolicy)
+                }
+              >
+                {mutation.busy ? '正在提交…' : '提交文本作答'} <ArrowRight size={16} />
+              </button>
+            </div>
+          </form>
+        ) : (
+          <Empty title="文本判分规则尚不可用">
+            需要启用文本判分能力并发布完整核验规则。你的输入会保留在当前草稿中。
+          </Empty>
+        )
+      ) : answerKind === 'CHOICE' ? (
         <form onSubmit={submit}>
           <fieldset disabled={mutation.busy || pending} className="answer-options">
             <legend className="sr-only">选择你的答案</legend>
@@ -335,7 +375,7 @@ function Question({
             </button>
           </div>
         </form>
-      ) : ['SIGNATURE', 'REFACTOR', 'FILL'].includes(exercise.kind) ? (
+      ) : answerKind === 'CODE' ? (
         can('CODE_GRADING') ? (
           <form onSubmit={submit}>
             <Field

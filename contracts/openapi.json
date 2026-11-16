@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "TypeForge connected learning studio API",
-    "version": "0.5.0",
-    "description": "真实会话、课程与编辑审核发布、学习追踪、代码编译队列、学习任务图、可编辑作品、私有素材和DOCX/PPTX/PDF导出。执行能力由/api/v1/capabilities与显式配置共同决定：MODEL规划需要实际模型服务，编译需要独立worker；任意代码运行及生成图像/音频/视频未启用。所有私人资源以会话归属、固定版本、输入来源、预算与租约校验；JSON请求最多262144字节/64层，素材最大8MiB。"
+    "version": "0.6.0",
+    "description": "真实会话、课程与编辑审核发布、学习追踪、代码编译队列、学习任务图、可编辑作品、私有素材和DOCX/PPTX/PDF导出。执行能力由/api/v1/capabilities与显式配置共同决定：MODEL规划需要实际模型服务，编译需要独立worker；任意代码运行及生成图像/音频/视频未启用。所有私人资源以会话归属、固定版本、输入来源、预算与租约校验；JSON请求最多262144字节/64层，素材最大8MiB。 v0.6新增私有检索评测、有限TXT/MD/DOCX批量预览与原子采集、修订差异、独立审核的精确短文本判分，以及六类持久错题交互。评测不计入学习成绩；上传解析1MiB/文件、4MiB/批，2个并发准入，24小时预览。"
   },
   "servers": [
     {
@@ -8842,7 +8842,7 @@
           "M16"
         ],
         "x-status": "implemented",
-        "description": "固定当前artifactRevision及blockRevision，核验allowedActions和来源。predict/openEvidence/submitAnswer可用；submitAnswer调用M05服务端判分；其他动作503。",
+        "description": "六类固定来源块的真实动作：有限类型推演、同题族选择/判分、分级提示、两份源码独立编译、来源作品导航。所有动作有来源版本/状态并发控制、幂等回执与审计。编译能力未启用时真实503。",
         "parameters": [
           {
             "name": "id",
@@ -13076,6 +13076,2921 @@
         },
         "parameters": []
       }
+    },
+    "/workspaces/{workspaceId}/evaluation-suites": {
+      "get": {
+        "operationId": "listEvaluationSuites",
+        "summary": "listEvaluationSuites",
+        "tags": [
+          "M11"
+        ],
+        "x-status": "implemented",
+        "description": "仅真实会话所有者可访问；固定工作空间发布与评测修订；用户标注不代表独立人工审核或教学效果。",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "真实持久结果；202仅表示已排队，非完成",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationSuitePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createEvaluationSuite",
+        "summary": "createEvaluationSuite",
+        "tags": [
+          "M11"
+        ],
+        "x-status": "implemented",
+        "description": "仅真实会话所有者可访问；固定工作空间发布与评测修订；用户标注不代表独立人工审核或教学效果。",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.:-]{16,64}$"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "真实持久结果；202仅表示已排队，非完成",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationSuite"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluationSuiteInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evaluation-suites/{id}": {
+      "get": {
+        "operationId": "getEvaluationSuite",
+        "summary": "getEvaluationSuite",
+        "tags": [
+          "M11"
+        ],
+        "x-status": "implemented",
+        "description": "仅真实会话所有者可访问；固定工作空间发布与评测修订；用户标注不代表独立人工审核或教学效果。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "真实持久结果；202仅表示已排队，非完成",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationSuite"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evaluation-suites/{id}/revisions/{revision}": {
+      "get": {
+        "operationId": "getEvaluationSuiteRevision",
+        "summary": "getEvaluationSuiteRevision",
+        "tags": [
+          "M11"
+        ],
+        "x-status": "implemented",
+        "description": "仅真实会话所有者可访问；固定工作空间发布与评测修订；用户标注不代表独立人工审核或教学效果。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "真实持久结果；202仅表示已排队，非完成",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationSuite"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evaluation-suites/{id}/revisions": {
+      "post": {
+        "operationId": "createEvaluationSuiteRevision",
+        "summary": "createEvaluationSuiteRevision",
+        "tags": [
+          "M11"
+        ],
+        "x-status": "implemented",
+        "description": "仅真实会话所有者可访问；固定工作空间发布与评测修订；用户标注不代表独立人工审核或教学效果。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.:-]{16,64}$"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "真实持久结果；202仅表示已排队，非完成",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationSuite"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluationRevisionInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evaluation-suites/{id}/archive": {
+      "post": {
+        "operationId": "archiveEvaluationSuite",
+        "summary": "archiveEvaluationSuite",
+        "tags": [
+          "M11"
+        ],
+        "x-status": "implemented",
+        "description": "仅真实会话所有者可访问；固定工作空间发布与评测修订；用户标注不代表独立人工审核或教学效果。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "真实持久结果；202仅表示已排队，非完成",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationSuite"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluationArchiveInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evaluation-suites/{id}/runs": {
+      "get": {
+        "operationId": "listEvaluationRuns",
+        "summary": "listEvaluationRuns",
+        "tags": [
+          "M11"
+        ],
+        "x-status": "implemented",
+        "description": "仅真实会话所有者可访问；固定工作空间发布与评测修订；用户标注不代表独立人工审核或教学效果。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "真实持久结果；202仅表示已排队，非完成",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationRunPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createEvaluationRun",
+        "summary": "createEvaluationRun",
+        "tags": [
+          "M11"
+        ],
+        "x-status": "implemented",
+        "description": "仅真实会话所有者可访问；固定工作空间发布与评测修订；用户标注不代表独立人工审核或教学效果。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.:-]{16,64}$"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "真实持久结果；202仅表示已排队，非完成",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluationRunInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evaluation-runs/{id}": {
+      "get": {
+        "operationId": "getEvaluationRun",
+        "summary": "getEvaluationRun",
+        "tags": [
+          "M11"
+        ],
+        "x-status": "implemented",
+        "description": "仅真实会话所有者可访问；固定工作空间发布与评测修订；用户标注不代表独立人工审核或教学效果。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "真实持久结果；202仅表示已排队，非完成",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evaluation-runs/{id}/cancel": {
+      "post": {
+        "operationId": "cancelEvaluationRun",
+        "summary": "cancelEvaluationRun",
+        "tags": [
+          "M11"
+        ],
+        "x-status": "implemented",
+        "description": "取消QUEUED/RUNNING；重复取消返回既有CANCELLED，已COMPLETED/FAILED拒绝409；部分结果不生成总分。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "真实持久结果；202仅表示已排队，非完成",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evaluation-runs/{id}/report": {
+      "get": {
+        "operationId": "downloadEvaluationReport",
+        "summary": "downloadEvaluationReport",
+        "tags": [
+          "M11"
+        ],
+        "x-status": "implemented",
+        "description": "仅完整运行提供冻结JSON附件，重查归属和实际字节SHA256；包含用户标注/课程出处/版本哈希/实际排名/公式与证明边界。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "真实持久结果；202仅表示已排队，非完成",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationReport"
+                }
+              }
+            },
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              },
+              "X-Content-SHA256": {
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              },
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留草稿并显示真实原因；不生成伪评测指标。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/import-batches": {
+      "get": {
+        "operationId": "listImportBatches",
+        "summary": "listImportBatches",
+        "tags": [
+          "M07"
+        ],
+        "x-status": "implemented",
+        "x-required-roles": [
+          "EDITOR",
+          "ADMIN"
+        ],
+        "description": "Checks the current active editorial role. Private batch resources additionally enforce owner scope.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Actual persisted result after authorization, version and integrity checks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ImportBatchSummary"
+                  },
+                  "minItems": 0,
+                  "maxItems": 100
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "previewImportBatch",
+        "summary": "previewImportBatch",
+        "tags": [
+          "M07"
+        ],
+        "x-status": "implemented",
+        "x-required-roles": [
+          "EDITOR",
+          "ADMIN"
+        ],
+        "description": "Bounded UTF-8 TXT/MD and DOCX main-body text parsing: 1–8 files, 1 MiB each, 4 MiB total, 2 concurrent parsers, 3 active previews per owner, 100 batches per rolling 24 h, 24 h expiry. Does not fetch URLs, follow external document references, OCR PDFs, execute macros, or publish. Files fail independently; explicit commit atomically captures selected READY items.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.:-]{16,64}$"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Actual persisted result after authorization, version and integrity checks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "sourceId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "processingNote": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary",
+                      "maxLength": 1048576
+                    },
+                    "minItems": 1,
+                    "maxItems": 8
+                  }
+                },
+                "required": [
+                  "sourceId",
+                  "processingNote",
+                  "files"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/import-batches/{id}": {
+      "get": {
+        "operationId": "getImportBatch",
+        "summary": "getImportBatch",
+        "tags": [
+          "M07"
+        ],
+        "x-status": "implemented",
+        "x-required-roles": [
+          "EDITOR",
+          "ADMIN"
+        ],
+        "description": "Checks the current active editorial role. Private batch resources additionally enforce owner scope.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Actual persisted result after authorization, version and integrity checks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/import-batches/{id}/commit": {
+      "post": {
+        "operationId": "commitImportBatch",
+        "summary": "commitImportBatch",
+        "tags": [
+          "M07"
+        ],
+        "x-status": "implemented",
+        "x-required-roles": [
+          "EDITOR",
+          "ADMIN"
+        ],
+        "description": "Atomically creates verified immutable captures for selected READY items. Fails completely on any invalid selection or integrity error. CAS and idempotency protect concurrent confirmation; this does not review or publish content.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.:-]{16,64}$"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Actual persisted result after authorization, version and integrity checks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportCommitInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/import-batches/{id}/cancel": {
+      "post": {
+        "operationId": "cancelImportBatch",
+        "summary": "cancelImportBatch",
+        "tags": [
+          "M07"
+        ],
+        "x-status": "implemented",
+        "x-required-roles": [
+          "EDITOR",
+          "ADMIN"
+        ],
+        "description": "CAS cancellation removes transient extracted text and prevents later commit. Replays the same command idempotently.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.:-]{16,64}$"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Actual persisted result after authorization, version and integrity checks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportCancelInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/content-diffs": {
+      "get": {
+        "operationId": "compareContentRevisions",
+        "summary": "compareContentRevisions",
+        "tags": [
+          "M10"
+        ],
+        "x-status": "implemented",
+        "x-required-roles": [
+          "EDITOR",
+          "ADMIN"
+        ],
+        "description": "Compares two immutable revisions of one content identity after current editorial authorization and source/hash verification. JSON pointer field paths, deterministic order and whole-array changes; bounded depth24/change256/response1MiB. Private answer/rubric values are editorial-only. Revision and authorship metadata do not appear as content edits.",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "CHUNK",
+                "EXERCISE"
+              ]
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "fromRevision",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          {
+            "name": "toRevision",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Actual persisted result after authorization, version and integrity checks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentRevisionComparison"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Controlled validation, authorization, version or availability error; no SQL, credentials or private answer data.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notebooks/{id}/state": {
+      "get": {
+        "operationId": "getNotebookState",
+        "summary": "getNotebookState",
+        "tags": [
+          "M16"
+        ],
+        "x-status": "implemented",
+        "description": "恢复当前作品修订下每个块的选择、提示级别、服务端结果与状态版本。旧作品修订409；新修订的交互从0开始，历史回执保留。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "artifactRevision",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "实际成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotebookState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notebooks/{id}/block-options": {
+      "get": {
+        "operationId": "getNotebookBlockOptions",
+        "summary": "getNotebookBlockOptions",
+        "tags": [
+          "M16"
+        ],
+        "x-status": "implemented",
+        "description": "列出真实可添加活动、当前发布同题族候选和本人同工作空间可读作品；不返回私有答案。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "artifactRevision",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          {
+            "name": "originBlockId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "实际成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotebookBlockOptions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notebooks/{id}/blocks": {
+      "post": {
+        "operationId": "appendNotebookBlock",
+        "summary": "appendNotebookBlock",
+        "tags": [
+          "M16"
+        ],
+        "x-status": "implemented",
+        "description": "基于当前来源块追加活动，完整校验私有来源闭包后形成新作品修订；同幂等键返回同一修订。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 64
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "真实受控失败，不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "实际成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactRevision"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotebookBlockInput"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -13617,6 +16532,24 @@
               ]
             },
             "maxItems": 12
+          },
+          "answerKind": {
+            "type": "string",
+            "enum": [
+              "CHOICE",
+              "CODE",
+              "TEXT"
+            ]
+          },
+          "textPolicy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TextAnswerPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -13627,7 +16560,9 @@
           "prompt",
           "difficulty",
           "conceptIds",
-          "options"
+          "options",
+          "answerKind",
+          "textPolicy"
         ]
       },
       "ExerciseList": {
@@ -15030,7 +17965,7 @@
               "value": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 16000
+                "maxLength": 4000
               }
             },
             "required": [
@@ -16631,7 +19566,7 @@
               "prompt": {
                 "type": "string",
                 "minLength": 0,
-                "maxLength": 8000
+                "maxLength": 16000
               },
               "conceptIds": {
                 "type": "array",
@@ -16715,7 +19650,7 @@
               "prompt": {
                 "type": "string",
                 "minLength": 0,
-                "maxLength": 8000
+                "maxLength": 16000
               },
               "conceptIds": {
                 "type": "array",
@@ -16799,7 +19734,7 @@
               "prompt": {
                 "type": "string",
                 "minLength": 0,
-                "maxLength": 8000
+                "maxLength": 16000
               },
               "conceptIds": {
                 "type": "array",
@@ -16883,7 +19818,7 @@
               "prompt": {
                 "type": "string",
                 "minLength": 0,
-                "maxLength": 8000
+                "maxLength": 16000
               },
               "conceptIds": {
                 "type": "array",
@@ -16967,7 +19902,7 @@
               "prompt": {
                 "type": "string",
                 "minLength": 0,
-                "maxLength": 8000
+                "maxLength": 16000
               },
               "conceptIds": {
                 "type": "array",
@@ -17051,7 +19986,7 @@
               "prompt": {
                 "type": "string",
                 "minLength": 0,
-                "maxLength": 8000
+                "maxLength": 16000
               },
               "conceptIds": {
                 "type": "array",
@@ -17677,6 +20612,23 @@
             "minimum": 1,
             "maximum": 3,
             "default": 1
+          },
+          "expectedStateRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "typeInput": {
+            "$ref": "#/components/schemas/NotebookTypeInput"
+          },
+          "parameterInput": {
+            "$ref": "#/components/schemas/NotebookParameterInput"
+          },
+          "exerciseRef": {
+            "$ref": "#/components/schemas/ContentRef"
+          },
+          "artifactRef": {
+            "$ref": "#/components/schemas/ContentRef"
           }
         },
         "required": [
@@ -17686,7 +20638,8 @@
           "expectedBlockRevision",
           "answer",
           "selection"
-        ]
+        ],
+        "description": "服务端校验 block.allowedActions。selectType/setParameter 必须提供 expectedStateRevision；COUNTERFACTUAL 的 submitAnswer/requestHint 也必须提供以固定已选择题目。其余动作可提供状态 CAS。Idempotency-Key 重放返回原结果，不重复写入。类型推演和导航不计独立掌握，所有 notebook 作答按辅助复练记录。"
       },
       "NotebookActionResult": {
         "type": "object",
@@ -17745,6 +20698,48 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 64
+          },
+          "stateRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "labSession": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LabSession"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "selectedExercise": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Exercise"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "navigation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NotebookNavigation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baselineCompileJobId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
           }
         },
         "required": [
@@ -17756,7 +20751,12 @@
           "evidenceRefs",
           "eventId",
           "artifactRevision",
-          "blockId"
+          "blockId",
+          "stateRevision",
+          "labSession",
+          "selectedExercise",
+          "navigation",
+          "baselineCompileJobId"
         ]
       },
       "ErrorContextConfig": {
@@ -17785,6 +20785,29 @@
             },
             "minItems": 0,
             "maxItems": 100
+          },
+          "answerKind": {
+            "type": "string",
+            "enum": [
+              "CHOICE",
+              "CODE",
+              "TEXT"
+            ]
+          },
+          "textPolicy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TextAnswerPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "originalTextAnswer": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 4000
           }
         },
         "required": [
@@ -18545,7 +21568,7 @@
         "additionalProperties": false,
         "properties": {
           "runtimeVersion": {
-            "const": "0.5"
+            "const": "0.6"
           },
           "businessReady": {
             "const": false
@@ -19401,6 +22424,16 @@
               "minLength": 1,
               "maxLength": 4000
             }
+          },
+          "textRubric": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EditorialTextRubric"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -19409,7 +22442,7 @@
           "explanation",
           "misconceptions"
         ],
-        "description": "编辑专用；SINGLE/MULTIPLE等客观题需2..8选项。SIGNATURE/REFACTOR/FILL需空选项和2..8个正反向编译检查，具体语义由服务端校验。不暴露给学习者。"
+        "description": "编辑专用；SINGLE/MULTIPLE等客观题需2..8选项。SIGNATURE/REFACTOR/FILL需空选项和2..8个正反向编译检查，具体语义由服务端校验。不暴露给学习者。 READING/DIAGNOSIS可改用私有textRubric，此时options/optionIds/compileChecks必须为空；规则随题目revision审核与发布。"
       },
       "EditorialExercise": {
         "type": "object",
@@ -20488,6 +23521,36 @@
           "pendingCompilation": {
             "type": "integer",
             "minimum": 0
+          },
+          "pendingEvaluations": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Queued or running durable retrieval evaluations across all accounts."
+          },
+          "failedEvaluations": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Retained evaluations in FAILED state; cancelled runs are excluded."
+          },
+          "activeImportPreviews": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "PREVIEW batches whose expiresAt is later than generatedAt."
+          },
+          "expiredImportPreviews": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Overdue batches still in PREVIEW awaiting bounded cleanup; EXPIRED terminal batches are excluded."
+          },
+          "storedEvaluationBytes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sum of SQL OCTET_LENGTH for all retained evaluation snapshot, corpus manifest, case-result and report JSON payloads, including failed or cancelled partial results. Serialized database representation, not physical page allocation or the admission quota counter."
+          },
+          "importPreviewBytes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sum of SQL OCTET_LENGTH for retained original and cleaned import-item preview text in every lifecycle state, so overdue or unexpectedly uncleared residue stays observable. Committed immutable content_ingestion receipts are excluded."
           }
         },
         "required": [
@@ -20495,7 +23558,13 @@
           "deadLetters",
           "pendingTutor",
           "pendingExports",
-          "pendingCompilation"
+          "pendingCompilation",
+          "pendingEvaluations",
+          "failedEvaluations",
+          "activeImportPreviews",
+          "expiredImportPreviews",
+          "storedEvaluationBytes",
+          "importPreviewBytes"
         ]
       },
       "OperationsStatus": {
@@ -20875,6 +23944,2270 @@
           "attemptIds"
         ],
         "description": "Explicit graded attempts replace the default latest-eight selection. Every reference is derived server-side from an attempt owned by the current user, in this workspace and its fixed release. Caller order is preserved. Omit the request body to retain the latest-eight behavior."
+      },
+      "EvaluationCaseInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "conceptId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expectation": {
+            "type": "string",
+            "enum": [
+              "MATCH",
+              "NO_RESULTS"
+            ]
+          },
+          "expectedChunkIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 0,
+            "maxItems": 8,
+            "uniqueItems": true
+          },
+          "note": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "key",
+          "query",
+          "conceptId",
+          "expectation",
+          "expectedChunkIds",
+          "note"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "expectation": {
+                  "const": "MATCH"
+                }
+              },
+              "required": [
+                "expectation"
+              ]
+            },
+            "then": {
+              "properties": {
+                "expectedChunkIds": {
+                  "minItems": 1
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "expectedChunkIds": {
+                  "maxItems": 0
+                }
+              }
+            }
+          }
+        ]
+      },
+      "EvaluationSuiteInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 2000
+          },
+          "cases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationCaseInput"
+            },
+            "minItems": 1,
+            "maxItems": 40
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "cases"
+        ]
+      },
+      "EvaluationRevisionInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 99
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 2000
+          },
+          "cases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationCaseInput"
+            },
+            "minItems": 1,
+            "maxItems": 40
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "title",
+          "description",
+          "cases"
+        ]
+      },
+      "EvaluationArchiveInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "expectedRevision"
+        ]
+      },
+      "EvaluationRunInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "suiteRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "topK": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          }
+        },
+        "required": [
+          "suiteRevision",
+          "topK"
+        ]
+      },
+      "EvaluationChunkReference": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "chunkId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "conceptId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "contentHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "chunkId",
+          "revision",
+          "conceptId",
+          "title",
+          "contentHash"
+        ]
+      },
+      "EvaluationSourceLocator": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "section": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 255
+          }
+        },
+        "required": [
+          "source",
+          "section"
+        ]
+      },
+      "EvaluationCorpusEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "chunkId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "conceptId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "contentHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationSourceLocator"
+            },
+            "minItems": 1,
+            "maxItems": 64
+          }
+        },
+        "required": [
+          "chunkId",
+          "revision",
+          "conceptId",
+          "title",
+          "contentHash",
+          "sources"
+        ]
+      },
+      "EvaluationCase": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "conceptId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expectation": {
+            "type": "string",
+            "enum": [
+              "MATCH",
+              "NO_RESULTS"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 1000
+          },
+          "expectedChunks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationChunkReference"
+            },
+            "minItems": 0,
+            "maxItems": 8
+          }
+        },
+        "required": [
+          "key",
+          "query",
+          "conceptId",
+          "expectation",
+          "note",
+          "expectedChunks"
+        ]
+      },
+      "EvaluationSnapshot": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "releaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 2000
+          },
+          "cases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationCase"
+            },
+            "minItems": 1,
+            "maxItems": 40
+          },
+          "releaseManifestHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "corpusHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "indexVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "releaseId",
+          "title",
+          "description",
+          "cases",
+          "releaseManifestHash",
+          "corpusHash",
+          "indexVersion"
+        ]
+      },
+      "EvaluationSuiteSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "releaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 2000
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ]
+          },
+          "caseCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 40
+          },
+          "contentHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "corpusHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "releaseId",
+          "title",
+          "description",
+          "revision",
+          "status",
+          "caseCount",
+          "contentHash",
+          "corpusHash",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "EvaluationSuite": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "releaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 2000
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ]
+          },
+          "caseCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 40
+          },
+          "contentHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "corpusHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "releaseManifestHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "indexVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "cases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationCase"
+            },
+            "minItems": 1,
+            "maxItems": 40
+          }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "releaseId",
+          "title",
+          "description",
+          "revision",
+          "status",
+          "caseCount",
+          "contentHash",
+          "corpusHash",
+          "createdAt",
+          "updatedAt",
+          "releaseManifestHash",
+          "indexVersion",
+          "cases"
+        ]
+      },
+      "EvaluationHit": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "chunkId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "conceptId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "contentHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "excerpt": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 800
+          },
+          "rankScore": {
+            "type": "number",
+            "minimum": 0
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "sourceSection": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 255
+          },
+          "relevant": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "rank",
+          "chunkId",
+          "revision",
+          "conceptId",
+          "title",
+          "contentHash",
+          "excerpt",
+          "rankScore",
+          "source",
+          "sourceSection",
+          "relevant"
+        ]
+      },
+      "EvaluationCaseResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "caseKey": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "conceptId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expectation": {
+            "type": "string",
+            "enum": [
+              "MATCH",
+              "NO_RESULTS"
+            ]
+          },
+          "expectedChunkIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 0,
+            "maxItems": 8
+          },
+          "hits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationHit"
+            },
+            "minItems": 0,
+            "maxItems": 8
+          },
+          "relevantCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          },
+          "firstRelevantRank": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 8
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "precisionAtK": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recallAtK": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reciprocalRank": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "elapsedMillis": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "caseKey",
+          "query",
+          "conceptId",
+          "expectation",
+          "expectedChunkIds",
+          "hits",
+          "relevantCount",
+          "firstRelevantRank",
+          "precisionAtK",
+          "recallAtK",
+          "reciprocalRank",
+          "passed",
+          "elapsedMillis"
+        ]
+      },
+      "EvaluationMetrics": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "totalCases": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 40
+          },
+          "matchCases": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 40
+          },
+          "noResultCases": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 40
+          },
+          "passedCases": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 40
+          },
+          "failedCases": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 40
+          },
+          "meanPrecisionAtK": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meanRecallAtK": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meanReciprocalRank": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hitRateAtK": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "noResultAccuracy": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totalElapsedMillis": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "totalCases",
+          "matchCases",
+          "noResultCases",
+          "passedCases",
+          "failedCases",
+          "meanPrecisionAtK",
+          "meanRecallAtK",
+          "meanReciprocalRank",
+          "hitRateAtK",
+          "noResultAccuracy",
+          "totalElapsedMillis"
+        ]
+      },
+      "EvaluationRun": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "suiteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "releaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "suiteRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "suiteTitle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "suiteHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "corpusHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "indexVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "evaluatorVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "topK": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "caseCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 40
+          },
+          "completedCases": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 40
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "COMPLETED",
+              "FAILED",
+              "CANCELLED"
+            ]
+          },
+          "errorCode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metrics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvaluationMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resultHash": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reportPath": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^/api/v1/evaluation-runs/[a-f0-9-]{36}/report$",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationCaseResult"
+            },
+            "minItems": 0,
+            "maxItems": 40
+          }
+        },
+        "required": [
+          "id",
+          "suiteId",
+          "workspaceId",
+          "releaseId",
+          "suiteRevision",
+          "suiteTitle",
+          "suiteHash",
+          "corpusHash",
+          "indexVersion",
+          "evaluatorVersion",
+          "topK",
+          "caseCount",
+          "completedCases",
+          "status",
+          "errorCode",
+          "createdAt",
+          "startedAt",
+          "finishedAt",
+          "metrics",
+          "resultHash",
+          "reportPath",
+          "results"
+        ],
+        "description": "列表省略逐例内容（results=[]）；详情返回已持久提交的不可变前缀。仅COMPLETED产生聚合指标和报告，FAILED/CANCELLED保留部分实际结果。",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "COMPLETED"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "properties": {
+                "metrics": {
+                  "$ref": "#/components/schemas/EvaluationMetrics"
+                },
+                "resultHash": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "reportPath": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "metrics": {
+                  "type": "null"
+                },
+                "resultHash": {
+                  "type": "null"
+                },
+                "reportPath": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "EvaluationSuitePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationSuiteSummary"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor",
+          "limit"
+        ]
+      },
+      "EvaluationRunPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationRun"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor",
+          "limit"
+        ]
+      },
+      "EvaluationReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "format": {
+            "const": "EVALUATION_REPORT_V1"
+          },
+          "scope": {
+            "const": "PRIVATE_USER_LABELLED_PUBLISHED_RETRIEVAL"
+          },
+          "runId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "suite": {
+            "$ref": "#/components/schemas/EvaluationSnapshot"
+          },
+          "suiteHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "corpus": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationCorpusEntry"
+            },
+            "minItems": 0,
+            "maxItems": 512
+          },
+          "evaluatorVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "topK": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationCaseResult"
+            },
+            "minItems": 1,
+            "maxItems": 40
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/EvaluationMetrics"
+          },
+          "resultHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "metricDefinitions": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "precisionAtK": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "recallAtK": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "meanReciprocalRank": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "hitRateAtK": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "noResultAccuracy": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "passedCases": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "elapsedMillis": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "precisionAtK",
+              "recallAtK",
+              "meanReciprocalRank",
+              "hitRateAtK",
+              "noResultAccuracy",
+              "passedCases",
+              "elapsedMillis"
+            ]
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "minItems": 1,
+            "maxItems": 10
+          },
+          "suiteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "suiteRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "format",
+          "scope",
+          "runId",
+          "completedAt",
+          "suite",
+          "suiteHash",
+          "corpus",
+          "evaluatorVersion",
+          "topK",
+          "results",
+          "metrics",
+          "resultHash",
+          "metricDefinitions",
+          "limitations",
+          "suiteId",
+          "suiteRevision"
+        ]
+      },
+      "ImportBatchItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fileName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "mediaType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "byteSize": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1048576
+          },
+          "fileHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "originalHash": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "parser": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "READY",
+              "FAILED",
+              "COMMITTED",
+              "SKIPPED"
+            ]
+          },
+          "errorCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "originalMarkdown": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 32000
+          },
+          "cleanedMarkdown": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 16000
+          },
+          "captureId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id",
+          "fileName",
+          "mediaType",
+          "byteSize",
+          "fileHash",
+          "originalHash",
+          "parser",
+          "status",
+          "errorCode",
+          "message",
+          "originalMarkdown",
+          "cleanedMarkdown",
+          "captureId"
+        ]
+      },
+      "ImportBatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ownerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PREVIEW",
+              "COMMITTED",
+              "CANCELLED",
+              "EXPIRED"
+            ]
+          },
+          "processingNote": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportBatchItem"
+            },
+            "minItems": 1,
+            "maxItems": 8
+          }
+        },
+        "required": [
+          "id",
+          "sourceId",
+          "ownerId",
+          "revision",
+          "status",
+          "processingNote",
+          "createdAt",
+          "expiresAt",
+          "items"
+        ],
+        "description": "Owner-private editorial preview. Terminal batches clear originalMarkdown and cleanedMarkdown; committed captureId remains an immutable source receipt. A preview does not publish any material."
+      },
+      "ImportBatchSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PREVIEW",
+              "COMMITTED",
+              "CANCELLED",
+              "EXPIRED"
+            ]
+          },
+          "processingNote": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "itemCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "readyCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          },
+          "failedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          },
+          "committedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          }
+        },
+        "required": [
+          "id",
+          "sourceId",
+          "revision",
+          "status",
+          "processingNote",
+          "createdAt",
+          "expiresAt",
+          "itemCount",
+          "readyCount",
+          "failedCount",
+          "committedCount"
+        ]
+      },
+      "ImportSelection": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cleanedMarkdown": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16000
+          },
+          "processingNote": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "itemId",
+          "cleanedMarkdown",
+          "processingNote"
+        ]
+      },
+      "ImportCommitInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportSelection"
+            },
+            "minItems": 1,
+            "maxItems": 8
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "items"
+        ]
+      },
+      "ImportCancelInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "expectedRevision"
+        ]
+      },
+      "ContentRevisionChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 1024
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ADDED",
+              "REMOVED",
+              "CHANGED"
+            ]
+          },
+          "before": {
+            "description": "Exact previous JSON value; arrays compare atomically. Missing values are null."
+          },
+          "after": {
+            "description": "Exact new JSON value; private grading fields require active EDITOR or ADMIN."
+          }
+        },
+        "required": [
+          "path",
+          "kind",
+          "before",
+          "after"
+        ]
+      },
+      "ContentRevisionComparison": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "CHUNK",
+              "EXERCISE"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "toRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "fromReviewHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "toReviewHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "fromStatus": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "REVIEWED",
+              "RETIRED"
+            ]
+          },
+          "toStatus": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "REVIEWED",
+              "RETIRED"
+            ]
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContentRevisionChange"
+            },
+            "minItems": 0,
+            "maxItems": 256
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "fromRevision",
+          "toRevision",
+          "fromReviewHash",
+          "toReviewHash",
+          "fromStatus",
+          "toStatus",
+          "changes"
+        ]
+      },
+      "EditorialTextRubric": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "const": "text-exact-nfkc-v1"
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 800
+          },
+          "caseSensitive": {
+            "type": "boolean"
+          },
+          "acceptedAnswers": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 16,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            }
+          },
+          "rejectedAnswers": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 16,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            }
+          }
+        },
+        "required": [
+          "version",
+          "scope",
+          "caseSensitive",
+          "acceptedAnswers",
+          "rejectedAnswers"
+        ],
+        "description": "仅编辑/独立审核可见的短答案精确规则；正反例经NFKC、Unicode空白折叠及显式大小写规则归一后必须无冲突，不做长文或语义判分。"
+      },
+      "TextAnswerPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "const": "text-exact-nfkc-v1"
+          },
+          "normalization": {
+            "const": "NFKC_WHITESPACE"
+          },
+          "caseSensitive": {
+            "type": "boolean"
+          },
+          "maxCharacters": {
+            "const": 4000
+          },
+          "maxUtf8Bytes": {
+            "const": 16000
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 800
+          }
+        },
+        "required": [
+          "version",
+          "normalization",
+          "caseSensitive",
+          "maxCharacters",
+          "maxUtf8Bytes",
+          "scope"
+        ],
+        "description": "公开短答案边界：整段精确匹配，NFKC与Unicode空白折叠；按作者配置决定大小写，保留标点与词序，不暴露可接受答案或反例。maxCharacters是UTF-16单元上限。"
+      },
+      "NotebookNavigation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "artifactId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "DOCUMENT",
+              "SLIDES",
+              "DIAGRAM",
+              "IMAGE",
+              "AUDIO",
+              "VIDEO",
+              "INTERACTION",
+              "NOTEBOOK"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        },
+        "required": [
+          "artifactId",
+          "revision",
+          "kind",
+          "title"
+        ]
+      },
+      "NotebookTypeInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sourceType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "targetType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "ASSIGN",
+              "READ",
+              "WRITE"
+            ]
+          },
+          "prediction": {
+            "type": "string",
+            "enum": [
+              "ALLOWED",
+              "DENIED",
+              "UNKNOWN"
+            ]
+          }
+        },
+        "required": [
+          "sourceType",
+          "targetType",
+          "operation",
+          "prediction"
+        ]
+      },
+      "NotebookParameterInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": [
+              "sourceType",
+              "targetType"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "ASSIGN",
+              "READ",
+              "WRITE"
+            ]
+          },
+          "prediction": {
+            "type": "string",
+            "enum": [
+              "ALLOWED",
+              "DENIED",
+              "UNKNOWN"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "value",
+          "operation",
+          "prediction"
+        ]
+      },
+      "NotebookBlockState": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "blockId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "stateRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "typeInput": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NotebookTypeInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "selectedExerciseRef": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContentRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hintLevel": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "lastResult": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NotebookActionResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "blockId",
+          "stateRevision",
+          "typeInput",
+          "selectedExerciseRef",
+          "hintLevel",
+          "lastResult"
+        ]
+      },
+      "NotebookState": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "artifactId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artifactRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotebookBlockState"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "artifactId",
+          "artifactRevision",
+          "blocks"
+        ]
+      },
+      "NotebookBlockOptions": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "artifactId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artifactRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "originBlockId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "availableKinds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "TYPE_FLOW",
+                "REPAIR_DIFF",
+                "COUNTERFACTUAL",
+                "EXPERT_HELP",
+                "REVIEW_LINKS"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 5
+          },
+          "typeFlowDefaults": {
+            "$ref": "#/components/schemas/BoundedTypeFlowConfig"
+          },
+          "counterfactualCandidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Exercise"
+            },
+            "minItems": 0,
+            "maxItems": 20
+          },
+          "artifactCandidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotebookNavigation"
+            },
+            "minItems": 0,
+            "maxItems": 20
+          },
+          "reviewIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 0,
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "artifactId",
+          "artifactRevision",
+          "originBlockId",
+          "availableKinds",
+          "typeFlowDefaults",
+          "counterfactualCandidates",
+          "artifactCandidates",
+          "reviewIds"
+        ]
+      },
+      "NotebookBlockInput": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "artifactRevision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "originBlockId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "TYPE_FLOW"
+                ]
+              },
+              "config": {
+                "$ref": "#/components/schemas/BoundedTypeFlowConfig"
+              }
+            },
+            "required": [
+              "artifactRevision",
+              "originBlockId",
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "artifactRevision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "originBlockId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "REPAIR_DIFF"
+                ]
+              }
+            },
+            "required": [
+              "artifactRevision",
+              "originBlockId",
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "artifactRevision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "originBlockId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "COUNTERFACTUAL"
+                ]
+              },
+              "config": {
+                "$ref": "#/components/schemas/CounterfactualConfig"
+              }
+            },
+            "required": [
+              "artifactRevision",
+              "originBlockId",
+              "kind",
+              "config"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "artifactRevision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "originBlockId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "EXPERT_HELP"
+                ]
+              }
+            },
+            "required": [
+              "artifactRevision",
+              "originBlockId",
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "artifactRevision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "originBlockId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "REVIEW_LINKS"
+                ]
+              },
+              "config": {
+                "$ref": "#/components/schemas/ReviewLinksConfig"
+              }
+            },
+            "required": [
+              "artifactRevision",
+              "originBlockId",
+              "kind"
+            ]
+          }
+        ],
+        "description": "显式增加一个活动块并保存新作品修订。来源 block 的本人 attempt/exercise/evidence 固定，allowedActions 由服务端产生；REPAIR_DIFF 与 EXPERT_HELP 配置从来源推导。TYPE_FLOW 默认有限候选；COUNTERFACTUAL 要求当前发布同题族审核题；REVIEW_LINKS 要求真实复习或本人同空间当前作品。"
+      },
+      "BoundedTypeFlowConfig": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sourceType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "targetType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "sourceType",
+                    "targetType"
+                  ]
+                },
+                "candidates": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "minItems": 1,
+                  "maxItems": 16,
+                  "uniqueItems": true
+                }
+              },
+              "required": [
+                "name",
+                "candidates"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 2
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ASSIGN",
+                "READ",
+                "WRITE"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 3,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "sourceType",
+          "targetType",
+          "parameters",
+          "operations"
+        ]
       }
     }
   }

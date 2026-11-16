@@ -6,6 +6,7 @@ import static io.typeforge.publishing.ContentWorkbenchModels.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.typeforge.compiler.CodeRubric;
+import io.typeforge.exercise.TextRubric;
 import io.typeforge.ingestion.ManualIngestionService;
 import io.typeforge.ingestion.IngestionModels.SourceInput;
 import io.typeforge.ingestion.IngestionModels.SourceReference;
@@ -137,7 +138,7 @@ public final class ContentDraftService {
             for(var ref:input.knowledgeRefs()) supported.add(chunk(actor,ref.id(),ref.revision()).conceptId());
             if(!supported.containsAll(input.conceptIds())) throw DomainException.invalid("Every exercise concept needs an exact supporting knowledge revision");
             jdbc.update("INSERT INTO exercise(id,revision,family_id,kind,difficulty,prompt,answer_spec,rubric_version,status,author_id) VALUES(?,?,?,?,?,?,?,?,'DRAFT',?)",
-                input.id().toString(),input.revision(),input.familyId().toString(),input.kind(),input.difficulty(),input.prompt(),json.write(input.answerSpec()),input.answerSpec().compileChecks().isEmpty()?"choice-v1":CodeRubric.VERSION,actor.toString());
+                input.id().toString(),input.revision(),input.familyId().toString(),input.kind(),input.difficulty(),input.prompt(),json.write(input.answerSpec()),input.answerSpec().textRubric()!=null?TextRubric.VERSION:input.answerSpec().compileChecks().isEmpty()?"choice-v1":CodeRubric.VERSION,actor.toString());
             List<UUID> concepts=input.conceptIds().stream().sorted().toList();
             BigDecimal share=BigDecimal.ONE.divide(BigDecimal.valueOf(concepts.size()),4,RoundingMode.DOWN);
             for(int i=0;i<concepts.size();i++) {
@@ -222,6 +223,11 @@ public final class ContentDraftService {
             jdbc.update("INSERT INTO content_review(id,target_kind,target_id,target_revision,author_id,reviewer_id,decision,note,created_at) VALUES(?,?,?,?,?,?,?,?,?)",
                 id.toString(),input.targetKind(),input.targetId().toString(),input.targetRevision(),author.toString(),actor.toString(),input.decision(),input.note(),Timestamp.from(clock.instant()));
             jdbc.update("INSERT INTO content_review_evidence(review_id,reviewed_hash,checker_version,reviewer_roles) VALUES(?,?,?,?)",id.toString(),hash,CHECKER_VERSION,json.write(roles));
+            if(input.targetKind().equals("EXERCISE") && input.decision().equals("APPROVED")) {
+                JsonNode answer=json.tree(jdbc.queryForObject("SELECT answer_spec FROM exercise WHERE id=? AND revision=?",Object.class,input.targetId().toString(),input.targetRevision()));
+                if(TextRubric.configured(answer)) jdbc.update("INSERT INTO exercise_text_review_receipt(exercise_id,exercise_revision,review_id,answer_hash,rubric_version) VALUES(?,?,?,?,?)",
+                    input.targetId().toString(),input.targetRevision(),id.toString(),json.hash(answer),TextRubric.VERSION);
+            }
             jdbc.update("UPDATE "+table(input.targetKind())+" SET status=? WHERE id=? AND revision=? AND status='DRAFT'",input.decision().equals("APPROVED")?"REVIEWED":"RETIRED",input.targetId().toString(),input.targetRevision());
             access.remember(actor,"editorReviewContent",key,input,id);
             access.audit(actor,"CONTENT_REVIEWED",id,Map.of("targetId",input.targetId(),"revision",input.targetRevision(),"decision",input.decision(),"reviewedHash",hash));
@@ -272,6 +278,12 @@ public final class ContentDraftService {
         for(String code:answer.misconceptions()) if(code==null || !code.matches("[A-Za-z0-9_.:-]{1,64}")) throw DomainException.invalid("Invalid misconception code");
         if(answer.hints().size()>3) throw DomainException.invalid("At most three progressive hints are supported");
         for(String hint:answer.hints()) text(hint,4000);
+        if(answer.textRubric()!=null) {
+            if(!TextRubric.supports(Objects.toString(kind,"")) || answer.options()==null || !answer.options().isEmpty()
+                || answer.optionIds()==null || !answer.optionIds().isEmpty() || !answer.compileChecks().isEmpty())
+                throw DomainException.invalid("Exact TEXT rubrics require READING/DIAGNOSIS with empty choices and compile checks");
+            TextRubric.validate(answer.textRubric());return;
+        }
         if(Set.of("SIGNATURE","REFACTOR","FILL").contains(Objects.toString(kind,""))) {
             if(answer.options()==null || !answer.options().isEmpty() || answer.optionIds()==null || !answer.optionIds().isEmpty()) throw DomainException.invalid("Code exercises cannot contain choice answers");
             CodeRubric.validateRules(answer.compileChecks());return;

@@ -1,4 +1,4 @@
-import { webcrypto } from 'node:crypto';
+import { createHash, webcrypto } from 'node:crypto';
 import { deflateSync } from 'node:zlib';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
@@ -6,6 +6,8 @@ import { act, configure, render, screen, waitFor, within } from '@testing-librar
 import userEvent from '@testing-library/user-event';
 import App from '../src/App';
 import type { Attempt, Progress } from '../src/types';
+import { api } from '../src/api';
+import { runWorkbenchJourney, type JourneyDriver } from './workbench-journey.mjs';
 
 const base = process.env.TYPEFORGE_BASE_URL;
 const nativeFetch = globalThis.fetch;
@@ -18,6 +20,7 @@ const receipts: {
   body: Record<string, unknown>;
 }[] = [];
 let failure: string | undefined;
+let completed = false;
 beforeAll(() => {
   configure({
     asyncUtilTimeout: 25000,
@@ -123,11 +126,12 @@ afterAll(async () => {
         driver: 'jsdom with real HTTP; not a graphical browser',
         baseUrl: base,
         steps,
-        status: failure ? 'FAIL' : 'PASS',
-        failure,
+        status: failure || !completed ? 'FAIL' : 'PASS',
+        failure: failure || (!completed ? 'The complete scenario did not finish.' : undefined),
         limits: [
           'Does not verify layout, screenshots, native downloads or real keyboard/touch rendering.',
           'Cookie and multipart encoding adapt DOM requests to Node fetch; no server response is mocked.',
+          'jsdom cannot validate its internal file list after user-event upload; this driver verifies the selected bytes and adapts only that required attribute. Chromium retains native file validation.',
         ],
       },
       null,
@@ -137,12 +141,15 @@ afterAll(async () => {
   vi.unstubAllGlobals();
 });
 const step = async (name: string, work: () => Promise<void>) => {
+  process.stdout.write(`${name} ... `);
   try {
     await work();
     steps.push({ name, status: 'PASS' });
+    process.stdout.write('PASS\n');
   } catch (error) {
     failure = String(error);
     steps.push({ name, status: 'FAIL' });
+    process.stdout.write('FAIL\n');
     await mkdir('test-results', { recursive: true });
     await writeFile(
       'test-results/live-dom-failure.txt',
@@ -168,6 +175,167 @@ const settledProgress = async () => {
 };
 const independentSamples = (progress: Progress) =>
   progress.items.reduce((count, item) => count + item.independentSamples, 0);
+
+function workbenchDriver(user: ReturnType<typeof userEvent.setup>): JourneyDriver {
+  const scope = async (selector?: string) => {
+    if (!selector) return document.body;
+    let result: HTMLElement | null = null;
+    await waitFor(() => {
+      result = document.querySelector(selector);
+      expect(result, `Required UI scope: ${selector}`).not.toBeNull();
+    });
+    return result!;
+  };
+  const role = async (kind: string, name: string | RegExp, selector?: string) =>
+    within(await scope(selector)).findByRole(kind as Parameters<typeof screen.findByRole>[0], {
+      name,
+    });
+  const label = async (name: string, selector?: string) =>
+    within(await scope(selector)).findByLabelText(name, {
+      exact: false,
+      selector: 'input,textarea,select',
+    });
+  const readJson = async (path: string) => {
+    const result = await fetch(`/api/v1${path}`);
+    expect(result.status, path).toBe(200);
+    return result.json();
+  };
+  return {
+    async fill(name, value, selector) {
+      const input = await label(name, selector);
+      await waitFor(() => expect(input).toBeEnabled());
+      await user.clear(input);
+      await user.click(input);
+      await user.paste(value);
+    },
+    async click(kind, name, selector) {
+      const target = await role(kind, name, selector);
+      if (target instanceof HTMLButtonElement) await waitFor(() => expect(target).toBeEnabled());
+      await user.click(target);
+    },
+    async select(name, value, selector) {
+      const input = await label(name, selector);
+      await waitFor(() => {
+        expect(input).toBeEnabled();
+        expect(
+          Array.from((input as HTMLSelectElement).options).some((item) => item.value === value),
+        ).toBe(true);
+      });
+      await user.selectOptions(input, value);
+    },
+    async check(name, selector) {
+      const input = await role('checkbox', name, selector);
+      await waitFor(() => expect(input).toBeEnabled());
+      if (!(input as HTMLInputElement).checked) await user.click(input);
+    },
+    async summary(name, selector) {
+      const root = await scope(selector);
+      let summary: HTMLElement | undefined;
+      await waitFor(() => {
+        summary = Array.from(root.querySelectorAll<HTMLElement>('summary')).find((item) =>
+          typeof name === 'string'
+            ? item.textContent?.includes(name)
+            : name.test(item.textContent || ''),
+        );
+        expect(summary).toBeTruthy();
+      });
+      if (!summary!.parentElement?.hasAttribute('open')) await user.click(summary!);
+    },
+    async text(text, selector) {
+      await within(await scope(selector)).findAllByText(text, { exact: false });
+    },
+    async heading(name, selector) {
+      await role('heading', name, selector);
+    },
+    async link(name, selector) {
+      await role('link', name, selector);
+    },
+    async disabled(kind, name, selector) {
+      const target = await role(kind, name, selector);
+      await waitFor(() => expect(target).toBeDisabled());
+    },
+    async enabled(kind, name, selector) {
+      const target = await role(kind, name, selector);
+      await waitFor(() => expect(target).toBeEnabled());
+    },
+    async value(name, selector) {
+      return ((await label(name, selector)) as HTMLInputElement).value;
+    },
+    async absentLabel(name) {
+      await waitFor(() => expect(screen.queryByLabelText(name, { exact: true })).toBeNull());
+    },
+    async clickRow(selector, text, name) {
+      let row: HTMLElement | undefined;
+      await waitFor(() => {
+        const rows = Array.from(document.querySelectorAll<HTMLElement>(selector)).filter((item) =>
+          item.textContent?.includes(text),
+        );
+        expect(rows).toHaveLength(1);
+        row = rows[0];
+      });
+      await user.click(within(row!).getByRole('button', { name }));
+    },
+    async clickArtifact(id) {
+      const artifact = await readJson(`/artifacts/${id}`);
+      await user.click(
+        await role(
+          'button',
+          new RegExp(artifact.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+          '.artifact-list',
+        ),
+      );
+      await role('heading', artifact.title);
+    },
+    readJson,
+    async mutate(path, method, body) {
+      return api.request(path, method, body, { idempotent: true });
+    },
+    async upload(name, files) {
+      const target = await label(name);
+      await user.upload(
+        target,
+        files.map(
+          (file) =>
+            new File([new Uint8Array(file.buffer).buffer], file.name, { type: file.mimeType }),
+        ),
+      );
+      // jsdom 31 reads an internal empty FileList for required validation although
+      // user-event exposes the actual selected File objects. Do not suppress any
+      // business validation or response: verify each selected byte before adapting
+      // this DOM-only native validity limitation. Chromium uses the original input.
+      const fileInput = target as HTMLInputElement;
+      expect(fileInput.files?.length).toBe(files.length);
+      for (let index = 0; index < files.length; index += 1)
+        expect(Buffer.from(await fileInput.files![index].arrayBuffer())).toEqual(
+          Buffer.from(files[index].buffer),
+        );
+      if (fileInput.required && fileInput.files!.length > 0 && fileInput.validity.valueMissing)
+        fileInput.removeAttribute('required');
+    },
+    async report(name) {
+      const anchor = await role('link', name);
+      const response = await fetch(anchor.getAttribute('href')!);
+      expect(response.status).toBe(200);
+      const bytes = Buffer.from(await response.arrayBuffer());
+      expect(createHash('sha256').update(bytes).digest('hex')).toBe(
+        response.headers.get('X-Content-SHA256'),
+      );
+      return JSON.parse(bytes.toString());
+    },
+    async capture() {
+      /* DOM transport checks do not claim screenshots or layout coverage. */
+    },
+    async captureResponsive() {
+      /* Actual sizes and screenshots run only in the Chromium adapter. */
+    },
+    async eventually(work, message) {
+      await waitFor(async () => expect(await work(), message).toBe(true), {
+        interval: 150,
+        timeout: 30000,
+      });
+    },
+  };
+}
 
 function pngFixture() {
   const chunk = (name: string, data: Buffer) => {
@@ -244,6 +412,7 @@ it('connects the rendered workspace learning, notebook, artifact, tutor and inva
     await find('heading', '服务端反馈');
     await user.click(await find('button', '加入可复练错题集'));
     await find('heading', '重新检查你的判断');
+    await waitFor(() => expect(screen.getByLabelText('先写下这次的预测或理由')).toBeEnabled());
     await user.type(
       screen.getByLabelText('先写下这次的预测或理由'),
       '先判断泛型不变性，再检查通配符。',
@@ -626,4 +795,6 @@ it('connects the rendered workspace learning, notebook, artifact, tutor and inva
     await find('heading', '回到你的工作台');
     expect(Object.keys(sessionStorage).filter((k) => k.startsWith('tf.'))).toHaveLength(0);
   });
+  await runWorkbenchJourney(workbenchDriver(user), step);
+  completed = true;
 });

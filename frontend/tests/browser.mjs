@@ -2,6 +2,8 @@ import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { runWorkbenchJourney } from './workbench-journey.mjs';
 
 // A real integration test. No intercepted fixture answers or mocked backend responses.
 const base = (process.env.TYPEFORGE_BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '');
@@ -109,9 +111,16 @@ const username = `web_${Date.now().toString(36)}`;
 const password = `BrowserStudy-${crypto.randomUUID()}`;
 const docTitle = '浏览器验收 · 泛型学习讲义';
 const sanitizeText = (value) =>
-  String(value)
-    .replaceAll(username, '[redacted username]')
-    .replaceAll(password, '[redacted password]');
+  [
+    username,
+    password,
+    process.env.TYPEFORGE_TEST_EDITOR_AUTHOR,
+    process.env.TYPEFORGE_TEST_EDITOR_REVIEWER,
+    process.env.TYPEFORGE_TEST_ADMIN_USERNAME,
+    process.env.TYPEFORGE_TEST_EDITOR_PASSWORD,
+  ]
+    .filter(Boolean)
+    .reduce((text, secret) => text.replaceAll(secret, '[redacted test identity]'), String(value));
 // Field wraps its label, control and optional hint. A select's option text also
 // participates in getByLabel(), so match the actual title span and its own select.
 const fieldSelect = (p, title) =>
@@ -172,6 +181,169 @@ const describeControls = async (p) => {
   });
   return JSON.parse(sanitizeText(JSON.stringify(summary)));
 };
+function workbenchDriver() {
+  const scope = (selector) => (selector ? page.locator(selector) : page);
+  const role = (kind, name, selector) =>
+    scope(selector).getByRole(kind, { name, exact: typeof name === 'string' });
+  const label = (name, selector) =>
+    scope(selector)
+      .getByLabel(name, { exact: false })
+      .and(scope(selector).locator('input,textarea,select'));
+  const readJson = async (route) => {
+    const response = await context.request.get(`${base}/api/v1${route}`);
+    assert.equal(response.status(), 200, route);
+    return response.json();
+  };
+  const capture = async (filename, selector) => {
+    if (selector) await page.locator(selector).screenshot({ path: path.join(out, filename) });
+    else await capturePage(page, filename);
+  };
+  return {
+    async fill(name, value, selector) {
+      await label(name, selector).fill(value);
+    },
+    async click(kind, name, selector) {
+      await role(kind, name, selector).click();
+    },
+    async select(name, value, selector) {
+      await label(name, selector).selectOption(value);
+    },
+    async check(name, selector) {
+      await role('checkbox', name, selector).check();
+    },
+    async summary(name, selector) {
+      const target = scope(selector).locator('summary').filter({ hasText: name });
+      assert.equal(await target.count(), 1, `Summary must be unambiguous: ${name}`);
+      if (!(await target.evaluate((element) => element.parentElement.open))) await target.click();
+    },
+    async text(text, selector) {
+      await scope(selector).getByText(text, { exact: false }).first().waitFor();
+    },
+    async heading(name, selector) {
+      await role('heading', name, selector).waitFor();
+    },
+    async link(name, selector) {
+      await role('link', name, selector).waitFor();
+    },
+    async disabled(kind, name, selector) {
+      await until(
+        async () => await role(kind, name, selector).isDisabled(),
+        `${name} should be disabled`,
+      );
+    },
+    async enabled(kind, name, selector) {
+      await until(
+        async () => await role(kind, name, selector).isEnabled(),
+        `${name} should be enabled`,
+      );
+    },
+    async value(name, selector) {
+      return label(name, selector).inputValue();
+    },
+    async absentLabel(name) {
+      assert.equal(await page.getByLabel(name, { exact: true }).count(), 0);
+    },
+    async clickRow(selector, text, name) {
+      const target = page.locator(selector).filter({ hasText: text });
+      assert.equal(await target.count(), 1, `Saved revision row should be unambiguous: ${text}`);
+      await target.getByRole('button', { name, exact: true }).click();
+    },
+    async clickArtifact(id) {
+      const artifact = await readJson(`/artifacts/${id}`);
+      await page.locator('.artifact-list > button').filter({ hasText: artifact.title }).click();
+      await role('heading', artifact.title).waitFor();
+    },
+    readJson,
+    async mutate(route, method, body) {
+      const token = await (await context.request.get(`${base}/api/v1/auth/csrf`)).json();
+      const response = await context.request.fetch(`${base}/api/v1${route}`, {
+        method,
+        headers: { [token.headerName]: token.token, 'Idempotency-Key': crypto.randomUUID() },
+        data: body,
+      });
+      assert.ok(
+        response.status() >= 200 && response.status() < 300,
+        `Actual separate client update failed: ${route} (${response.status()})`,
+      );
+      return response.json();
+    },
+    async upload(name, files) {
+      await label(name).setInputFiles(files);
+    },
+    async report(name) {
+      const anchor = role('link', name);
+      const href = await anchor.getAttribute('href');
+      assert.match(href, /^\/api\/v1\/evaluation-runs\/[a-f0-9-]+\/report$/);
+      const response = await context.request.get(`${base}${href}`);
+      assert.equal(response.status(), 200);
+      const bytes = await response.body();
+      assert.equal(
+        createHash('sha256').update(bytes).digest('hex'),
+        response.headers()['x-content-sha256'],
+      );
+      const [download] = await Promise.all([page.waitForEvent('download'), anchor.click()]);
+      const filename = `v06-${download.suggestedFilename()}`;
+      assert.match(filename, /^v06-evaluation-[a-f0-9-]+\.json$/);
+      await download.saveAs(path.join(out, filename));
+      assert.deepEqual(await readFile(path.join(out, filename)), bytes);
+      return JSON.parse(bytes.toString());
+    },
+    capture,
+    async captureResponsive(prefix, widths, selector) {
+      for (const width of widths) {
+        await page.setViewportSize({ width, height: 1000 });
+        await page.evaluate(async () => {
+          await document.fonts.ready;
+          await new Promise((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(resolve)),
+          );
+        });
+        assert.ok(
+          await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+          `${prefix} overflows the page at ${width}px`,
+        );
+        const regions = page.locator(
+          '.concept-map-scroll:visible,.evaluation-metric-table:visible',
+        );
+        for (let i = 0; i < (await regions.count()); i += 1) {
+          const region = regions.nth(i);
+          const scrollable = await region.evaluate(
+            (element) => element.scrollWidth > element.clientWidth + 1,
+          );
+          await region.focus();
+          assert.ok(
+            await region.evaluate((element) => element === document.activeElement),
+            'Overflow region must accept keyboard focus',
+          );
+          if (scrollable) {
+            await region.evaluate((element) => {
+              element.scrollLeft = 0;
+            });
+            await page.keyboard.press('ArrowRight');
+            await until(
+              async () => await region.evaluate((element) => element.scrollLeft > 0),
+              'Keyboard must reach horizontally scrolled content',
+            );
+            await region.evaluate((element) => {
+              element.scrollLeft = 0;
+            });
+          }
+        }
+        const controls = scope(selector || 'main').locator('button:visible');
+        for (let i = 0; i < (await controls.count()); i += 1) {
+          const size = await controls.nth(i).boundingBox();
+          assert.ok(
+            size && size.height >= 43,
+            `${prefix} has a button below the 44px touch target at ${width}px`,
+          );
+        }
+        await capture(`${prefix}-${width}.png`, selector);
+      }
+      await page.setViewportSize({ width: 1440, height: 1000 });
+    },
+    eventually: until,
+  };
+}
 try {
   await check('register, login and create workspace through visible controls', async () => {
     await page.goto(base);
@@ -645,7 +817,26 @@ try {
       assert.deepEqual(consoleErrors, []);
     },
   );
+  await runWorkbenchJourney(workbenchDriver(), check);
+  await check(
+    'all editorial, learner evaluation and administrator journeys finish with no uncaught browser errors',
+    async () => {
+      assert.deepEqual(pageErrors, []);
+      assert.deepEqual(consoleErrors, []);
+      assert.equal(
+        await page.evaluate(
+          () => Object.keys(sessionStorage).filter((key) => key.startsWith('tf.')).length,
+        ),
+        0,
+      );
+    },
+  );
 } catch (error) {
+  if (!failures.length) {
+    const name = 'runner failed outside a recorded scenario';
+    failures.push(name);
+    results.push({ name, status: 'FAIL', error: sanitizeText(error) });
+  }
   console.error(sanitizeText(error));
   failurePages = await Promise.all(
     context.pages().map(async (p) => {
@@ -673,7 +864,8 @@ try {
     },
     notes: [
       'Real demo backend and session/CSRF, no API response fixtures.',
-      'Three screenshots inspect desktop reading, mobile notebook and saved document export.',
+      'Screenshots cover actual learner, editorial and administrator paths; each executed responsive capture checks page overflow, touch target heights and reachable scroll regions.',
+      'Editor and administrator identities are temporary isolated test accounts; a test-account review is not a claim of human teaching review.',
       'No model provider was invoked; tutor used EVIDENCE_ONLY.',
     ],
   };

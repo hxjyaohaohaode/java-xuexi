@@ -1,6 +1,6 @@
 # 当前接口规范与前后端约束
 
-本章说明 v0.5 的实际调用规则。完整字段、状态码、必填 header 与当前操作状态以 [OpenAPI](../contracts/openapi.json) 为准，按模块和路径检索见 [自动生成的接口索引](../contracts/README.md)。[开发接手指南](02-modules.md)区分后端、页面与后续目标；登录后的 `/api/v1/capabilities` 反映这次部署实际启用的能力。
+本章说明 v0.6 的实际调用规则。完整字段、状态码、必填 header 与当前操作状态以 [OpenAPI](../contracts/openapi.json) 为准，按模块和路径检索见 [自动生成的接口索引](../contracts/README.md)。[开发接手指南](02-modules.md)区分后端、页面与后续目标；登录后的 `/api/v1/capabilities` 反映这次部署实际启用的能力。
 
 ## 1. 传输、身份与输入边界
 
@@ -23,6 +23,9 @@ UUID 是资源标识，不是权限令牌。revision 使用 int32 范围；epoch
 | Agent 运行命令 | expectedPlanRevision + expectedRunEpoch | 重新读取运行；旧 epoch 不能提交 |
 | 导师取消 | expectedEpoch + 幂等键 | 重读请求终态；取消不代表供应商未计费 |
 | 发布与历史激活 | 固定 manifest hash + expectedActiveRevision | 并发切换不能覆盖；幂等重放不能重新激活旧版 |
+| 批量导入 | expectedRevision；提交/取消串行竞争 | 保留清洗草稿，重读当前终态；任何采集失败整批回滚 |
+| 评测套件与运行 | 套件 expectedRevision；运行固定 suiteRevision 与幂等键 | 新修订不改历史运行；取消后迟到结果被拒绝 |
+| Notebook 交互 | 固定作品 revision、blockId 与 state revision | 读取实际块状态后合并选择，不覆盖旧作品或伪造动作 |
 
 上下文创建产生新的不可变快照，没有通用快照幂等承诺。客户端事件以 UUID 和内容去重；它们只表示阅读/选区等允许的行为，不能声称已经判分或已经完成生成。
 
@@ -41,8 +44,12 @@ UUID 是资源标识，不是权限令牌。revision 使用 int32 范围；epoch
 | 编译与代码题 | 代码样例/本人代码 → `/compile-jobs` 或 CODE 作答 → 独立 worker → 终态/判分 | 固定源码 hash、JDK/flags 与隐藏正反例；编译通过不等于答题正确 |
 | 学习作品任务 | 目标/所选作答 → context → `/agent-runs` → 规划/专家/复核 → 草稿 | 来源完整的 DRAFT，实际步骤与用量；MODEL 配置缺失不会伪造回答 |
 | 私有素材 | 上传 → `/assets` → 作品 ASSET 引用 → 预览/导出 → 撤回 | 实际字节、hash、MIME、配额与完整失效传播 |
+| 批量资料加工 | 来源 → `/admin/import-batches` → 人工清洗 → commit → 采集收据 | TXT/MD/DOCX 真实解析，选中项原子提交；不自动审核或发布 |
+| 修订比较 | 两个已保存版本 → `/admin/content-diffs` | 当前编辑权限与完整性复核后的字段变化，私有答案不向学习者开放 |
+| 私有检索评测 | 套件及不可变修订 → 持久运行 → 逐例证据 → JSON 下载 | 真实 BM25、固定课程与预期标签、明确指标；不生成学习成绩 |
+| 六类错题块 | 原始错题 → block-options → blocks → state/actions | 实际实验、编译、判分、提示与复习导航；版本及来源校验一致 |
 
-题目详情必须绑定 releaseId 和 revision；客户端不能访问 answer_spec。CHOICE 的 answer 使用 `{ "kind": "CHOICE", "optionIds": ["选项ID"] }`。CODE 仅用于匹配的代码题种类，并按服务器隐藏编译 rubric 判分；TEXT 仍是未启用的扩展分支。使用分级提示会记录 assisted，不能恢复成“首次独立作答”。
+题目详情必须绑定 releaseId 和 revision；客户端不能访问 answer_spec。CHOICE 的 answer 使用 `{ "kind": "CHOICE", "optionIds": ["选项ID"] }`。CODE 仅用于匹配的代码题种类，并按服务器隐藏编译 rubric 判分；READING/DIAGNOSIS 可使用已启用的 TEXT 精确规则判分，提交 `{ "kind": "TEXT", "value": "完整短答案" }`，并按公开 policy 显示规范化方式与输入上限。私有接受/拒绝答案只在编辑审核与服务端判分可见。使用分级提示会记录 assisted，不能恢复成“首次独立作答”。
 
 ## 4. 导师与编排入口
 
@@ -81,4 +88,4 @@ UUID 是资源标识，不是权限令牌。revision 使用 int32 范围；epoch
 
 ## 7. 开发新增接口的收口规则
 
-先明确事实归属、身份/课程/工作空间边界、幂等和失败语义，再实现端点、schema、DTO、SQL、前端调用及回归。运行 `python scripts/sync_contract_index.py` 更新索引，再运行 `python scripts/verify.py` 核对路由和契约。密码修改、会话撤销、关闭账户与原始素材载荷清理已接通，保留审计/学习事实的边界见 [账户说明](22-account-assets-operations.md)。批量资料解析、SSE、用户程序执行和完整生成媒体仍是后续工作，入口不得返回伪造成功。
+先明确事实归属、身份/课程/工作空间边界、幂等和失败语义，再实现端点、schema、DTO、SQL、前端调用及回归。运行 `python scripts/sync_contract_index.py` 更新索引，再运行 `python scripts/verify.py` 核对路由和契约。密码修改、会话撤销、关闭账户与原始素材载荷清理已接通，保留审计/学习事实的边界见 [账户说明](22-account-assets-operations.md)。TXT/MD/DOCX 批量预览、清洗确认、原子采集和私有检索评测已经接通，资源上限见[本轮实现](24-evaluation-import-and-notebook.md)。PDF/OCR、SSE、用户程序执行和完整生成媒体仍是后续工作，入口不得返回伪造成功。

@@ -1,6 +1,8 @@
 # 架构、交互与一致性
 
-本章连接当前运行机制和完整目标。v0.5 已落地真实学习前端、SQL/HTTP、导师与受限专家工作流、独立编译 worker、私有素材、Office/PDF 导出及双人内容审核发布；通用自治、程序执行、媒体生成等扩展仍属后续设计。准确范围见 [模块接手指南](02-modules.md)、[后端说明](../backend/README.md)与[本轮记录](../evidence/runtime-review.md)。
+本章连接当前运行机制和完整目标。v0.6 已落地真实学习前端、SQL/HTTP、导师与受限专家工作流、独立编译 worker、私有素材、Office/PDF 导出及双人内容审核发布；通用自治、程序执行、媒体生成等扩展仍属后续设计。准确范围见 [模块接手指南](02-modules.md)、[后端说明](../backend/README.md)与[本轮记录](../evidence/runtime-review.md)。
+
+v0.6 新增有界 TXT/MD/DOCX 批量资料加工、知识/题目修订对比、独立审核的 TEXT 精确判分、六类可恢复错题交互、私有检索评测和管理员运行指标，并将概念前置关系接入学习页面。具体边界、容量和联动见[本轮实现](24-evaluation-import-and-notebook.md)。
 
 ## 1. 技术基线与决策
 
@@ -38,7 +40,7 @@ flowchart TB
   APP --> OBS[审计 / 指标 / traceId]
 ```
 
-目标分层要求领域规则不依赖 Controller、HTTP 或供应商 SDK，Controller 只调用应用服务。v0.5 采用显式 JDBC 应用服务落实事务与归属，尚未把所有 SQL 拆成独立 repository adapter；后续按业务稳定程度拆分，不能把目录形式当作已完成解耦。共享模块只放通用 ID、分页、错误、JSON/Schema 与版本边界，不承接全部业务逻辑。闭户通过 `AccountClosureParticipant` 端口回调各模块，避免 identity 反向依赖业务形成环。
+目标分层要求领域规则不依赖 Controller、HTTP 或供应商 SDK，Controller 只调用应用服务。v0.6 采用显式 JDBC 应用服务落实事务与归属，尚未把所有 SQL 拆成独立 repository adapter；后续按业务稳定程度拆分，不能把目录形式当作已完成解耦。共享模块只放通用 ID、分页、错误、JSON/Schema 与版本边界，不承接全部业务逻辑。闭户通过 `AccountClosureParticipant` 端口回调各模块，避免 identity 反向依赖业务形成环。
 
 API JVM 永不编译或运行用户代码。`CompileWorker` 通过固定 HTTP 协议调用独立 broker，后者以无网络、非 root、只读根文件系统、资源/时间上限和 `-proc:none` 容器进行编译，不执行产物。API 内的 JavaCompiler 测试只编译仓库固定案例；真实 Docker 隔离检查是独立 CI 门禁，不能以协议测试代替。
 

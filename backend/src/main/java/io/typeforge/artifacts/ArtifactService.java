@@ -168,15 +168,51 @@ public class ArtifactService implements ArtifactStudio<JsonNode> {
                 for(JsonNode edge:node.path("edges")) if(!ids.contains(edge.path("from").asText()) || !ids.contains(edge.path("to").asText())) throw DomainException.invalid("Diagram edge has no matching node");
             }
             if(node.has("blocks")) for(JsonNode block:node.path("blocks")) {
+                if(Set.of("ERROR_CONTEXT","TYPE_FLOW","REPAIR_DIFF","COUNTERFACTUAL","EXPERT_HELP","REVIEW_LINKS").contains(block.path("kind").asText())) validateInteractionBlock(release,block);
                 if(block.path("kind").asText().equals("EXPERT_HELP")) {
                     String target=block.path("config").path("contextBlockId").asText();
                     boolean found=false;
-                    for(JsonNode candidate:node.path("blocks")) if(candidate.path("id").asText().equals(target) && !candidate.path("kind").asText().equals("EXPERT_HELP")) found=true;
+                    for(JsonNode candidate:node.path("blocks")) if(candidate.path("id").asText().equals(target) && !candidate.path("kind").asText().equals("EXPERT_HELP")) {
+                        if(!candidate.path("exerciseRef").equals(block.path("exerciseRef")))throw DomainException.invalid("Guidance and its context must pin the same exercise revision");
+                        found=true;
+                    }
                     if(!found) throw DomainException.invalid("Expert help must reference an existing non-help block in the same artifact");
                 }
             }
         }
         if(node.isContainerNode()) node.forEach(child->validateEmbeddedReferences(owner,workspace,release,child,inputs));
+    }
+    private void validateInteractionBlock(UUID release,JsonNode block) {
+        String kind=block.path("kind").asText();JsonNode config=block.path("config");
+        Set<String> allowed=switch(kind) {
+            case "ERROR_CONTEXT","REPAIR_DIFF"->Set.of("predict","submitAnswer","requestCompile","requestHint","openEvidence");
+            // Existing source revisions may still expose the real hint/compile actions from v0.5.
+            case "TYPE_FLOW"->Set.of("predict","selectType","setParameter","requestCompile","requestHint","openEvidence");
+            case "COUNTERFACTUAL"->Set.of("predict","setParameter","submitAnswer","requestHint","openEvidence");
+            case "EXPERT_HELP"->Set.of("requestHint","openEvidence");
+            case "REVIEW_LINKS"->Set.of("navigateArtifact","openEvidence");
+            default->Set.of();
+        };
+        var seen=new java.util.HashSet<String>();
+        for(JsonNode action:block.path("allowedActions"))if(!allowed.contains(action.asText()) || !seen.add(action.asText()))throw DomainException.invalid("Block action is unsupported for its declared interaction kind");
+        boolean typedFlow=false;for(JsonNode action:block.path("allowedActions"))if(Set.of("selectType","setParameter").contains(action.asText()))typedFlow=true;
+        if(kind.equals("TYPE_FLOW") && typedFlow) {
+            var parameters=new java.util.HashSet<String>();
+            for(JsonNode parameter:config.path("parameters")) {
+                if(!Set.of("sourceType","targetType").contains(parameter.path("name").asText()) || !parameters.add(parameter.path("name").asText()))throw DomainException.invalid("Type flow parameters must name distinct sourceType/targetType candidates");
+                var candidates=new java.util.HashSet<String>();for(JsonNode value:parameter.path("candidates"))if(!candidates.add(value.asText()))throw DomainException.invalid("Type candidates must be distinct");
+            }
+        }
+        if(kind.equals("COUNTERFACTUAL")) {
+            JsonNode base=config.path("baseExerciseRef");
+            if(!base.equals(block.path("exerciseRef")))throw DomainException.invalid("A comparison block must pin its actual base exercise");
+            var candidates=new java.util.HashSet<String>();
+            for(JsonNode candidate:config.path("candidateExerciseRefs")) {
+                if(candidate.path("id").equals(base.path("id")) || !candidates.add(candidate.path("id").asText()))throw DomainException.invalid("Comparison variants must be distinct exercises, not the unchanged base");
+                if(jdbc.queryForList("SELECT candidate.id FROM exercise candidate JOIN exercise base ON base.family_id=candidate.family_id JOIN release_exercise re ON re.exercise_id=candidate.id AND re.exercise_revision=candidate.revision WHERE base.id=? AND base.revision=? AND candidate.id=? AND candidate.revision=? AND re.release_id=? AND candidate.status='REVIEWED'",
+                    base.path("id").asText(),base.path("revision").asInt(),candidate.path("id").asText(),candidate.path("revision").asInt(),release.toString()).isEmpty())throw DomainException.invalid("Comparison variants must be reviewed in the same published course and exercise family");
+            }
+        }
     }
     private void validateExerciseReference(UUID release,JsonNode exercise) {
         if(jdbc.queryForList("SELECT re.exercise_id FROM release_exercise re JOIN exercise e ON e.id=re.exercise_id AND e.revision=re.exercise_revision JOIN content_release r ON r.id=re.release_id WHERE re.release_id=? AND re.exercise_id=? AND re.exercise_revision=? AND e.status='REVIEWED' AND r.status='PUBLISHED'",

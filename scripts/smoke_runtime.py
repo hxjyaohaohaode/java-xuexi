@@ -2,7 +2,7 @@
 """Exercise a packaged runtime over real HTTP, including a process restart.
 
 Build the jar separately, then run:
-  python scripts/smoke_runtime.py --jar backend/target/typeforge-backend-0.5.0-SNAPSHOT.jar
+  python scripts/smoke_runtime.py --jar backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar
   python .work/mysql-validation/with_mysql.py python scripts/smoke_runtime.py --profile mysql
 
 The default uses a new task-owned H2 file database. MySQL mode requires an explicit
@@ -30,6 +30,7 @@ import urllib.parse
 import urllib.request
 import uuid
 import zipfile
+from verification_inputs import capture_inputs, require_unchanged, write_report
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -290,7 +291,7 @@ class Smoke:
             self.report["database"] = database
         else:
             self.env["TYPEFORGE_DB_URL"] = ("jdbc:h2:file:" + str(self.work / "typeforge") +
-                                           ";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH")
+                                           ";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_ON_EXIT=FALSE;DEFAULT_NULL_ORDERING=HIGH")
             self.env["TYPEFORGE_DB_USER"] = "sa"
             self.env["TYPEFORGE_DB_PASSWORD"] = ""
             self.report["engine"] = "H2 persistent file (not MySQL)"
@@ -332,6 +333,7 @@ class Smoke:
                    capabilities["businessReady"] is False and not enabled.intersection(unavailable)
                    and {"CHOICE_GRADING", "LOCAL_EVIDENCE_WORKFLOW", "OUTBOX_PROJECTIONS"} <= enabled
                    and {"FINITE_TYPE_LAB", "NOTEBOOK_ACTIONS", "STATIC_EXPORT", "TUTOR_EVIDENCE_ONLY", "EDITORIAL_PUBLISHING", "STUDY_WORKFLOW", "PRIVATE_ASSETS", "OFFICE_PDF_EXPORT", "ACCOUNT_LIFECYCLE", "LEARNING_ANALYTICS"} <= enabled
+                   and {"TEXT_GRADING", "NOTEBOOK_INTERACTIONS", "EVALUATION_WORKBENCH", "BATCH_INGESTION", "CONTENT_REVISION_DIFF"} <= enabled
                    and {"LLM_PLANNING", "LLM_TUTOR", "UNTRUSTED_CODE_EXECUTION", "MEDIA_GENERATION", "COMPILE_ONLY", "CODE_GRADING"} <= unavailable)
         return capabilities
 
@@ -340,7 +342,8 @@ class Smoke:
             return
         targets = {"app_user": saved["userId"], "learning_workspace": saved["workspaceId"],
                    "exercise_attempt": saved["attempt"]["id"], "learning_artifact": saved["notebook"]["id"],
-                   "agent_run": saved["run"]["id"]}
+                   "agent_run": saved["run"]["id"], "evaluation_suite": saved["evaluationSuite"]["id"],
+                   "evaluation_run": saved["evaluationRun"]["id"]}
         for table, resource in targets.items():
             identity = str(uuid.UUID(resource))
             count = self.mysql_query(f"SELECT COUNT(*) FROM {table} WHERE id='{identity}';")
@@ -375,7 +378,8 @@ class Smoke:
         page = client.request("GET", API + "/exercises?" + query + "&limit=100")
         self.check("public exercise DTOs omit answer specifications and hidden grading data",
                    8 <= len(page["items"]) <= 12
-                   and all(set(item) == {"id", "revision", "releaseId", "kind", "prompt", "difficulty", "conceptIds", "options"}
+                   and all(set(item) == {"id", "revision", "releaseId", "kind", "prompt", "difficulty", "conceptIds", "options", "answerKind", "textPolicy"}
+                           and item["answerKind"] == "CHOICE" and item["textPolicy"] is None
                            and all(set(option) == {"id", "text"} for option in item["options"])
                            for item in page["items"]))
         # Read only the packaged demo fixture as a test oracle; no answers are fetched from public HTTP.
@@ -434,6 +438,40 @@ class Smoke:
                    and any(ref["kind"] == "ATTEMPT" and ref["id"] == attempt["id"] for ref in version["inputRefs"])
                    and any(ref["kind"] == "KNOWLEDGE_CHUNK" for ref in version["inputRefs"])
                    and any(block["attemptId"] == attempt["id"] for block in version["content"]["blocks"]))
+        # Append before freezing the context: later tutor/document/export sources must bind
+        # this current notebook revision, while the original revision remains immutable.
+        origin_block = version["content"]["blocks"][0]
+        block_options = client.request("GET", API + f"/notebooks/{notebook['id']}/block-options?" + urllib.parse.urlencode(
+            {"artifactRevision": 1, "originBlockId": origin_block["id"]}))
+        self.check("notebook discovers a bounded type activity from its actual source block",
+                   "TYPE_FLOW" in block_options["availableKinds"] and block_options["typeFlowDefaults"]["operations"])
+        interactive_version = client.request("POST", API + f"/notebooks/{notebook['id']}/blocks",
+            {"artifactRevision": 1, "originBlockId": origin_block["id"], "kind": "TYPE_FLOW",
+             "config": block_options["typeFlowDefaults"]}, expected=(201,), key="notebook-type-" + uuid.uuid4().hex)
+        type_block = next(block for block in interactive_version["content"]["blocks"] if block["kind"] == "TYPE_FLOW")
+        notebook = client.request("GET", API + f"/artifacts/{notebook['id']}")
+        self.check("adding an activity persists a new source revision and preserves the original block",
+                   interactive_version["revision"] == notebook["currentRevision"] == 2
+                   and interactive_version["content"]["blocks"][0] == origin_block
+                   and type_block["config"] == block_options["typeFlowDefaults"])
+        initial_state = client.request("GET", API + f"/notebooks/{notebook['id']}/state?artifactRevision=2")
+        type_state = next(block for block in initial_state["blocks"] if block["blockId"] == type_block["id"])
+        type_input = {"sourceType": type_block["config"]["sourceType"], "targetType": type_block["config"]["targetType"],
+                      "operation": type_block["config"]["operations"][0], "prediction": "UNKNOWN"}
+        progress_before_type = client.request("GET", API + "/me/progress")
+        type_action = client.request("POST", API + f"/notebooks/{notebook['id']}/actions",
+            {"artifactRevision": 2, "blockId": type_block["id"], "expectedBlockRevision": type_block["revision"],
+             "expectedStateRevision": type_state["stateRevision"], "action": "selectType", "selection": "",
+             "answer": None, "typeInput": type_input}, key="notebook-lab-" + uuid.uuid4().hex)
+        self.check("notebook type selection persists a real finite laboratory result and increments state",
+                   type_action["status"] == "COMPLETED" and type_action["stateRevision"] == 1
+                   and type_action["attemptId"] is None and type_action["compileJobId"] is None
+                   and type_action["labSession"]["workspaceId"] == workspace_id
+                   and type_action["labSession"]["verdict"] in ("ALLOWED", "DENIED")
+                   and type_action["labSession"]["predictionCorrect"] is None
+                   and client.request("GET", API + "/labs/sessions/" + type_action["labSession"]["id"]) == type_action["labSession"])
+        self.check("notebook type exploration does not manufacture mastery evidence",
+                   client.request("GET", API + "/me/progress") == progress_before_type)
         search = client.request("GET", API + "/knowledge/search?" + urllib.parse.urlencode({"releaseId": release, "q": "PECS", "topK": 5}))
         self.check("local retrieval returns real versioned sources without inventing an answer",
                    search["items"] and search["insufficientEvidence"] is False
@@ -473,7 +511,7 @@ class Smoke:
                                  "conceptId": concepts[0]["id"], "eventType": "READ_COMPLETED"}, expected=(201,), key="reading-" + uuid.uuid4().hex)
         self.check("reading is activity evidence with a server timestamp", reading["evidenceClass"] == "ACTIVITY_NOT_MASTERY" and bool(reading["occurredAt"]))
         block = version["content"]["blocks"][0]
-        action = client.request("POST", API + f"/notebooks/{notebook['id']}/actions", {"artifactRevision": 1, "blockId": block["id"],
+        action = client.request("POST", API + f"/notebooks/{notebook['id']}/actions", {"artifactRevision": interactive_version["revision"], "blockId": block["id"],
                                 "expectedBlockRevision": block["revision"], "action": "submitAnswer", "selection": "",
                                 "answer": {"kind": "CHOICE", "optionIds": oracle["correctOptionIds"]}}, key="notebook-action-" + uuid.uuid4().hex)
         corrected = client.request("GET", API + "/attempts/" + action["attemptId"])
@@ -518,15 +556,86 @@ class Smoke:
             job = self.wait_for(file_format + " file is actually rendered", lambda: client.request("GET", API + "/export-jobs/" + job["id"]), lambda value: value["status"] in ("SUCCEEDED", "FAILED", "CANCELLED"))
             self.check(file_format + " exposes valid Office ZIP bytes with matching SHA-256", job["status"] == "SUCCEEDED" and job["downloadPath"] is not None and client.download(job["downloadPath"]).startswith(b"PK") and hashlib.sha256(client.download(job["downloadPath"])).hexdigest() == job["contentHash"])
             native_exports.append(job)
-        extras = {"preference": preference, "lab": lab, "tutor": tutor, "export": export, "documentId": document_id, "study": study, "nativeExports": native_exports}
+        # A user-labelled singleton proves durable retrieval execution, not independent
+        # relevance quality: its expected chunk comes from the real published search API.
+        progress_before_evaluation = self.wait_for("learning evidence settles before retrieval evaluation",
+            lambda: client.request("GET", API + "/me/progress"), lambda value: not value["rebuilding"])
+        evaluation_suite = client.request("POST", API + f"/workspaces/{studio['id']}/evaluation-suites",
+            {"title": "HTTP restart retrieval evidence", "description": "Private persistence fixture; labels follow an observed public search, not independent teaching-quality review.",
+             "cases": [{"key": "published-pecs", "query": "PECS", "conceptId": None, "expectation": "MATCH",
+                        "expectedChunkIds": [search["items"][0]["chunkId"]], "note": "Fixed published result selected through the real search API."}]},
+            expected=(201,), key="evaluation-suite-" + uuid.uuid4().hex)
+        self.check("evaluation suite freezes the real workspace release and observed knowledge revision",
+                   evaluation_suite["workspaceId"] == studio["id"] and evaluation_suite["releaseId"] == release
+                   and evaluation_suite["revision"] == 1 and evaluation_suite["caseCount"] == 1
+                   and evaluation_suite["cases"][0]["expectedChunks"][0]["chunkId"] == search["items"][0]["chunkId"]
+                   and evaluation_suite["cases"][0]["expectedChunks"][0]["revision"] == search["items"][0]["revision"]
+                   and evaluation_suite["cases"][0]["expectedChunks"][0]["contentHash"] == search["items"][0]["contentHash"])
+        evaluation = client.request("POST", API + f"/evaluation-suites/{evaluation_suite['id']}/runs",
+            {"suiteRevision": evaluation_suite["revision"], "topK": 5}, expected=(202,), key="evaluation-run-" + uuid.uuid4().hex)
+        evaluation = self.wait_for("durable retrieval evaluation completes with actual case results",
+            lambda: client.request("GET", API + "/evaluation-runs/" + evaluation["id"]),
+            lambda value: value["status"] in ("COMPLETED", "FAILED", "CANCELLED"))
+        self.check("complete evaluation binds metrics and its report to the fixed suite and corpus",
+                   evaluation["status"] == "COMPLETED" and evaluation["completedCases"] == evaluation["caseCount"] == 1
+                   and evaluation["suiteHash"] == evaluation_suite["contentHash"]
+                   and evaluation["corpusHash"] == evaluation_suite["corpusHash"]
+                   and evaluation["indexVersion"] == evaluation_suite["indexVersion"] == search["indexVersion"]
+                   and evaluation["metrics"]["totalCases"] == evaluation["metrics"]["passedCases"] == 1
+                   and evaluation["results"][0]["passed"] is True and evaluation["reportPath"] is not None
+                   and bool(re.fullmatch(r"[a-f0-9]{64}", evaluation["resultHash"])))
+
+        def evaluation_attachment(reader):
+            path = evaluation["reportPath"]
+            if path != API + f"/evaluation-runs/{evaluation['id']}/report":
+                raise SmokeFailure("Refusing an evaluation attachment outside its authenticated run")
+            started = time.monotonic()
+            with reader.opener.open(reader.base + path, timeout=8) as response:
+                payload = response.read(MAX_RESPONSE + 1)
+                status, headers = response.status, response.headers
+            self.report["http"].append({"phase": self.phase, "method": "GET", "path": path,
+                "status": status, "milliseconds": round((time.monotonic() - started) * 1000)})
+            digest = hashlib.sha256(payload).hexdigest()
+            self.check("evaluation JSON attachment is private, bounded and matches its server byte hash",
+                       status == 200 and 0 < len(payload) <= 2 * 1024 * 1024
+                       and headers.get_content_type() == "application/json"
+                       and headers.get("Content-Disposition", "").startswith("attachment;")
+                       and headers.get("Cache-Control") == "private, no-store"
+                       and headers.get("X-Content-Type-Options") == "nosniff"
+                       and headers.get("X-Content-SHA256") == digest)
+            return json.loads(payload), digest
+
+        evaluation_report, evaluation_report_hash = evaluation_attachment(client)
+        self.check("downloaded evaluation contains the actual frozen run results and explicit private scope",
+                   evaluation_report["format"] == "EVALUATION_REPORT_V1"
+                   and evaluation_report["scope"] == "PRIVATE_USER_LABELLED_PUBLISHED_RETRIEVAL"
+                   and evaluation_report["runId"] == evaluation["id"] and evaluation_report["suiteId"] == evaluation_suite["id"]
+                   and evaluation_report["suiteHash"] == evaluation_suite["contentHash"]
+                   and evaluation_report["resultHash"] == evaluation["resultHash"]
+                   and evaluation_report["metrics"] == evaluation["metrics"] and evaluation_report["results"] == evaluation["results"])
+        self.check("retrieval evaluation does not manufacture learner mastery evidence",
+                   client.request("GET", API + "/me/progress") == progress_before_evaluation)
+        notebook_state = client.request("GET", API + f"/notebooks/{notebook['id']}/state?artifactRevision=2")
+        saved_type_state = next(block for block in notebook_state["blocks"] if block["blockId"] == type_block["id"])
+        self.check("notebook state retains selected types and the exact persisted server result",
+                   saved_type_state["stateRevision"] == 1 and saved_type_state["typeInput"] == type_input
+                   and saved_type_state["lastResult"] == type_action)
+        extras = {"preference": preference, "lab": lab, "tutor": tutor, "export": export, "documentId": document_id,
+                  "study": study, "nativeExports": native_exports, "interactiveVersion": interactive_version,
+                  "notebookState": notebook_state, "typeLab": type_action["labSession"], "evaluationReportHash": evaluation_report_hash}
         attacker = Client(self, base)
         other_password = secrets.token_urlsafe(24)
         self.secrets.add(other_password)
-        attacker.register_and_login("smoke-other-" + uuid.uuid4().hex[:16], other_password)
-        for path in (f"/workspaces/{workspace_id}", f"/attempts/{attempt['id']}",
-                     f"/artifacts/{notebook['id']}", f"/agent-runs/{run['id']}"):
+        other_username = "smoke-other-" + uuid.uuid4().hex[:16]
+        attacker.register_and_login(other_username, other_password)
+        private_paths = (f"/workspaces/{workspace_id}", f"/attempts/{attempt['id']}",
+                         f"/artifacts/{notebook['id']}", f"/agent-runs/{run['id']}",
+                         f"/notebooks/{notebook['id']}/state?artifactRevision=2",
+                         f"/evaluation-suites/{evaluation_suite['id']}", f"/evaluation-runs/{evaluation['id']}",
+                         f"/evaluation-runs/{evaluation['id']}/report")
+        for path in private_paths:
             attacker.request("GET", API + path, expected=(404,))
-        self.check("another authenticated learner cannot access private workspace/evidence/artifact/run IDs", True)
+        self.check("another authenticated learner cannot access private workspace, notebook state, evaluation or report IDs", True)
         projection = self.wait_for("ordered workspace projection catches up without dead letters",
                                    lambda: client.request("GET", API + f"/workspaces/{workspace_id}/projection"),
                                    lambda value: value["caughtUp"] and value["deadLetters"] == 0)
@@ -542,6 +651,7 @@ class Smoke:
         saved = {"userId": session["userId"], "workspaceId": workspace_id, "attempt": attempt,
                  "notebook": notebook, "version": version, "run": run, "events": events,
                  "runEvents": run_events, "capabilities": capabilities,
+                 "evaluationSuite": evaluation_suite, "evaluationRun": evaluation,
                  "progress": client.request("GET", API + "/me/progress"),
                  "reviews": client.request("GET", API + "/me/reviews"),
                  "memories": client.request("GET", API + f"/workspaces/{workspace_id}/memories")}
@@ -564,6 +674,12 @@ class Smoke:
             ("actual export file metadata", f"/export-jobs/{extras['export']['id']}", extras["export"]),
             ("immutable graded attempt", f"/attempts/{attempt['id']}", saved["attempt"]),
             ("notebook DSL and provenance hash", f"/artifacts/{notebook['id']}/revisions?revision=1", saved["version"]),
+            ("current notebook activity source", f"/artifacts/{notebook['id']}/revisions?revision=2", extras["interactiveVersion"]),
+            ("current notebook metadata", f"/artifacts/{notebook['id']}", saved["notebook"]),
+            ("notebook interaction state and receipt", f"/notebooks/{notebook['id']}/state?artifactRevision=2", extras["notebookState"]),
+            ("notebook-generated finite type session", f"/labs/sessions/{extras['typeLab']['id']}", extras["typeLab"]),
+            ("private retrieval evaluation suite", f"/evaluation-suites/{evaluation_suite['id']}", saved["evaluationSuite"]),
+            ("completed retrieval evaluation and metrics", f"/evaluation-runs/{evaluation['id']}", saved["evaluationRun"]),
             ("durable run and output references", f"/agent-runs/{run['id']}", saved["run"]),
             ("workspace event stream", f"/workspaces/{workspace_id}/events?after=0&limit=100", saved["events"]),
             ("agent execution history", f"/agent-runs/{run['id']}/events?after=0&limit=100", saved["runEvents"]),
@@ -576,6 +692,14 @@ class Smoke:
             self.check(name + " survives process restart unchanged", actual == expected)
         self.check("capability honesty survives restart", self.capabilities(restored) == saved["capabilities"])
         self.verify_private_sql(saved)
+        restored_evaluation_report, restored_evaluation_hash = evaluation_attachment(restored)
+        self.check("private evaluation attachment bytes and frozen JSON survive actual process restart",
+                   restored_evaluation_hash == extras["evaluationReportHash"] and restored_evaluation_report == evaluation_report)
+        restarted_attacker = Client(self, base)
+        restarted_attacker.login(other_username, other_password)
+        for path in private_paths:
+            restarted_attacker.request("GET", API + path, expected=(404,))
+        self.check("private notebook state and evaluation evidence remain inaccessible to another user after restart", True)
         self.check("export bytes survive actual process restart", hashlib.sha256(restored.download(extras["export"]["downloadPath"])).hexdigest() == extras["export"]["contentHash"])
         self.check("study DAG and output references survive restart unchanged", restored.request("GET", API + "/agent-runs/" + extras["study"]["id"]) == extras["study"])
         for native in extras["nativeExports"]:
@@ -591,18 +715,27 @@ class Smoke:
         restored.request("GET", API + f"/workspaces/{workspace_id}", expected=(401,))
         self.check("logout invalidates subsequent private-resource access", True)
         self.report["resources"] = {"userId": saved["userId"], "workspaceId": workspace_id,
-                                    "attemptId": attempt["id"], "notebookId": notebook["id"], "runId": run["id"]}
+                                    "attemptId": attempt["id"], "notebookId": notebook["id"], "runId": run["id"],
+                                    "notebookRevision": interactive_version["revision"], "notebookStateRevision": saved_type_state["stateRevision"],
+                                    "evaluationSuiteId": evaluation_suite["id"], "evaluationRunId": evaluation["id"],
+                                    "evaluationReportSha256": evaluation_report_hash}
         self.app.stop()
         self.app.check_logs()
         self.check("packaged jar stayed unchanged throughout verification",
                    hashlib.sha256(self.jar.read_bytes()).hexdigest() == self.report["jarSha256"])
 
     def execute(self):
+        output = self.args.output or ROOT / ".work" / ("smoke-runtime-" + self.args.profile + ".json")
+        write_report(output, self.report)
         try:
+            before = capture_inputs("backend", ("scripts/smoke_runtime.py",))
+            self.report["verificationInputs"] = before
             self.prepare()
             self.run_flow()
+            self.report["inputsUnchanged"] = require_unchanged(before)
             self.report["result"] = "PASS"
         except Exception as failure:
+            self.report["result"] = "FAIL"
             self.report["error"] = self.redact(type(failure).__name__ + ": " + str(failure))
         finally:
             try:
@@ -613,11 +746,8 @@ class Smoke:
             self.report["finishedAt"] = dt.datetime.now(dt.timezone.utc).isoformat()
             self.report["scope"] = "Real HTTP authentication, learning/artifact/evidence linkage and process-restart persistence; no model/media/compiler adapters are simulated"
             self.report.setdefault("applicationLogs", [str(path) for path in self.app.logs])
-            encoded = json.dumps(self.report, ensure_ascii=False, indent=2) + "\n"
-            (self.work / "report.json").write_text(encoded, encoding="utf-8")
-            output = self.args.output or ROOT / ".work" / ("smoke-runtime-" + self.args.profile + ".json")
-            output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_text(encoded, encoding="utf-8")
+            write_report(self.work / "report.json", self.report)
+            write_report(output, self.report)
             print(json.dumps({"result": self.report["result"], "profile": self.args.profile,
                               "engine": self.report.get("engine"), "checks": len(self.report["checks"]),
                               "report": str(output), "error": self.report.get("error")}, ensure_ascii=False, indent=2))

@@ -26,7 +26,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 /** Choice grading and asynchronous compile-contract grading share immutable attempts and learning evidence. */
 @Service
-public class LearningService {
+public class LearningService implements io.typeforge.operations.RuntimeCapabilityProvider {
     public record Attempt(UUID id,UUID workspaceId,UUID releaseId,UUID exerciseId,int exerciseRevision,String status,
                           int hintLevel,BigDecimal score,BigDecimal maximum,UUID jobId,String feedback,JsonNode answer,
                           Instant createdAt,String graderVersion,List<String> misconceptionCodes,Reference evidenceRef) {}
@@ -42,28 +42,58 @@ public class LearningService {
     private final SchemaCatalog schemas;
     private final Clock clock;
     private final CompileService compiler;
+    @Override public Set<String> enabledCapabilities() {return Set.of("TEXT_GRADING");}
     public LearningService(JdbcTemplate jdbc,TransactionTemplate tx,WorkspaceService workspaces,EventJournal events,JsonCodec json,SchemaCatalog schemas,Clock clock,CompileService compiler) {
         this.jdbc=jdbc;this.tx=tx;this.workspaces=workspaces;this.events=events;this.json=json;this.schemas=schemas;this.clock=clock;this.compiler=compiler;
     }
     public Attempt submit(UUID owner,UUID workspace,UUID release,UUID exercise,int revision,JsonNode answer,String key) {
+        return submit(owner,workspace,release,exercise,revision,answer,key,false);
+    }
+    /** Contextual notebook practice cannot manufacture a new independent mastery sample. */
+    public Attempt submitPractice(UUID owner,UUID workspace,UUID release,UUID exercise,int revision,JsonNode answer,String key) {
+        return submit(owner,workspace,release,exercise,revision,answer,key,true);
+    }
+    private Attempt submit(UUID owner,UUID workspace,UUID release,UUID exercise,int revision,JsonNode answer,String key,boolean assistedPractice) {
         WorkspaceService.requireKey(key); schemas.validate("Answer",answer);
         if(revision<1) throw DomainException.invalid("Invalid exercise revision");
-        if(answer.path("kind").asText().equals("TEXT")) throw new DomainException("CAPABILITY_UNAVAILABLE",503,"Free text cannot receive an objective score without a reviewed rubric");
         return tx.execute(status->{
             if(jdbc.queryForList("SELECT id FROM app_user WHERE id=? AND status='ACTIVE' FOR UPDATE",owner.toString()).isEmpty()) throw DomainException.missing();
             var scope=workspaces.lockOwned(owner,workspace);
             if(!scope.releaseId().equals(release)) throw DomainException.invalid("Attempt must use the workspace's fixed release");
-            String hash=json.hash(Map.of("workspaceId",workspace,"releaseId",release,"exerciseId",exercise,"revision",revision,"answer",answer));
+            var hashInput=new java.util.LinkedHashMap<String,Object>(Map.of("workspaceId",workspace,"releaseId",release,"exerciseId",exercise,"revision",revision,"answer",answer));
+            if(assistedPractice)hashInput.put("assistedPractice",true);String hash=json.hash(hashInput);
             UUID previous=workspaces.replay(owner,"submitAttempt",key,hash);
             if(previous!=null) return get(owner,previous);
-            var rows=jdbc.query("SELECT e.answer_spec,e.kind FROM exercise e JOIN release_exercise re ON re.exercise_id=e.id AND re.exercise_revision=e.revision JOIN content_release r ON r.id=re.release_id WHERE e.id=? AND e.revision=? AND re.release_id=? AND e.status='REVIEWED' AND r.status='PUBLISHED'",(rs,n)->Map.of("spec",json.tree(rs.getString(1)),"kind",rs.getString(2)),exercise.toString(),revision,release.toString());
+            var rows=jdbc.query("SELECT e.answer_spec,e.kind,e.rubric_version FROM exercise e JOIN release_exercise re ON re.exercise_id=e.id AND re.exercise_revision=e.revision JOIN content_release r ON r.id=re.release_id WHERE e.id=? AND e.revision=? AND re.release_id=? AND e.status='REVIEWED' AND r.status='PUBLISHED'",(rs,n)->Map.of("spec",json.tree(rs.getString(1)),"kind",rs.getString(2),"rubricVersion",rs.getString(3)),exercise.toString(),revision,release.toString());
             if(rows.isEmpty()) throw DomainException.missing();
             String kind=rows.get(0).get("kind").toString();
             JsonNode spec=(JsonNode)rows.get(0).get("spec");
+            String expectedKind=TextRubric.configured(spec)?"TEXT":Set.of("SIGNATURE","REFACTOR","FILL").contains(kind)?"CODE":"CHOICE";
+            if(!answer.path("kind").asText().equals(expectedKind)) throw DomainException.invalid("Answer kind does not match this published exercise's response policy");
+            if(expectedKind.equals("TEXT")) {
+                if(!TextRubric.supports(kind) || !TextRubric.VERSION.equals(rows.get(0).get("rubricVersion")))
+                    throw new DomainException("INVALID_PUBLISHED_EXERCISE",503,"The short-answer rubric version needs editorial repair; no grade was recorded");
+                TextRubric.Spec rubric=TextRubric.parse(spec);
+                var reviewed=jdbc.queryForList("SELECT receipt.answer_hash FROM exercise_text_review_receipt receipt JOIN content_review r ON r.id=receipt.review_id JOIN exercise e ON e.id=receipt.exercise_id AND e.revision=receipt.exercise_revision WHERE receipt.exercise_id=? AND receipt.exercise_revision=? AND receipt.rubric_version=? AND r.target_kind='EXERCISE' AND r.target_id=e.id AND r.target_revision=e.revision AND r.author_id=e.author_id AND r.author_id<>r.reviewer_id AND r.decision='APPROVED'",String.class,exercise.toString(),revision,TextRubric.VERSION);
+                if(reviewed.size()!=1 || !reviewed.get(0).equals(json.hash(spec))) throw new DomainException("INVALID_PUBLISHED_EXERCISE",503,"An unchanged independently reviewed short-answer rubric is required; no grade was recorded");
+                boolean matched=TextRubric.matches(rubric,answer.path("value").asText());
+                int hintLevel=assistedPractice?4:assistanceLevel(owner,exercise,revision);UUID id=UUID.randomUUID();
+                BigDecimal score=matched?new BigDecimal("100.00"):new BigDecimal("0.00");
+                // Keep the immutable rule identity as evidence, but do not reveal accepted/rejected examples.
+                var feedback=Map.of("explanation",matched?"本次短答案与已独立审核的规范化精确答案一致；此结果只覆盖题目声明的短答案范围，不代表自由文本语义已被核验。":"本次短答案未匹配已独立审核的精确答案。系统保留标点与词序，不进行语义推断；请核对公开范围与规范化规则。",
+                    "misconceptions",matched?json.tree("[]"):spec.path("misconceptions"),"correct",matched,
+                    "evidenceClass",hintLevel==0?"INDEPENDENT_FIRST_ATTEMPT":"PRACTICE_AFTER_FEEDBACK",
+                    "evaluationKind","NORMALIZED_EXACT","rubricVersion",TextRubric.VERSION,"rubricHash",json.hash(spec.path("textRubric")));
+                jdbc.update("INSERT INTO exercise_attempt(id,user_id,release_id,exercise_id,exercise_revision,answer,status,hint_level,score,maximum,grader_version,feedback,created_at) VALUES(?,?,?,?,?,?,'GRADED',?,?,100,?,?,?)",
+                    id.toString(),owner.toString(),release.toString(),exercise.toString(),revision,json.write(answer),hintLevel,score,TextRubric.VERSION,json.write(feedback),Timestamp.from(clock.instant()));
+                jdbc.update("INSERT INTO workspace_attempt(workspace_id,attempt_id) VALUES(?,?)",workspace.toString(),id.toString());
+                events.append(workspace,"ATTEMPT_GRADED","SERVER",Map.of("attemptId",id,"releaseId",release,"exerciseId",exercise,"exerciseRevision",revision));
+                workspaces.remember(owner,"submitAttempt",key,hash,id);return get(owner,id);
+            }
             if(answer.path("kind").asText().equals("CODE")) {
                 if(!Set.of("SIGNATURE","REFACTOR","FILL").contains(kind)) throw DomainException.invalid("This exercise accepts an objective selection, not source code");
                 var checks=CodeRubric.parse(spec);
-                UUID id=UUID.randomUUID();int hintLevel=assistanceLevel(owner,exercise,revision);
+                UUID id=UUID.randomUUID();int hintLevel=assistedPractice?4:assistanceLevel(owner,exercise,revision);
                 jdbc.update("INSERT INTO exercise_attempt(id,user_id,release_id,exercise_id,exercise_revision,answer,status,hint_level,grader_version,feedback,created_at) VALUES(?,?,?,?,?,?,'PENDING',?,?,?,?)",id.toString(),owner.toString(),release.toString(),exercise.toString(),revision,json.write(answer),hintLevel,CodeRubric.VERSION,json.write(Map.of("explanation","正在等待独立编译检查；编译通过本身不会判为答对。","misconceptions",List.of())),Timestamp.from(clock.instant()));
                 jdbc.update("INSERT INTO workspace_attempt(workspace_id,attempt_id) VALUES(?,?)",workspace.toString(),id.toString());
                 compiler.createForAttempt(owner,workspace,release,answer.path("source").asText(),id,checks,json.hash(Map.of("owner",owner,"operation","attemptCompile","key",key)));
@@ -77,7 +107,7 @@ public class LearningService {
             if(!offered.containsAll(chosen) || kind.equals("SINGLE") && chosen.size()!=1) throw DomainException.invalid("Answer contains invalid choices");
             boolean correct=expected.equals(chosen);
             // The first attempt in a family is independent. Later attempts follow exposed feedback.
-            int hintLevel=assistanceLevel(owner,exercise,revision);
+            int hintLevel=assistedPractice?4:assistanceLevel(owner,exercise,revision);
             BigDecimal score=correct?new BigDecimal("100.00"):new BigDecimal("0.00");
             var feedback=Map.of("explanation",spec.path("explanation").asText(),"misconceptions",correct?json.tree("[]"):spec.path("misconceptions"),"correct",correct,"evidenceClass",hintLevel==0?"INDEPENDENT_FIRST_ATTEMPT":"PRACTICE_AFTER_FEEDBACK");
             UUID id=UUID.randomUUID();
@@ -131,6 +161,12 @@ public class LearningService {
             events.append(workspace,"EXERCISE_HINT_REVEALED","SERVER",Map.of("hintId",id,"exerciseId",exercise,"exerciseRevision",revision,"hintLevel",level,"evidenceClass","ASSISTED_PRACTICE"));
             workspaces.remember(owner,"requestExerciseHint",key,hash,id);return hintReceipt(owner,id);
         });
+    }
+    /** Revealed text belongs to an exact question revision; family-level assistance is computed separately. */
+    public int revealedHintLevel(UUID owner,UUID workspace,UUID exercise,int revision) {
+        workspaces.requireOwned(owner,workspace);
+        Integer value=jdbc.queryForObject("SELECT MAX(hint_level) FROM exercise_hint_receipt WHERE user_id=? AND workspace_id=? AND exercise_id=? AND exercise_revision=?",Integer.class,owner.toString(),workspace.toString(),exercise.toString(),revision);
+        return value==null?0:value;
     }
     private Hint hintReceipt(UUID owner,UUID id) {
         return jdbc.queryForObject("SELECT * FROM exercise_hint_receipt WHERE id=? AND user_id=?",(rs,n)->new Hint(id,UUID.fromString(rs.getString("workspace_id")),UUID.fromString(rs.getString("exercise_id")),rs.getInt("exercise_revision"),rs.getInt("hint_level"),rs.getString("hint_text"),"ASSISTED_PRACTICE"),id.toString(),owner.toString());

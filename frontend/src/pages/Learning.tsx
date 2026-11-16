@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, Search } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, GitBranch, Search } from 'lucide-react';
 import { api } from '../api';
 import { useWorkspace } from '../context';
 import { useMutation, useResource, useSessionDraft } from '../hooks';
@@ -13,6 +13,7 @@ import {
   SectionTitle,
 } from '../components/ui';
 import type { Concept, Evidence } from '../types';
+import { ConceptMap } from '../components/ConceptMap';
 
 export function Learning() {
   const { workspace, session, tick, events, navigate, selection, can } = useWorkspace();
@@ -21,6 +22,10 @@ export function Learning() {
   );
   const [query, setQuery] = useSessionDraft(`tf.search.${session.userId}.${workspace.id}`, '');
   const [submitted, setSubmitted] = useState('');
+  const [view, setView] = useSessionDraft<'reading' | 'map'>(
+    `tf.learning-view.${session.userId}.${workspace.id}`,
+    'reading',
+  );
   const [read, setRead] = useSessionDraft<string[]>(
     `tf.read.${session.userId}.${workspace.id}`,
     [],
@@ -110,6 +115,16 @@ export function Learning() {
       </form>
       <ErrorNotice error={concepts.error} retry={concepts.reload} />
       <ErrorNotice error={readings.error} retry={readings.reload} />
+      {!submitted && !!concepts.data?.items.length && (
+        <div className="segments learning-view-switch" aria-label="课程浏览方式">
+          <button aria-pressed={view === 'reading'} onClick={() => setView('reading')}>
+            <BookOpen size={16} /> 课程阅读
+          </button>
+          <button aria-pressed={view === 'map'} onClick={() => setView('map')}>
+            <GitBranch size={16} /> 概念路径
+          </button>
+        </div>
+      )}
       {submitted ? (
         <section className="search-results">
           <div className="row spread">
@@ -130,6 +145,16 @@ export function Learning() {
         </section>
       ) : concepts.loading ? (
         <Loading />
+      ) : chosen && view === 'map' ? (
+        <ConceptMap
+          concepts={concepts.data!.items}
+          selectedId={chosen.id}
+          completed={read}
+          onRead={(id) => {
+            setView('reading');
+            navigate('learn', id);
+          }}
+        />
       ) : chosen ? (
         <div className="reading-layout">
           <aside className="concept-outline" aria-label="概念目录">
@@ -168,6 +193,9 @@ export function Learning() {
                 })}
               </div>
             )}
+            <button className="text-button small path-backlink" onClick={() => setView('map')}>
+              <GitBranch size={15} /> 查看前置与后续路径
+            </button>
             <EvidenceList items={chosen.evidence} />
             <div className="reading-actions">
               <div>

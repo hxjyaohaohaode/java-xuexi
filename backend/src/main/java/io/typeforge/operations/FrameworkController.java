@@ -42,7 +42,7 @@ public class FrameworkController {
         for(String capability:List.of("TUTOR_MODEL","LLM_PLANNING","COMPILE_ONLY","CODE_GRADING","PRIVATE_ASSETS")) if(!enabled.contains(capability)) unavailable.add(capability);
         if(!enabled.contains("TUTOR_MODEL")) unavailable.add("LLM_TUTOR");
         if(new ClassPathResource("static/index.html").exists()) enabled.add("FRONTEND");else unavailable.add("FRONTEND");
-        return Map.of("runtimeVersion","0.5","businessReady",false,
+        return Map.of("runtimeVersion","0.6","businessReady",false,
             "enabled",List.copyOf(enabled),"unavailable",List.copyOf(unavailable),
             "learningEvidence","Only server-graded first attempts from distinct families contribute independent samples",
             "localWorkflow","Evidence workflow is deterministic. Tutor EVIDENCE_ONLY and configured MODEL are separate request modes.");

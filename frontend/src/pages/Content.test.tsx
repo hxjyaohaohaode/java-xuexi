@@ -149,3 +149,70 @@ it('sends the independently reviewed hash and the exact APPROVED protocol decisi
     ),
   );
 });
+
+it('authors bounded TEXT rules privately and can derive a new published-family candidate without changing the original id', async () => {
+  const { context, get, view } = fixture();
+  context.can = (capability) => capability === 'TEXT_GRADING';
+  const originalRead = get.getMockImplementation()!;
+  const exercise = {
+    id: 'text-original',
+    revision: 1,
+    familyId: 'fixed-family',
+    kind: 'READING',
+    difficulty: 1,
+    prompt: '回答读取结果的类型',
+    conceptIds: ['concept-a'],
+    knowledgeRefs: [{ id: 'chunk-a', revision: 3 }],
+    status: 'REVIEWED',
+    authorId: 'another-editor',
+    reviewHash: 'd'.repeat(64),
+    answerSpec: {
+      options: [],
+      optionIds: [],
+      explanation: '读取类型受上界约束。',
+      misconceptions: [],
+      hints: ['先看上界'],
+      compileChecks: [],
+      textRubric: {
+        version: 'text-exact-nfkc-v1',
+        scope: '回答完整类型名，保留词序。',
+        caseSensitive: true,
+        acceptedAnswers: ['Number'],
+        rejectedAnswers: ['Integer'],
+      },
+    },
+  };
+  get.mockImplementation((path, signal) =>
+    path.startsWith('/admin/exercises?')
+      ? Promise.resolve([{ ...exercise, title: exercise.prompt }])
+      : path === '/admin/exercises/text-original/revisions/1'
+        ? Promise.resolve(exercise)
+        : originalRead(path, signal),
+  );
+  const request = vi.spyOn(api, 'request').mockResolvedValue({ ...exercise, id: 'derived' });
+  const user = userEvent.setup();
+  view();
+  await user.click(screen.getByRole('tab', { name: '练习设计' }));
+  await user.click(await screen.findByRole('button', { name: '派生同题族新练习' }));
+  expect(await screen.findByLabelText('允许答案 1')).toHaveValue('Number');
+  expect(screen.getByLabelText('拒绝反例 1')).toHaveValue('Integer');
+  expect(screen.getByRole('checkbox', { name: '区分大小写' })).toBeChecked();
+  expect(screen.queryByLabelText('选项 A 内容')).not.toBeInTheDocument();
+  await user.clear(screen.getByLabelText('题目内容'));
+  await user.type(screen.getByLabelText('题目内容'), '比较上界变化后的读取类型');
+  await user.click(screen.getByRole('button', { name: '保存练习草稿' }));
+  await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+  const body = request.mock.calls[0][2] as typeof exercise & { baseRevision: number };
+  expect(body.id).not.toBe(exercise.id);
+  expect(body).toMatchObject({
+    revision: 1,
+    baseRevision: 0,
+    familyId: 'fixed-family',
+    answerSpec: {
+      options: [],
+      optionIds: [],
+      compileChecks: [],
+      textRubric: exercise.answerSpec.textRubric,
+    },
+  });
+});

@@ -40,6 +40,8 @@ jobs:
           python-version: '3.12'
       - name: Install contract validation dependencies
         run: python -m pip install -r requirements-dev.txt
+      - name: Verify evidence guards reject stale builds and incomplete results
+        run: python -m unittest discover -s scripts -p 'test_*.py'
       - name: Verify contracts, data and documentation
         run: python scripts/verify.py
       - name: Verify the published source matches its evidence snapshot
@@ -94,14 +96,13 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Install and verify the frontend
+      - name: Install the locked frontend dependencies
         working-directory: frontend
-        run: |
-          npm ci
-          npm run check
-          npm run build
+        run: npm ci
+      - name: Verify and bind the complete fresh frontend build
+        run: python scripts/verify_frontend.py
       - name: Verify Java semantics, transactions and package the runtime
-        run: mvn -B -ntp -f backend/pom.xml clean verify
+        run: python scripts/verify_java.py
       - name: Verify HTTP linkage and restart persistence on H2 files
         run: python scripts/smoke_runtime.py --profile h2
       - name: Ensure an independent MySQL client is available
@@ -134,22 +135,27 @@ jobs:
         run: python scripts/verify_content_mysql.py
       - name: Verify account lifecycle and private assets against real MySQL
         run: python scripts/verify_private_modules_mysql.py
+      - name: Verify evaluation imports TEXT and Notebook interactions against real MySQL
+        run: python scripts/verify_v06_modules_mysql.py
       - name: Install Chromium for the real browser integration
         working-directory: frontend
         run: npx playwright install --with-deps chromium
       - name: Verify the real browser against the packaged application
-        run: python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.5.0-SNAPSHOT.jar
+        run: python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar
       - name: Upload sanitized runtime and isolation reports only
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: persistent-http-smoke-verification
           path: |
+            .work/frontend-build-verification.json
+            .work/java-build-verification.json
             .work/smoke-runtime-h2.json
             .work/smoke-runtime-mysql.json
             .work/mysql-isolation-verification.json
             .work/mysql-content-verification.json
             .work/mysql-account-assets-verification.json
+            .work/mysql-v06-modules-verification.json
             frontend/test-results/browser-runtime-report.json
             frontend/test-results/browser-report.json
             frontend/test-results/*.png

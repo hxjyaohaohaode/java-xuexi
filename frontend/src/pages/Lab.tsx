@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, FlaskConical } from 'lucide-react';
+import { ArrowLeft, ArrowRight, FlaskConical } from 'lucide-react';
 import { api } from '../api';
 import { useWorkspace } from '../context';
 import { useMutation, useResource, useSessionDraft } from '../hooks';
@@ -105,14 +105,12 @@ export function Lab() {
                     }}
                   >
                     <option value="READ">读取：容器 → 接收值类型</option>
-                    <option value="WRITE">写入：值类型 → 容器</option>
+                    <option value="WRITE">写入：向容器写入一个值</option>
                   </select>
                 </Field>
               )}
               <div className="type-flow-input">
-                <Field
-                  label={labType === 'READ_WRITE' && operation === 'READ' ? '容器类型' : '源类型'}
-                >
+                <Field label={labType === 'READ_WRITE' ? '容器类型' : '源类型'}>
                   <input
                     className="code-input"
                     value={sourceType}
@@ -124,10 +122,18 @@ export function Lab() {
                     required
                   />
                 </Field>
-                <ArrowRight size={20} />
+                {labType === 'READ_WRITE' && operation === 'WRITE' ? (
+                  <ArrowLeft size={20} />
+                ) : (
+                  <ArrowRight size={20} />
+                )}
                 <Field
                   label={
-                    labType === 'READ_WRITE' && operation === 'WRITE' ? '容器类型' : '目标类型'
+                    labType === 'READ_WRITE'
+                      ? operation === 'WRITE'
+                        ? '写入值的类型'
+                        : '接收值的类型'
+                      : '目标类型'
                   }
                 >
                   <input
@@ -181,8 +187,8 @@ export function Lab() {
               onClick={() => {
                 setLabType('READ_WRITE');
                 setOperation('WRITE');
-                setSourceType('Integer');
-                setTargetType('List<? super Integer>');
+                setSourceType('List<? super Integer>');
+                setTargetType('Integer');
                 setResult(null);
               }}
             >
@@ -213,7 +219,11 @@ export function Lab() {
               </div>
               <div className="type-relation">
                 <code>{sourceType}</code>
-                <ArrowRight size={18} />
+                {labType === 'READ_WRITE' && operation === 'WRITE' ? (
+                  <ArrowLeft size={18} />
+                ) : (
+                  <ArrowRight size={18} />
+                )}
                 <code>{targetType}</code>
               </div>
               <p className="preserve-text">{result.explanation}</p>

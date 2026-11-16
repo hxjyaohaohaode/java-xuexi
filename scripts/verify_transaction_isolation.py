@@ -25,6 +25,8 @@ import sys
 import tempfile
 import time
 import xml.etree.ElementTree as ET
+from verification_inputs import (VerificationFailure, capture_inputs, clean_maven_environment,
+                                 require_unchanged, write_report)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,7 +59,7 @@ def mysql_environment():
     port = int(config["port"])
     if not 1 <= port <= 65535 or not config.get("username") or not config.get("password"):
         raise GateFailure("Incomplete private MySQL test configuration")
-    env = os.environ.copy()
+    env = clean_maven_environment(native_mysql=True)
     for name in list(env):
         if name.startswith("SPRING_DATASOURCE_") or name in ("SPRING_PROFILES_ACTIVE", "SPRING_APPLICATION_JSON"):
             del env[name]
@@ -116,9 +118,12 @@ def main():
     work.chmod(0o700)
     report = {"result": "FAIL", "execution": "targeted-real-mysql", "testClass": TEST_CLASS,
               "tests": 0, "failures": 0, "errors": 0, "skipped": 0, "engine": "UNCONFIRMED", "caseNames": []}
+    write_report(REPORT, report)
     started = time.monotonic()
     xml_path = ROOT / "backend/target/surefire-reports" / ("TEST-" + TEST_CLASS + ".xml")
     try:
+        before = capture_inputs("backend", ("scripts/verify_transaction_isolation.py",))
+        report["verificationInputs"] = before
         env = mysql_environment()
         executable = shutil.which(args.maven)
         if executable is None and Path(args.maven).is_file():
@@ -138,13 +143,14 @@ def main():
         report.update(summary)
         if completed.returncode != 0 or not valid:
             raise GateFailure("Targeted isolation checks failed or did not supply actual MySQL READ COMMITTED and REPEATABLE READ control evidence")
+        report["inputsUnchanged"] = require_unchanged(before)
         report["result"] = "PASS"
     except Exception as failure:
-        report["error"] = str(failure) if isinstance(failure, GateFailure) else type(failure).__name__
+        report["error"] = str(failure) if isinstance(failure, (GateFailure, VerificationFailure)) else type(failure).__name__
     finally:
         report["durationSeconds"] = round(time.monotonic() - started, 3)
-        REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps(report, ensure_ascii=False, indent=2))
+        write_report(REPORT, report)
+    print(json.dumps({key: value for key, value in report.items() if key != "verificationInputs"}, ensure_ascii=False, indent=2))
     return 0 if report["result"] == "PASS" else 1
 
 

@@ -4,6 +4,7 @@ import App from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles.css';
 import './experience.css';
+import './workbench.css';
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>

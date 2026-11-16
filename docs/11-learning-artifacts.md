@@ -1,6 +1,6 @@
 # 多模态学习作品与动态错题集
 
-本章保留完整创作目标，并明确 v0.5 当前范围：作品 DSL/语义校验、不可变版本、输入血缘和失效传播；从本人明确选择的真实错题/提示后作答构建 NOTEBOOK；预测、证据、复练、编译与分级提示受控动作；文档/幻灯片编辑、私有图片选择与安全预览；导师及学习任务生成带完整来源的 DRAFT；真实 Markdown/HTML/SVG/DOCX/PPTX/PDF 私有下载。学习任务已接通有限规划、专家回答、独立复核与作品组装。声音/镜头制作、通用任意工具自治和真实供应商教学效果评测仍待完成。准确操作见 [契约](../contracts/README.md)，实测见 [当前验收](../evidence/runtime-review.md)，新增实现和限制见 [学习任务与原生导出](23-study-and-exports.md)。
+本章保留完整创作目标，并明确 v0.6 当前范围：作品 DSL/语义校验、不可变版本、输入血缘和失效传播；从本人明确选择的真实错题/提示后作答构建 NOTEBOOK；预测、证据、复练、编译与分级提示受控动作；文档/幻灯片编辑、私有图片选择与安全预览；导师及学习任务生成带完整来源的 DRAFT；真实 Markdown/HTML/SVG/DOCX/PPTX/PDF 私有下载。学习任务已接通有限规划、专家回答、独立复核与作品组装。声音/镜头制作、通用任意工具自治和真实供应商教学效果评测仍待完成。准确操作见 [契约](../contracts/README.md)，实测见 [当前验收](../evidence/runtime-review.md)，实现和限制见 [学习任务与原生导出](23-study-and-exports.md)及[六类错题交互与批量加工](24-evaluation-import-and-notebook.md)。
 
 当前导出矩阵：DOCUMENT→Markdown/HTML/DOCX/PDF；SLIDES→HTML/PPTX/PDF；DIAGRAM→SVG；NOTEBOOK/INTERACTION→静态 HTML。PNG/JPEG 私有图片进入幻灯片后参与血缘复检，并嵌入真实文件；包含不支持元素时受控拒绝，不静默丢失。静态错题文件不提供离线保密判分。以下类型表中超出本矩阵的输出仍属于最终目标。
 
@@ -26,7 +26,7 @@
 
 图像模型、TTS/视频模型、渲染器分别是能力适配器；并非制作视频必然调用昂贵视频生成模型。代码关系动画优先结构化图形+时间线+旁白合成，既可准确表达泛型，又能控制修改和成本。
 
-正式课程提交的 DOCX/PDF 仍须满足用户约定的 FORMAT.md 模板，包括获授权的 FZKai-Z03S/Times New Roman、字号和缩进。当前 v0.5 下载采用明确的通用排版：Apache POI 生成可编辑 DOCX/PPTX，PDFBox 从同一版本 DSL 独立排版，并嵌入仓库所带的 OFL 中文字体；PDF 不是 DOCX 的逐页转换副本，也不冒充正式模板验收。获授权模板、Word→PDF 同版转换及逐页视觉核验应在正式提交前单独接入。PPT 的布局单独设计。
+正式课程提交的 DOCX/PDF 仍须满足用户约定的 FORMAT.md 模板，包括获授权的 FZKai-Z03S/Times New Roman、字号和缩进。当前 v0.6 下载采用明确的通用排版：Apache POI 生成可编辑 DOCX/PPTX，PDFBox 从同一版本 DSL 独立排版，并嵌入仓库所带的 OFL 中文字体；PDF 不是 DOCX 的逐页转换副本，也不冒充正式模板验收。获授权模板、Word→PDF 同版转换及逐页视觉核验应在正式提交前单独接入。PPT 的布局单独设计。
 
 ## 3. 高交互错题集的六种块
 
@@ -43,7 +43,7 @@
 
 首版采用白名单 DSL 组件渲染，布局与逻辑分离。扩展自由 HTML 时运行于独立 origin 的 sandbox iframe，默认禁同源身份/网络/顶层导航，postMessage 必须校验 origin、source、消息 schema、任务能力令牌。代码执行仍只在 M04 worker，iframe 隔离不代替代码沙箱。
 
-当前素材服务按 owner/workspace/asset/revision 控权，原始字节存入受限私有数据库表，经会话鉴权下载与 Range 读取；没有公开对象 URL。PNG/JPEG 实际解码，WAV/MP3/MP4 校验结构和时长；SVG/HTML/任意路径和任意远程 URL 不在上传白名单内。大小、hash、像素、时长、每日次数与用户总量均受限，撤回/闭户物理删除对应原始字节并失效引用，详见 [账户与素材](22-account-assets-operations.md)。外部对象存储、病毒扫描和 Office/PDF 私人资料解析仍是扩展项。导出不附带隐藏答案、未选中的私人上下文或密钥。
+当前素材服务按 owner/workspace/asset/revision 控权，原始字节存入受限私有数据库表，经会话鉴权下载与 Range 读取；没有公开对象 URL。PNG/JPEG 实际解码，WAV/MP3/MP4 校验结构和时长；SVG/HTML/任意路径和任意远程 URL 不在上传白名单内。大小、hash、像素、时长、每日次数与用户总量均受限，撤回/闭户物理删除对应原始字节并失效引用，详见 [账户与素材](22-account-assets-operations.md)。编辑工作台已支持有界 TXT/MD/DOCX 主体文字解析和人工确认采集，原始二进制不持久保存；此入口与学习者的私有媒体素材上传分开。外部对象存储、病毒扫描、PDF/OCR 和旧 DOC 解析仍是扩展项。导出不附带隐藏答案、未选中的私人上下文或密钥。
 
 离线能力明确分层：阅读/PPT/媒体/受控交互可打包；真实模型、服务器编译、云端记忆需要连接。离线练习若内含答案要标注练习模式，不能伪装成保密测验。PPT中的网页交互使用明确链接/二维码，不宣称PPTX自动保留完整浏览器交互。
 

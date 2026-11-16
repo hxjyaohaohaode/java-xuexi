@@ -1,6 +1,7 @@
 package io.typeforge.curriculum;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.typeforge.exercise.TextRubric;
 import io.typeforge.shared.DomainException;
 import io.typeforge.shared.JsonCodec;
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ public final class CurriculumService {
                               List<UUID> relatedExerciseIds) {}
     public record OptionView(String id, String text) {}
     public record ExerciseView(UUID id, int revision, UUID releaseId, String kind, String prompt,
-                               int difficulty, List<UUID> conceptIds, List<OptionView> options) {}
+                               int difficulty, List<UUID> conceptIds, List<OptionView> options,String answerKind,TextRubric.Policy textPolicy) {}
     public record ExercisePage(List<ExerciseView> items, String nextCursor) {}
 
     private final JdbcTemplate jdbc;
@@ -97,7 +98,11 @@ public final class CurriculumService {
                 }
                 var concepts = jdbc.query("SELECT concept_id FROM exercise_concept WHERE exercise_id=? AND exercise_revision=? ORDER BY concept_id",
                     (cr, i) -> UUID.fromString(cr.getString(1)), exerciseId.toString(), revision);
-                return new ExerciseView(exerciseId, revision, releaseId, rs.getString("kind"), rs.getString("prompt"), rs.getInt("difficulty"), concepts, List.copyOf(options));
+                String kind=rs.getString("kind");
+                boolean text=TextRubric.configured(answer);
+                if(text && !TextRubric.supports(kind)) throw new DomainException("INVALID_PUBLISHED_EXERCISE",503,"Short-answer policy does not match the published exercise kind");
+                return new ExerciseView(exerciseId, revision, releaseId, kind, rs.getString("prompt"), rs.getInt("difficulty"), concepts, List.copyOf(options),
+                    text?"TEXT":java.util.Set.of("SIGNATURE","REFACTOR","FILL").contains(kind)?"CODE":"CHOICE",text?TextRubric.policy(TextRubric.parse(answer)):null);
             }, releaseId.toString(), exerciseId.toString(), revision);
         if (rows.isEmpty()) throw DomainException.missing();
         return rows.get(0);

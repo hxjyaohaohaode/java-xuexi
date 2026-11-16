@@ -9,9 +9,11 @@ import subprocess
 import xml.etree.ElementTree as ET
 
 from verify_transaction_isolation import GateFailure, mysql_environment
+from verification_inputs import (VerificationFailure, capture_inputs, java_test_inventory,
+                                 require_unchanged, validate_java_summaries, write_report)
 
 ROOT = Path(__file__).resolve().parents[1]
-SUITES = {"AccountLifecycleIntegrationTest": 14, "PrivateAssetsIntegrationTest": 8}
+SUITES = ("AccountLifecycleIntegrationTest", "PrivateAssetsIntegrationTest")
 PREFIX = "TYPEFORGE_PRIVATE_MODULE_EVIDENCE "
 REPORT = ROOT / ".work/mysql-account-assets-verification.json"
 
@@ -22,7 +24,11 @@ def main():
     args = parser.parse_args()
     report = {"result": "FAIL", "generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
               "scope": "Explicit real-MySQL account lifecycle and private asset HTTP/SQL regression; no external media or model provider claim"}
+    write_report(REPORT, report)
     try:
+        before = capture_inputs("backend", ("scripts/verify_private_modules_mysql.py", "scripts/verify_transaction_isolation.py"))
+        report["verificationInputs"] = before
+        inventory = java_test_inventory()
         env = mysql_environment()
         env["TYPEFORGE_MYSQL_ACCOUNT_TEST"] = "true"
         executable = shutil.which(args.maven)
@@ -32,6 +38,7 @@ def main():
             raise GateFailure("Maven executable was not found")
         work = ROOT / ".work/mysql-private-modules"
         work.mkdir(parents=True, exist_ok=True)
+        work.chmod(0o700)
         for suite in SUITES:
             (ROOT / ("backend/target/surefire-reports/TEST-io.typeforge." + suite + ".xml")).unlink(missing_ok=True)
         with (work / "maven.log").open("w", encoding="utf-8") as output:
@@ -40,7 +47,7 @@ def main():
                                     cwd=ROOT, env=env, stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT, timeout=900)
         report["mavenExitCode"] = result.returncode
         results = []
-        for suite, expected in SUITES.items():
+        for suite in SUITES:
             path = ROOT / ("backend/target/surefire-reports/TEST-io.typeforge." + suite + ".xml")
             if not path.is_file():
                 raise GateFailure("Missing fresh test report for " + suite)
@@ -50,20 +57,22 @@ def main():
             for node in xml.iter("system-out"):
                 for line in (node.text or "").splitlines():
                     if line.strip().startswith(PREFIX):
-                        proofs.append(json.loads(line.strip()[len(PREFIX):]))
-            if counts["tests"] != expected or any(counts[key] for key in ("failures", "errors", "skipped")):
-                raise GateFailure("Private module test count or outcome differs from the required gate: " + suite)
+                        proof = json.loads(line.strip()[len(PREFIX):])
+                        proofs.append({key: proof.get(key) for key in ("suite", "engine", "version", "database")})
+            names = [node.attrib["name"] for node in xml.iter("testcase")]
+            validate_java_summaries([{"name": "io.typeforge." + suite, **counts, "testCases": names}],
+                                    {"io.typeforge." + suite: inventory["io.typeforge." + suite]})
             if not any(proof.get("suite") == suite and proof.get("engine") == "MySQL" and str(proof.get("version", "")).startswith("8.4.") for proof in proofs):
                 raise GateFailure("No actual MySQL 8.4 JDBC proof for " + suite)
-            results.append({"suite": suite, **counts, "engineProof": proofs, "caseNames": [node.attrib["name"] for node in xml.iter("testcase")]})
+            results.append({"suite": suite, **counts, "engineProof": proofs, "caseNames": names})
         if result.returncode:
             raise GateFailure("Private module Maven execution failed")
-        report.update({"result": "PASS", "tests": sum(item["tests"] for item in results), "suites": results})
+        report.update({"result": "PASS", "inputsUnchanged": require_unchanged(before), "tests": sum(item["tests"] for item in results), "suites": results})
     except Exception as failure:
-        report["error"] = str(failure) if isinstance(failure, GateFailure) else type(failure).__name__
+        report["error"] = str(failure) if isinstance(failure, (GateFailure, VerificationFailure)) else type(failure).__name__
     REPORT.parent.mkdir(parents=True, exist_ok=True)
-    REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps(report, ensure_ascii=False, indent=2))
+    write_report(REPORT, report)
+    print(json.dumps({key: value for key, value in report.items() if key != "verificationInputs"}, ensure_ascii=False, indent=2))
     return 0 if report["result"] == "PASS" else 1
 
 

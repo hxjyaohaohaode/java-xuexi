@@ -5,6 +5,8 @@ import { api } from '../api';
 import { WorkspaceContext, type WorkspaceState } from '../context';
 import { Practice } from './Practice';
 import type { Attempt, Exercise } from '../types';
+import { TestWorkspace, deferred, testWorkspace } from '../test/workspace';
+import { ApiError } from '../api';
 
 it('renders the published SINGLE kind as radio and sends one CHOICE option id', async () => {
   const exercise: Exercise = {
@@ -90,6 +92,63 @@ it('renders the published SINGLE kind as radio and sends one CHOICE option id', 
     ),
   );
   await screen.findByRole('heading', { name: '服务端反馈' });
+});
+
+it('sends the exact bounded TEXT input to the server and keeps it after a failed request', async () => {
+  const exercise: Exercise = {
+    id: 'text-question',
+    revision: 3,
+    releaseId: 'release-1',
+    kind: 'READING',
+    answerKind: 'TEXT',
+    difficulty: 1,
+    prompt: '回答读取类型',
+    conceptIds: [],
+    options: [],
+    textPolicy: {
+      version: 'text-exact-nfkc-v1',
+      normalization: 'NFKC_WHITESPACE',
+      scope: '请输入完整类型名称。',
+      caseSensitive: true,
+      maxCharacters: 4000,
+      maxUtf8Bytes: 16000,
+    },
+  };
+  vi.spyOn(api, 'get').mockImplementation((path) =>
+    Promise.resolve(
+      path.startsWith('/exercises?')
+        ? { items: [exercise], nextCursor: null }
+        : path.startsWith('/concepts')
+          ? { items: [] }
+          : [],
+    ),
+  );
+  const pending = deferred<Attempt>();
+  const request = vi.spyOn(api, 'request').mockReturnValue(pending.promise);
+  const user = userEvent.setup();
+  render(
+    <TestWorkspace value={testWorkspace(['TEXT_GRADING'])}>
+      <Practice />
+    </TestWorkspace>,
+  );
+  const input = await screen.findByLabelText('写下你的文本答案');
+  await user.type(input, '  Ｎｕｍｂｅｒ  ');
+  await user.click(screen.getByRole('button', { name: '提交文本作答' }));
+  expect(input).toBeDisabled();
+  expect(request).toHaveBeenCalledWith(
+    '/attempts',
+    'POST',
+    expect.objectContaining({
+      exerciseRevision: 3,
+      answer: { kind: 'TEXT', value: '  Ｎｕｍｂｅｒ  ' },
+    }),
+    { idempotent: true },
+  );
+  await act(async () => pending.reject(new ApiError(503, 'TEMPORARY', '判定服务暂不可用')));
+  await screen.findByText('判定服务暂不可用');
+  expect(input).toHaveValue('  Ｎｕｍｂｅｒ  ');
+  expect(input).toBeEnabled();
+  expect(screen.queryByRole('heading', { name: '服务端反馈' })).not.toBeInTheDocument();
 });
 
 it('submits a real code kind and keeps a pending result ungraded until the server supplies evidence', async () => {

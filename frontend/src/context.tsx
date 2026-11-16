@@ -10,6 +10,8 @@ export type Route =
   | 'memory'
   | 'settings'
   | 'content'
+  | 'evaluation'
+  | 'operations'
   | 'agents';
 export interface WorkspaceState {
   workspace: Workspace;

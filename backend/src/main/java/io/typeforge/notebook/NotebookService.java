@@ -2,6 +2,7 @@ package io.typeforge.notebook;
 
 import io.typeforge.artifacts.ArtifactService;
 import io.typeforge.exercise.LearningService;
+import io.typeforge.curriculum.CurriculumService;
 import io.typeforge.operations.events.EventJournal;
 import io.typeforge.shared.DomainException;
 import io.typeforge.shared.JsonCodec;
@@ -26,8 +27,9 @@ public class NotebookService implements NotebookCompiler {
     private final ArtifactService artifacts;
     private final EventJournal events;
     private final JsonCodec json;
-    public NotebookService(JdbcTemplate jdbc,TransactionTemplate tx,WorkspaceService workspaces,LearningService learning,ArtifactService artifacts,EventJournal events,JsonCodec json) {
-        this.jdbc=jdbc;this.tx=tx;this.workspaces=workspaces;this.learning=learning;this.artifacts=artifacts;this.events=events;this.json=json;
+    private final CurriculumService curriculum;
+    public NotebookService(JdbcTemplate jdbc,TransactionTemplate tx,WorkspaceService workspaces,LearningService learning,ArtifactService artifacts,EventJournal events,JsonCodec json,CurriculumService curriculum) {
+        this.jdbc=jdbc;this.tx=tx;this.workspaces=workspaces;this.learning=learning;this.artifacts=artifacts;this.events=events;this.json=json;this.curriculum=curriculum;
     }
     public ArtifactService.Artifact build(UUID owner,UUID workspace,List<UUID> attemptIds,String title,String key) {
         WorkspaceService.requireKey(key);WorkspaceService.requireText(title,255);
@@ -49,10 +51,7 @@ public class NotebookService implements NotebookCompiler {
                 List<String> concepts=jdbc.queryForList("SELECT concept_id FROM exercise_concept WHERE exercise_id=? AND exercise_revision=? ORDER BY weight DESC,concept_id",String.class,attempt.exerciseId().toString(),attempt.exerciseRevision());
                 if(concepts.isEmpty()) throw new DomainException("INVALID_PUBLISHED_EXERCISE",503,"Exercise has no concept attribution");
                 var citations=new ArrayList<Map<String,Object>>();
-                for(String concept:concepts) {
-                    var chunks=jdbc.query("SELECT k.id,k.revision,k.content_hash FROM knowledge_chunk k JOIN release_chunk rc ON rc.chunk_id=k.id AND rc.chunk_revision=k.revision WHERE rc.release_id=? AND k.concept_id=? AND k.status='REVIEWED' ORDER BY k.id LIMIT 2",(rs,n)->new Reference("KNOWLEDGE_CHUNK",UUID.fromString(rs.getString(1)),rs.getInt(2),rs.getString(3)),scope.releaseId().toString(),concept);
-                    for(Reference chunk:chunks) { inputs.put(chunk.kind()+":"+chunk.id(),chunk);citations.add(Map.of("id",chunk.id(),"revision",chunk.revision())); }
-                }
+                for(Reference chunk:knowledgeSources(scope.releaseId(),attempt,concepts)) {inputs.put(chunk.kind()+":"+chunk.id(),chunk);citations.add(Map.of("id",chunk.id(),"revision",chunk.revision()));}
                 String prompt=jdbc.queryForObject("SELECT prompt FROM exercise WHERE id=? AND revision=?",String.class,attempt.exerciseId().toString(),attempt.exerciseRevision());
                 String blockId="error-"+attemptId;
                 String source=attempt.answer().path("source").asText("");
@@ -62,8 +61,12 @@ public class NotebookService implements NotebookCompiler {
                 block.put("exerciseRef",Map.of("id",attempt.exerciseId(),"revision",attempt.exerciseRevision()));
                 block.put("attemptId",attemptId);block.put("allowedActions",source.isBlank()?List.of("predict","submitAnswer","requestHint","openEvidence"):List.of("predict","submitAnswer","requestCompile","requestHint","openEvidence"));
                 block.put("evidenceRefs",citations);
-                String reason=source.isBlank()?"学习者尚未记录自己的理由。已提交答案："+json.write(attempt.answer()):"学习者尚未记录自己的理由。原始代码已固定在代码区，后续复练会创建新作答，不覆盖原始成绩。";
-                block.put("config",Map.of("studentReason",reason,"originalSource",source,"sourceHash",json.sha256(source),"diagnosticIds",List.of()));
+                String answerKind=attempt.answer().path("kind").asText();
+                String reason=answerKind.equals("TEXT")?"学习者尚未记录自己的理由。原始短答案保存在作答区，规则匹配结果不等于自由语义核验。":source.isBlank()?"学习者尚未记录自己的理由。已提交答案："+json.write(attempt.answer()):"学习者尚未记录自己的理由。原始代码已固定在代码区，后续复练会创建新作答，不覆盖原始成绩。";
+                var config=new LinkedHashMap<String,Object>();config.put("studentReason",reason);config.put("originalSource",source);config.put("sourceHash",json.sha256(source));config.put("diagnosticIds",List.of());
+                config.put("answerKind",answerKind);config.put("originalTextAnswer",answerKind.equals("TEXT")?attempt.answer().path("value").asText():"");
+                config.put("textPolicy",answerKind.equals("TEXT")?curriculum.exercise(scope.releaseId(),attempt.exerciseId(),attempt.exerciseRevision()).textPolicy():null);
+                block.put("config",config);
                 blocks.add(block);
                 entries.add(Map.of("attempt",attemptId,"concept",concepts.get(0),"key",blockId,"content",block));
             }
@@ -76,6 +79,21 @@ public class NotebookService implements NotebookCompiler {
             workspaces.remember(owner,"buildNotebookDraft",key,hash,artifact.id());
             return artifacts.get(owner,artifact.id());
         });
+    }
+    private List<Reference> knowledgeSources(UUID release,LearningService.Attempt attempt,List<String> concepts) {
+        Integer expected=jdbc.queryForObject("SELECT COUNT(*) FROM exercise_knowledge WHERE exercise_id=? AND exercise_revision=?",Integer.class,attempt.exerciseId().toString(),attempt.exerciseRevision());
+        if(expected!=null && expected>0) {
+            var references=jdbc.query("SELECT k.id,k.revision,k.content_hash FROM exercise_knowledge ek JOIN knowledge_chunk k ON k.id=ek.chunk_id AND k.revision=ek.chunk_revision JOIN release_chunk rc ON rc.chunk_id=k.id AND rc.chunk_revision=k.revision WHERE ek.exercise_id=? AND ek.exercise_revision=? AND rc.release_id=? AND k.status='REVIEWED' ORDER BY k.id LIMIT 17",
+                (rs,n)->new Reference("KNOWLEDGE_CHUNK",UUID.fromString(rs.getString(1)),rs.getInt(2),rs.getString(3)),attempt.exerciseId().toString(),attempt.exerciseRevision(),release.toString());
+            if(references.size()!=expected || references.size()>16)throw new DomainException("INVALID_PUBLISHED_EXERCISE",503,"The exercise's fixed reviewed knowledge references need repair");
+            return references;
+        }
+        // Explicit legacy demo questions predate authored exercise_knowledge. Keep at most one
+        // reviewed release member per concept so even the allowed 16 concepts fit the citation bound.
+        var references=new ArrayList<Reference>();
+        for(String concept:concepts)references.addAll(jdbc.query("SELECT k.id,k.revision,k.content_hash FROM knowledge_chunk k JOIN release_chunk rc ON rc.chunk_id=k.id AND rc.chunk_revision=k.revision WHERE rc.release_id=? AND k.concept_id=? AND k.status='REVIEWED' ORDER BY k.id LIMIT 1",
+            (rs,n)->new Reference("KNOWLEDGE_CHUNK",UUID.fromString(rs.getString(1)),rs.getInt(2),rs.getString(3)),release.toString(),concept));
+        return references;
     }
     @Override public UUID requestBuild(Request request) {
         var scope=workspaces.requireOwned(request.ownerId(),request.workspaceId());

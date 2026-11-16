@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   BookOpen,
   CheckSquare,
@@ -18,6 +18,8 @@ import {
   WifiOff,
   LibraryBig,
   Workflow,
+  BarChart3,
+  Activity,
 } from 'lucide-react';
 import { api } from './api';
 import { useMutation, useResource, useWorkspaceEvents } from './hooks';
@@ -28,13 +30,22 @@ import { Learning } from './pages/Learning';
 import { Practice } from './pages/Practice';
 import { ProgressPage } from './pages/Progress';
 import { applyPreference, MemoryPage, setPreferenceOwner, SettingsPage } from './pages/Personal';
-import { Studio } from './pages/Studio';
 import { Tutor } from './pages/Tutor';
 import { Lab } from './pages/Lab';
-import { Content } from './pages/Content';
-import { Agents } from './pages/Agents';
 import type { Capabilities, Preference, Session, Workspace } from './types';
 import { readSaved, writeSaved } from './state';
+
+const Studio = lazy(() => import('./pages/Studio').then((module) => ({ default: module.Studio })));
+const Content = lazy(() =>
+  import('./pages/Content').then((module) => ({ default: module.Content })),
+);
+const Agents = lazy(() => import('./pages/Agents').then((module) => ({ default: module.Agents })));
+const Evaluation = lazy(() =>
+  import('./pages/Evaluation').then((module) => ({ default: module.Evaluation })),
+);
+const Operations = lazy(() =>
+  import('./pages/Operations').then((module) => ({ default: module.Operations })),
+);
 
 const navigation: [Route, string, typeof BookOpen][] = [
   ['learn', '知识与阅读', BookOpen],
@@ -46,6 +57,8 @@ const navigation: [Route, string, typeof BookOpen][] = [
   ['agents', '学习创作任务', Workflow],
   ['memory', '笔记与记忆', NotebookPen],
   ['content', '内容工作台', LibraryBig],
+  ['evaluation', '检索评测', BarChart3],
+  ['operations', '运行状态', Activity],
 ];
 function routeFromHash(): { route: Route; selection: string } {
   const [route, selection = ''] = location.hash.slice(1).split('/');
@@ -387,7 +400,10 @@ function WorkspaceShell({
   const visibleNavigation = navigation.filter(
     ([id]) =>
       (id !== 'content' || session.roles.some((role) => ['EDITOR', 'ADMIN'].includes(role))) &&
-      (id !== 'agents' || capabilities.enabled.includes('STUDY_WORKFLOW')),
+      (id !== 'agents' || capabilities.enabled.includes('STUDY_WORKFLOW')) &&
+      (id !== 'evaluation' || capabilities.enabled.includes('EVALUATION_WORKBENCH')) &&
+      (id !== 'operations' ||
+        (session.roles.includes('ADMIN') && capabilities.enabled.includes('OPERATIONS_METRICS'))),
   );
   const selected = navigation.find((n) => n[0] === locationState.route)?.[1] || '偏好与能力';
   return (
@@ -600,27 +616,33 @@ function WorkspaceShell({
               </div>
             )}
             <ErrorNotice error={stream.error} />
-            {locationState.route === 'learn' ? (
-              <Learning />
-            ) : locationState.route === 'practice' ? (
-              <Practice />
-            ) : locationState.route === 'progress' ? (
-              <ProgressPage />
-            ) : locationState.route === 'memory' ? (
-              <MemoryPage />
-            ) : locationState.route === 'settings' ? (
-              <SettingsPage />
-            ) : locationState.route === 'studio' ? (
-              <Studio />
-            ) : locationState.route === 'content' ? (
-              <Content />
-            ) : locationState.route === 'agents' ? (
-              <Agents />
-            ) : locationState.route === 'tutor' ? (
-              <Tutor />
-            ) : (
-              <Lab />
-            )}
+            <Suspense fallback={<Loading label="正在打开工作区…" />}>
+              {locationState.route === 'learn' ? (
+                <Learning />
+              ) : locationState.route === 'practice' ? (
+                <Practice />
+              ) : locationState.route === 'progress' ? (
+                <ProgressPage />
+              ) : locationState.route === 'memory' ? (
+                <MemoryPage />
+              ) : locationState.route === 'settings' ? (
+                <SettingsPage />
+              ) : locationState.route === 'studio' ? (
+                <Studio />
+              ) : locationState.route === 'content' ? (
+                <Content />
+              ) : locationState.route === 'evaluation' ? (
+                <Evaluation />
+              ) : locationState.route === 'operations' ? (
+                <Operations />
+              ) : locationState.route === 'agents' ? (
+                <Agents />
+              ) : locationState.route === 'tutor' ? (
+                <Tutor />
+              ) : (
+                <Lab />
+              )}
+            </Suspense>
           </main>
           <footer className="workspace-footer">
             课程：Java 泛型与类型安全 <span>工作空间隔离 · 服务端确认后保存</span>

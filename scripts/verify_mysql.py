@@ -18,6 +18,7 @@ import subprocess
 import sys
 import time
 import uuid
+from verification_inputs import capture_inputs, require_unchanged, write_report
 
 ROOT=Path(__file__).resolve().parents[1]
 INTEGRITY_ERRORS=("ERROR 1062", "ERROR 1452", "ERROR 3819")
@@ -246,6 +247,83 @@ def verify(harness):
     sql(export_sql('text/html',1048577),False,'static export byte count enforces renderer budget')
     sql(export_sql('text/html',4),label='static export content links to its actual job')
 
+    # V012: native MySQL constraints; synthetic SQL fixtures, not claimed retrieval outcomes.
+    ev_suite,ev_run,ev_other=[uid(x) for x in ['evaluation-sql-suite','evaluation-sql-run','evaluation-other-owner']]
+    sql(f"INSERT INTO app_user(id,username,password_hash,roles) VALUES ('{ev_other}','evaluation-sql-other','disabled-test-only',JSON_ARRAY('LEARNER'));",label='evaluation ownership negative fixture is an existing separate account')
+    def evaluation_suite_sql(owner=author,space=w1,release=rel):
+        return f"INSERT INTO evaluation_suite(id,owner_id,workspace_id,release_id,created_at,updated_at) VALUES ('{ev_suite}','{owner}','{space}','{release}',UTC_TIMESTAMP(3),UTC_TIMESTAMP(3));"
+    sql(evaluation_suite_sql(ev_other),False,'evaluation suite cannot claim another workspace owner')
+    sql(evaluation_suite_sql(release=uid('other-release')),False,'evaluation suite release must match its workspace release')
+    sql(evaluation_suite_sql(),label='evaluation suite binds actual owner workspace and release')
+    for column,value,label in [('current_revision','0','evaluation current revision must be positive'),('current_revision','101','evaluation history has a finite revision bound'),('status',"'PUBLISHED'",'a private evaluation suite cannot claim course publication')]:
+        sql(f"UPDATE evaluation_suite SET {column}={value} WHERE id='{ev_suite}';",False,label)
+    sql(f"INSERT INTO evaluation_suite_revision(suite_id,revision,title,description,case_count,snapshot_json,corpus_json,content_hash,corpus_hash,byte_size,created_at) VALUES ('{ev_suite}',1,'SQL fixture','schema only',2,JSON_OBJECT(),JSON_ARRAY(),REPEAT('a',64),REPEAT('b',64),4,UTC_TIMESTAMP(3));",label='evaluation definition stores a concrete immutable version and bounded manifest bytes')
+    for column,value,label in [('case_count','0','empty evaluation definitions are rejected'),('case_count','41','evaluation definitions enforce forty-case limit'),('byte_size','0','evaluation snapshot bytes cannot be empty'),('byte_size','262145','evaluation snapshot storage is capped at 256 KiB')]:
+        sql(f"UPDATE evaluation_suite_revision SET {column}={value} WHERE suite_id='{ev_suite}' AND revision=1;",False,label)
+    def evaluation_run_sql(revision=1,owner=author,space=w1,release=rel,top_k=3):
+        return f"INSERT INTO evaluation_run(id,suite_id,suite_revision,owner_id,workspace_id,release_id,suite_hash,corpus_hash,index_version,evaluator_version,top_k,case_count,created_at) VALUES ('{ev_run}','{ev_suite}',{revision},'{owner}','{space}','{release}',REPEAT('a',64),REPEAT('b',64),'bm25-script-boundaries-v2','retrieval-macro-v1',{top_k},2,UTC_TIMESTAMP(3));"
+    sql(evaluation_run_sql(revision=2),False,'evaluation run requires an existing suite revision')
+    sql(evaluation_run_sql(owner=ev_other),False,'evaluation run cannot impersonate a different suite owner')
+    sql(evaluation_run_sql(space=w2),False,'evaluation run cannot cross suite workspace')
+    sql(evaluation_run_sql(release=uid('other-release')),False,'evaluation run cannot replace its frozen release')
+    sql(evaluation_run_sql(top_k=0),False,'evaluation retrieval depth must be positive')
+    sql(evaluation_run_sql(top_k=9),False,'evaluation retrieval depth cannot exceed eight')
+    sql(evaluation_run_sql(),label='evaluation run retains bounded inputs without premature metrics')
+    for assignment,label in [("status='COMPLETED'",'evaluation cannot complete without actual report and aggregate evidence'),("metrics_json=JSON_OBJECT('meanRecallAtK',1)",'queued evaluation cannot claim a score'),("result_hash=REPEAT('c',64)",'queued evaluation cannot claim deterministic result hash'),("lease_token='00000000-0000-0000-0000-000000000001'",'queued evaluation cannot carry a running worker lease'),("status='RUNNING'",'running evaluation requires token and deadline'),("completed_cases=1,result_bytes=2",'queued evaluation cannot claim completed cases')]:
+        sql(f"UPDATE evaluation_run SET {assignment} WHERE id='{ev_run}';",False,label)
+    sql(f"UPDATE evaluation_run SET status='RUNNING',lease_token='{uid('evaluation-lease')}',lease_until=UTC_TIMESTAMP(3)+INTERVAL 90 SECOND,started_at=UTC_TIMESTAMP(3) WHERE id='{ev_run}';",label='evaluation worker state has an explicit bounded lease')
+    for assignment,label in [("completed_cases=3",'evaluation completed count cannot exceed admitted cases'),("result_bytes=1",'evaluation evidence bytes require a completed case'),("completed_cases=1,result_bytes=1048577",'evaluation partial evidence cannot exceed one MiB'),("metrics_json=JSON_OBJECT('meanRecallAtK',1)",'partial running results cannot claim complete aggregate scores')]:
+        sql(f"UPDATE evaluation_run SET {assignment} WHERE id='{ev_run}';",False,label)
+    def evaluation_result_sql(run=ev_run,position=0,size=2):
+        return f"INSERT INTO evaluation_case_result(run_id,case_key,case_position,result_json,result_hash,byte_size) VALUES ('{run}','case-1',{position},JSON_OBJECT(),REPEAT('c',64),{size});"
+    sql(evaluation_result_sql(run=uid('evaluation-unknown-run')),False,'evaluation case evidence requires its real run')
+    sql(evaluation_result_sql(position=40),False,'evaluation case position cannot exceed forty-case bound')
+    sql(evaluation_result_sql(size=0),False,'evaluation case byte accounting cannot be zero')
+    sql(evaluation_result_sql(size=65537),False,'evaluation individual result is bounded at 64 KiB')
+    sql(evaluation_result_sql(),label='evaluation result has stable case identity position and byte accounting')
+    sql(evaluation_result_sql(),False,'evaluation cannot write the same case result twice')
+    sql(f"UPDATE evaluation_run SET completed_cases=1,result_bytes=2 WHERE id='{ev_run}';",label='partial evaluation progress records actual stored byte capacity')
+    complete="status='COMPLETED',completed_cases=2,result_bytes=4,lease_token=NULL,lease_until=NULL,metrics_json=JSON_OBJECT('totalCases',2),result_hash=REPEAT('c',64),report_json=JSON_OBJECT('format','SQL_CONSTRAINT_FIXTURE_ONLY'),report_hash=REPEAT('d',64),report_bytes=64,finished_at=UTC_TIMESTAMP(3)"
+    sql(f"UPDATE evaluation_run SET {complete.replace('report_bytes=64','report_bytes=2097153')} WHERE id='{ev_run}';",False,'evaluation report cannot exceed two MiB')
+    sql(f"UPDATE evaluation_run SET {complete.replace('completed_cases=2','completed_cases=1')} WHERE id='{ev_run}';",False,'evaluation aggregate evidence requires all admitted cases completed')
+    sql(f"UPDATE evaluation_run SET {complete} WHERE id='{ev_run}';",label='complete evaluation state must carry all bounded evidence fields')
+    sql(f"UPDATE evaluation_run SET status='FAILED' WHERE id='{ev_run}';",False,'failed evaluation cannot keep complete-score fields')
+    sql("INSERT INTO evaluation_admission_lock(singleton_id) VALUES(2);",False,'evaluation global queue admission lock has one fixed identity')
+
+    # V013: real JSON state and immutable source/review foreign keys. Semantic author checks are also exercised through the service gate.
+    text_review=uid('text-review-proof')
+    sql(f"INSERT INTO content_review(id,target_kind,target_id,target_revision,author_id,reviewer_id,decision,note) VALUES ('{text_review}','EXERCISE','{exercise}',1,'{author}','{reviewer}','APPROVED','isolated text rubric receipt fixture');",label='TEXT grading has an actual independent exercise review')
+    def text_receipt_sql(revision=1,review_id=text_review):
+        return f"INSERT INTO exercise_text_review_receipt(exercise_id,exercise_revision,review_id,answer_hash,rubric_version) VALUES ('{exercise}',{revision},'{review_id}',REPEAT('6',64),'text-exact-nfkc-v1');"
+    sql(text_receipt_sql(2),False,'TEXT review receipt cannot pin nonexistent exercise revision')
+    sql(text_receipt_sql(1,uid('missing-text-review')),False,'TEXT review receipt requires actual review identity')
+    sql(text_receipt_sql(),label='TEXT exact rubric receipt stores reviewed answer hash and algorithm version')
+    sql(text_receipt_sql(),False,'TEXT rubric version cannot acquire a second mutable review receipt')
+    def block_state_sql(artifact_revision=1,revision=1,state="JSON_OBJECT('blockId','flow','stateRevision',1)"):
+        return f"INSERT INTO notebook_block_state(artifact_id,artifact_revision,block_key,revision,state_json) VALUES ('{a1}',{artifact_revision},'flow',{revision},{state});"
+    sql(block_state_sql(2),False,'Notebook state requires a real immutable artifact version')
+    sql(block_state_sql(1,0),False,'Notebook durable state revision must be positive')
+    sql(block_state_sql(1,1,"'{invalid'"),False,'Notebook state requires native valid JSON',('ERROR 3140',))
+    sql(block_state_sql(),label='Notebook state persists an actual source-version-bound JSON value')
+    for action in ['selectType','setParameter','navigateArtifact','appendBlock']:
+        sql(f"INSERT INTO notebook_action_receipt(id,artifact_id,artifact_revision,block_key,action_key,result_json) VALUES ('{uid('v06-action-'+action)}','{a1}',1,'flow','{action}',JSON_OBJECT());",label='Notebook typed action receipt accepts '+action)
+
+    # v0.6 import constraints use real native SQL, independent of service validation.
+    batch,item=uid('bounded-import-batch'),uid('bounded-import-item')
+    sql(f"INSERT INTO import_batch(id,source_id,owner_id,processing_note,created_at,expires_at) VALUES ('{batch}','{source_a}','{author}','isolated preview fixture',UTC_TIMESTAMP(3),UTC_TIMESTAMP(3)+INTERVAL 1 DAY);",label='bounded import binds actual source and authenticated owner')
+    for column,value,label in [('revision','0','import revision must be positive'),('status',"'PUBLISHED'",'import preview cannot claim content publication'),('expires_at',"created_at",'import preview expiration must follow creation')]:
+        sql(f"UPDATE import_batch SET {column}={value} WHERE id='{batch}';",False,label)
+    def import_item_sql(source,ordinal=0):
+        return f"INSERT INTO import_batch_item(id,batch_id,source_id,ordinal_number,file_name,media_type,byte_size,file_hash,original_hash,parser_version,status,message,original_markdown,cleaned_markdown) VALUES ('{item}','{batch}','{source}',{ordinal},'lesson.md','text/markdown',7,REPEAT('1',64),REPEAT('2',64),'utf8-newlines-v1','READY','actual text preview','original','cleaned');"
+    sql(import_item_sql(source_b),False,'import item cannot claim source from another batch')
+    sql(import_item_sql(source_a,8),False,'import item ordinal enforces eight-file limit')
+    sql(import_item_sql(source_a),label='valid import item retains exact upload and extracted text hashes')
+    for column,value,label in [('byte_size','1048577','import file size exceeds one MiB'),('status',"'COMMITTED'",'committed import requires an actual capture receipt'),('status',"'FAILED'",'failed import requires a stable parser error')]:
+        sql(f"UPDATE import_batch_item SET {column}={value} WHERE id='{item}';",False,label)
+    sql(f"UPDATE import_batch_item SET status='COMMITTED',capture_id='{uid('nonexistent-import-capture')}' WHERE id='{item}';",False,'import cannot invent its capture result')
+    sql(f"UPDATE import_batch_item SET status='COMMITTED',capture_id='{ingestion}' WHERE id='{item}';",label='committed import pins an existing capture from its registered source')
+    sql(f"UPDATE import_batch_item SET status='SKIPPED' WHERE id='{item}';",False,'skipped import cannot retain a committed capture identity')
+
     assert sql(f"SELECT JSON_TYPE(answer) FROM exercise_attempt WHERE id='{attempt}';",label="native JSON answer remains structured object")=="OBJECT"
     sql(f"UPDATE exercise_attempt SET answer='{{invalid' WHERE id='{attempt}';",False,"native JSON column rejects malformed documents",("ERROR 3140",))
     assert all(hashlib.sha256((ROOT/'database'/name).read_bytes()).hexdigest()==digest for name,digest in schema_hashes.items()),'SQL changed during verification'
@@ -263,18 +341,22 @@ def main():
     args=parser.parse_args()
     harness=MysqlHarness(args)
     report={"result":"FAIL","mode":harness.mode,"checks":harness.results}
+    write_report(args.output,report)
     try:
+        before=capture_inputs('schema',('scripts/verify_mysql.py',))
+        report['verificationInputs']=before
         harness.start()
-        report=verify(harness)
+        report.update(verify(harness))
+        report['inputsUnchanged']=require_unchanged(before)
     except Exception as failure:
+        report["result"]="FAIL"
         report["error"]=str(failure)
     finally:
         try:harness.close()
         except Exception as failure:
             report["result"]="FAIL";report["cleanupError"]=str(failure)
-        args.output.parent.mkdir(parents=True,exist_ok=True)
-        args.output.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-    print(json.dumps(report,ensure_ascii=False,indent=2))
+        write_report(args.output,report)
+    print(json.dumps({key:value for key,value in report.items() if key!='verificationInputs'},ensure_ascii=False,indent=2))
     return 0 if report["result"]=="PASS" else 1
 
 if __name__=="__main__":

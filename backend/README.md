@@ -1,6 +1,6 @@
 # Java 后端：启动、配置与接手
 
-Java 17、Spring Boot 3.5.16、Maven 3.9.x；版本 `0.5.0-SNAPSHOT`，`-Xlint:all -Werror`。当前 109 个公开操作均有实际路由实现，但运行时继续报告 `businessReady=false`，不把接口数量当作完整产品完成率。当前能力与剩余范围集中在[模块接手指南](../docs/02-modules.md)，操作字段见[契约索引](../contracts/README.md)，实际验证见[当前验收](../evidence/runtime-review.md)。
+Java 17、Spring Boot 3.5.16、Maven 3.9.x；版本 `0.6.0-SNAPSHOT`，`-Xlint:all -Werror`。当前 129 个公开操作均有实际路由实现，但运行时继续报告 `businessReady=false`，不把接口数量当作完整产品完成率。当前能力与剩余范围集中在[模块接手指南](../docs/02-modules.md)，操作字段见[契约索引](../contracts/README.md)，实际验证见[当前验收](../evidence/runtime-review.md)。
 
 ## 1. 构建与本地运行
 
@@ -10,7 +10,7 @@ Java 17、Spring Boot 3.5.16、Maven 3.9.x；版本 `0.5.0-SNAPSHOT`，`-Xlint:a
 npm ci --prefix frontend
 npm run build --prefix frontend
 mvn -B -ntp -f backend/pom.xml clean verify
-java -jar backend/target/typeforge-backend-0.5.0-SNAPSHOT.jar --spring.profiles.active=demo
+java -jar backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar --spring.profiles.active=demo
 ```
 
 访问 http://127.0.0.1:8080/。前端dist作为静态资源随JAR打包；仅构建后端而没有dist时业务API可用，但capabilities会明确FRONTEND不可用。开发模式用前端Vite代理连接同源语义的API，不开放任意CORS。
@@ -26,7 +26,7 @@ HTTP顺序是 GET `/api/v1/auth/csrf` → 带Cookie和返回CSRF header注册 �
 编辑角色只接受运维显式启动配置，**账户必须已经真实注册且ACTIVE**：
 
 ```sh
-TYPEFORGE_EDITOR_USERS=editor-a,editor-b java -jar backend/target/typeforge-backend-0.5.0-SNAPSHOT.jar --spring.profiles.active=demo
+TYPEFORGE_EDITOR_USERS=editor-a,editor-b java -jar backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar --spring.profiles.active=demo
 ```
 
 这里 `editor-a/editor-b` 是示例用户名，须替换为已注册并核对的账号。`TYPEFORGE_ADMIN_USERS` 同样可指定维护者。配置缺失默认不授予；账号不存在或格式无效会启动失败，不创建账号或密码。操作写审计、重复启动不重复授予；配置完成可移除环境项，角色仍持久保存。新角色重新登录后生效，内容服务每次复查数据库角色，旧 session 不能保留已撤销编辑权限。曾具有编辑/管理权限的关闭账号保留用户名，启动配置遇到该关闭账号会跳过授权并记录日志，防止同名新账号继承权限。
@@ -95,7 +95,7 @@ typeforge.compiler.worker-token=<至少32字符的服务端随机令牌>
 
 ## 6. MySQL 与运维
 
-设置 `TYPEFORGE_DB_URL` 为真实 MySQL JDBC URL、`TYPEFORGE_DB_USER` 与 `TYPEFORGE_DB_PASSWORD`，运行 `--spring.profiles.active=mysql`（演示验证可加 `,demo`）。连接信息仅放安全配置。MySQL Profile 执行 V001–V011 原始迁移，默认 H2 使用对应兼容迁移；当前有 79 张领域表。已应用迁移不回写，已有库必须沿完整升级链前进。
+设置 `TYPEFORGE_DB_URL` 为真实 MySQL JDBC URL、`TYPEFORGE_DB_USER` 与 `TYPEFORGE_DB_PASSWORD`，运行 `--spring.profiles.active=mysql`（演示验证可加 `,demo`）。连接信息仅放安全配置。MySQL Profile 执行 V001–V014 原始迁移，默认 H2 使用对应兼容迁移；当前有 88 张领域表。已应用迁移不回写，已有库必须沿完整升级链前进。
 
 共享短事务采用 READ_COMMITTED；学习写入锁序为 user → workspace → 具体资源。编辑事务以 content_workbench_lock 串行化编辑并锁定实际编辑账号，该锁内没有网络或 workspace 调用。模型 HTTP 和二进制渲染在数据库事务外执行，提交重新核对状态与来源。
 
@@ -114,7 +114,13 @@ outbox效果、receipt与published同事务，每空间按完整流头顺序投�
 
 准确字段、所有列表/详情和响应见OpenAPI；`ContentWorkbenchIntegrationTest` 包含完整真实session HTTP流程，可作为开发时的调用样例。该测试使用隔离测试作者和明确夹具，不计作两位学生的人类审核记录。
 
-## 8. 验证命令
+## 8. 新增评测、导入与错题交互
+
+M11 的私有检索评测由 `typeforge.evaluation.worker-enabled`（默认 true）和 `typeforge.evaluation.poll-millis`（默认 1000）调度。服务端执行真实检索，定义和报告包含固定发布/语料/算法/修订，案例及未完成结果均有额度。它不写学习成绩。
+
+M07 批量导入接受 TXT/MD/DOCX，单文件 1 MiB、每批 4 MiB、最多 8 项，两个准入许可覆盖读取到持久化；清理周期由 `typeforge.ingestion.cleanup-delay-millis`（默认 60000）控制。TEXT 判分和六类错题交互默认可用；修复比较仍需 COMPILE_ONLY。精确公式、边界、保留和恢复语义见 [v0.6 新增实现](../docs/24-evaluation-import-and-notebook.md)。
+
+## 9. 验证命令
 
 ```sh
 python scripts/sync_contract_index.py --check
@@ -125,6 +131,10 @@ python scripts/verify_mysql.py
 python -m unittest discover -s workers/compiler -p 'test_*.py'
 ```
 
-真实 MySQL HTTP 重启、隔离级别和浏览器检查使用专用配置及同一最终构建。模式验证覆盖全部 11 个迁移；账户/素材可用 `scripts/verify_private_modules_mysql.py` 在显式隔离连接上复跑，并输出实际 JDBC 引擎证据。MySQL 专用门禁需要 `MYSQL_TEST_CONNECTION`，只接受标明用途的回环测试库，不能指向个人或生产数据库。
+真实 MySQL HTTP 重启、隔离级别和浏览器检查使用专用配置及同一最终构建。模式验证覆盖 V001–V014 完整升级链；账户/素材使用 `scripts/verify_private_modules_mysql.py`，新增评测/导入/版本比较/TEXT/Notebook 使用 `scripts/verify_v06_modules_mysql.py` 在显式隔离连接上复跑，并输出实际 JDBC 引擎证据。MySQL 专用门禁需要 `MYSQL_TEST_CONNECTION`，只接受标明用途的回环测试库，不能指向个人或生产数据库。
 
 所有结果以验收记录和 CI 的实际执行为准。仍需完成的范围包括通用工具自治、外部模型教学与账单验收、生成式图像/TTS/视频、生产 Docker 宿主部署与容量验收、生产性能 SLO 及备份恢复；测试夹具、有限类型规则和配置入口不能代替这些实测。
+
+正式整包验收先运行 `python scripts/verify_frontend.py`，再运行 `python scripts/verify_java.py`。两者实际清理旧输出并执行完整检查与构建，保存受检源码、完整测试集合与最终字节的对应关系；之后 HTTP 和 DOM 必须使用这个未变更的 JAR。开发中的直接 Maven 命令仍可使用，但旧测试/JAR不能经汇总脚本直接变成新源码的验收证明。
+
+H2 文件库的连接 URL 必须保留 `DB_CLOSE_ON_EXIT=FALSE`，由 Spring Boot 管理后台任务、连接池和数据库的关闭顺序。自定义 `TYPEFORGE_DB_URL` 时也应保留此项；不要另加一个与容器竞争的 H2 JVM 退出钩子。该设置对应 [Spring Boot 3.5 的嵌入式数据库说明](https://docs.spring.io/spring-boot/3.5/reference/data/sql.html)，真实停止/重启和无后台异常由两引擎 HTTP 门禁检查。

@@ -4,7 +4,7 @@
 
 围绕 **Java 泛型与类型安全**，把知识、实验、练习、学习证据、导师、作品和复练放在同一个有版本、有来源的学习工作空间里。
 
-**当前版本 v0.5：按 16 个模块逐一审查并补全本轮业务联动，109 个公开操作与实际路由逐项核对。** 本轮补齐了账号与会话、阅读与统计、代码编译/判分队列、内容编辑审核发布页面、教学规划与分工任务、私有素材、幻灯片画布，以及 DOCX/PPTX/PDF 原生文件导出。前端保留草稿、处理冲突、等待上次请求结束后轮询，支持触控、键盘、小屏、深色与减少动态。
+**当前版本 v0.6：16 个模块均已有实际子能力，129 个公开操作与路由逐项对应。** 在既有学习、编译、导师、作品、素材、导出及内容发布链上，这轮补入私有检索评测工作台、TXT/MD/DOCX 批量预览与原子采集、知识/练习修订差异、独立审核的短文本判分、六类错题交互，以及真实前置关系的概念路径与管理员运行状态。前端保留独立草稿、处理版本冲突、串行轮询，支持键盘、触控、小屏、深色与减少动态。
 
 默认环境可完成证据整理、学习/复练、内容管理、作品编辑和文件导出。**模型规划需要配置实际 HTTP 模型；用户代码编译需要单独部署容器 worker。** 任意 Java 程序运行、生成式图像/语音/视频、完整自由工具调度和正式教学质量评估仍不计入已验收能力。`businessReady=false` 继续明确完整产品与课程最终验收边界；接口实现数量不是产品完成率。
 
@@ -16,7 +16,7 @@
 | 哪些接口能调用、完整请求和响应是什么 | [当前 API 索引](contracts/README.md) · [OpenAPI](contracts/openapi.json) |
 | 如何启动、配置模型和编辑角色 | [后端运行说明](backend/README.md) · [前端运行说明](frontend/README.md) |
 | 数据表、字段、锁序、发布与撤回 | [当前字段字典](database/data-dictionary.md) · [数据一致性](docs/03-data.md) |
-| 什么实际验证过、还有哪些限制 | [本轮验收记录](evidence/runtime-review.md) · [三轮审查](evidence/development-review-v05.md) |
+| 什么实际验证过、还有哪些限制 | [本轮验收记录](evidence/runtime-review.md) · [三轮审查](evidence/development-review-v06.md) |
 | 两人如何继续做及课程最终交付 | [团队计划](docs/09-team-plan.md) · [课程交付](docs/16-course-delivery.md) |
 | 为什么这样设计、参考了什么 | [总体架构](docs/01-architecture.md) · [研究依据](docs/14-research-decisions.md) |
 
@@ -24,7 +24,7 @@
 
 ## 已连接的数据链
 
-1. **内容到学习**：来源 → 手工原稿/清洗登记 → 知识与题目版本 → 作者之外的真实编辑审核 → 发布清单 → 知识阅读/BM25/客观判分。新发布不改旧工作空间的 release。
+1. **内容到学习**：来源 → 手工录入或文件解析预览 → 原稿/清洗收据 → 知识与题目版本 → 作者之外的真实编辑审核 → 发布清单 → 知识阅读/BM25/客观判分。新发布不改旧工作空间的 release。
 2. **作答到复练**：服务端判分 → 顺序事件/outbox → 独立题目家族证据与复习 → 错题源稿 → 当前块版本动作 → 同一个判分服务。重复题目家族不会刷高独立掌握样本。
 3. **上下文到作品**：目标/记忆/本人作答 → 固定快照 → 证据导师或已配置模型 → 明确标识的导师回答 → 文档草稿 → 人工编辑 → 固定版本导出。
 4. **修改到失效**：目标编辑、记忆撤回、作品换版 → 传递血缘标记过期 → 旧上下文/迟到 Agent 写入被拒绝 → 旧导出停止下载 → 用户重建当前结果。
@@ -32,6 +32,9 @@
 6. **代码到反馈**：本人空间 → 独立编译队列 → 容器编译回执 → 固定版本正反检查 → 成绩/outbox/错题；API JVM 不编译用户代码。
 7. **素材到作品**：实际文件校验 → 私有素材与配额 → 版本化 ASSET 引用 → 图片嵌入演示文件 → 撤回后传递失效。
 8. **事件到页面**：持久游标轮询 → 有范围的查询刷新 → 进度/复习/运行/作品同步；切换空间取消旧请求，编辑草稿与服务端事实分开，冲突时保留用户输入。
+9. **定义到评测报告**：本人空间 → 固定发布与语料 → 私有案例/不可变修订 → 真实 BM25 队列 → 逐项证据 → 可复算指标与 JSON 附件；取消保留已完成结果，评测不改变学习成绩。
+
+新增功能的操作与容量边界见 [评测、批量加工与六类错题交互](docs/24-evaluation-import-and-notebook.md)。
 
 ## 从干净环境启动
 
@@ -39,13 +42,12 @@
 
 ```sh
 npm ci --prefix frontend
-npm run check --prefix frontend
-npm run build --prefix frontend
 python -m pip install -r requirements-dev.txt
 python scripts/sync_contract_index.py --check
 python scripts/verify.py
-mvn -B -ntp -f backend/pom.xml clean verify
-java -jar backend/target/typeforge-backend-0.5.0-SNAPSHOT.jar --spring.profiles.active=demo
+python scripts/verify_frontend.py
+python scripts/verify_java.py
+java -jar backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar --spring.profiles.active=demo
 ```
 
 打开 **http://127.0.0.1:8080/**。前端使用同源 `/api` 和 hash 导航，构建产物随 JAR 打包；先构建前端再打包后端。开发时可单独运行 `npm run dev --prefix frontend`，其 API 代理指向本地后端。没有默认登录账户，请自己注册。
@@ -72,12 +74,14 @@ java -jar backend/target/typeforge-backend-0.5.0-SNAPSHOT.jar --spring.profiles.
 ```sh
 python scripts/sync_contract_index.py
 python scripts/verify.py
-npm run check --prefix frontend
-npm run build --prefix frontend
-mvn -B -ntp -f backend/pom.xml clean verify
+python -m unittest discover -s scripts -p 'test_*.py'
+python scripts/verify_frontend.py
+python scripts/verify_java.py
 python scripts/smoke_runtime.py --profile h2
 ```
 
+前端与 Java 包装脚本实际执行完整 check/build 和 clean verify，并绑定运行前后的源码摘要、完整测试集合及安装包字节；它们不能给已有旧报告补签名。改动源码后需要重跑受影响门禁，汇总会拒绝过期证据。
+
 MySQL、浏览器、模型协议和重启检查的实际命令与环境见验收记录。测试脚本使用专用验证数据，不接入个人生产数据库。新增功能先更新真实实现和契约，再刷新索引、字典、消费者及验证；不要只修改能力标签。
 
-已清理旧基线报告、过时研究副本和分版本字段字典，历史可从 Git 取回。**V001–V011 是升级链，必须保留**；删除或修改已应用的迁移会破坏同学现有数据库。AI 协助过程如实记录在 [ai-context.md](evidence/ai-context.md)，两位学生后续的审阅、修改和贡献另行记录。
+已清理旧基线报告、过时研究副本和分版本字段字典，历史可从 Git 取回。**V001–V014 是升级链，必须保留**；删除或修改已应用的迁移会破坏同学现有数据库。AI 协助过程如实记录在 [ai-context.md](evidence/ai-context.md)，两位学生后续的审阅、修改和贡献另行记录。

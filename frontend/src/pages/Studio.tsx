@@ -32,6 +32,7 @@ import { SlideEditor } from '../components/SlideEditor';
 import { AssetsPanel } from '../components/Assets';
 import { CompileDiagnostics, jobPending, starterSource } from '../components/Compiler';
 import { SourcePreview } from '../components/SourcePreview';
+import { NotebookWorkspace } from '../components/Notebook';
 import type {
   Artifact,
   Asset,
@@ -252,6 +253,8 @@ function ArtifactEditor({ artifact }: { artifact: Artifact }) {
   );
   const [tab, setTab] = useState<'edit' | 'preview'>('edit');
   const [saved, setSaved] = useState(false);
+  const [confirmedVersion, setConfirmedVersion] = useState<ArtifactVersion | null>(null);
+  const [focusNotebookBlock, setFocusNotebookBlock] = useState('');
   const [conflict, setConflict] = useState(false);
   const [sourcePicker, setSourcePicker] = useState(false);
   const [sourceId, setSourceId] = useState('');
@@ -445,7 +448,11 @@ function ArtifactEditor({ artifact }: { artifact: Artifact }) {
     setTab('preview');
   };
   const currentRemote =
-    remote.data && remote.data.revision >= draft.baseRevision ? remote.data : null;
+    remote.data && remote.data.revision >= draft.baseRevision
+      ? remote.data
+      : confirmedVersion && confirmedVersion.revision >= draft.baseRevision
+        ? confirmedVersion
+        : null;
   const blocked =
     currentRemote?.reviewStatus === 'STALE' || currentRemote?.reviewStatus === 'REJECTED';
   return (
@@ -553,18 +560,29 @@ function ArtifactEditor({ artifact }: { artifact: Artifact }) {
       {remote.loading && artifact.currentRevision > 0 && draft.baseRevision === 0 ? (
         <Loading />
       ) : artifact.kind === 'NOTEBOOK' || artifact.kind === 'INTERACTION' ? (
-        <>
-          {(draft.content.kind === 'NOTEBOOK' || draft.content.kind === 'INTERACTION') &&
-            draft.content.blocks.map((block) => (
-              <NotebookBlock
-                key={block.id}
-                artifact={artifact}
-                version={currentRemote}
-                block={block}
-                disabled={blocked || !can('NOTEBOOK_ACTIONS')}
-              />
-            ))}
-        </>
+        currentRemote && (
+          <NotebookWorkspace
+            key={`${artifact.id}:${currentRemote.revision}`}
+            artifact={artifact}
+            version={currentRemote}
+            disabled={blocked || draft.dirty || !can('NOTEBOOK_ACTIONS')}
+            focusBlockId={focusNotebookBlock}
+            onVersion={(version) => {
+              setConfirmedVersion(version);
+              setDraft({
+                baseRevision: version.revision,
+                content: version.content,
+                inputRefs: version.inputRefs,
+                dirty: false,
+              });
+              setSaved(true);
+              setConflict(false);
+              if (version.content.kind === 'NOTEBOOK' || version.content.kind === 'INTERACTION')
+                setFocusNotebookBlock(version.content.blocks.at(-1)?.id || '');
+              refresh();
+            }}
+          />
+        )
       ) : (
         <>
           <div className="editor-toolbar">
@@ -930,290 +948,6 @@ function ExportPanel({
           ))}
         </div>
       )}
-    </section>
-  );
-}
-function NotebookBlock({
-  artifact,
-  version,
-  block,
-  disabled,
-}: {
-  artifact: Artifact;
-  version: ArtifactVersion | null;
-  block: InteractionBlock;
-  disabled: boolean;
-}) {
-  const { workspace, session, can, refresh, navigate } = useWorkspace();
-  const exercise = useResource<Exercise>(
-    block.exerciseRef
-      ? `/exercises/${block.exerciseRef.id}?releaseId=${workspace.releaseId}&revision=${block.exerciseRef.revision}`
-      : null,
-  );
-  const concepts = useResource<{ items: Concept[] }>(`/concepts?releaseId=${workspace.releaseId}`);
-  const [prediction, setPrediction] = useSessionDraft(
-    `tf.notebook-prediction.${session.userId}.${workspace.id}.${artifact.id}.${block.id}`,
-    '',
-  );
-  const [options, setOptions] = useSessionDraft<string[]>(
-    `tf.notebook-answer.${session.userId}.${workspace.id}.${artifact.id}.${block.id}`,
-    [],
-  );
-  const [source, setSource] = useSessionDraft(
-    `tf.notebook-code.${session.userId}.${workspace.id}.${artifact.id}.${block.id}`,
-    typeof block.config.originalSource === 'string' ? block.config.originalSource : starterSource,
-  );
-  const [compileId, setCompileId] = useSessionDraft(
-    `tf.notebook-compile.${session.userId}.${workspace.id}.${artifact.id}.${block.id}`,
-    '',
-  );
-  const [seenHintLevel, setSeenHintLevel] = useState(0);
-  const hintLevel = Math.min(seenHintLevel + 1, 3);
-  const [poll, setPoll] = useState(0);
-  const [feedback, setFeedback] = useSessionDraft<Attempt | null>(
-    `tf.notebook-feedback.${session.userId}.${workspace.id}.${artifact.id}.${block.id}`,
-    null,
-  );
-  const [notice, setNotice] = useState('');
-  const [showEvidence, setShowEvidence] = useState(false);
-  const mutation = useMutation();
-  const pending = !!feedback && ['PENDING', 'QUEUED', 'RUNNING'].includes(feedback.status);
-  const latest = useResource<Attempt>(pending ? `/attempts/${feedback!.id}` : null, poll);
-  const compilation = useResource<CompileJob>(
-    compileId ? `/compile-jobs/${compileId}` : null,
-    poll,
-  );
-  const isCode = !!exercise.data && ['SIGNATURE', 'REFACTOR', 'FILL'].includes(exercise.data.kind);
-  const sourceBytes = new TextEncoder().encode(source).byteLength;
-  useEffect(() => {
-    if (latest.data && latest.data.id === feedback?.id && latest.data.status !== feedback.status) {
-      setFeedback(latest.data);
-      refresh();
-    }
-  }, [latest.data, feedback]);
-  usePolling(
-    pending || (!!compileId && (!compilation.data || jobPending(compilation.data.status))),
-    () => setPoll((value) => value + 1),
-    latest.loading || compilation.loading,
-    !!latest.error || !!compilation.error,
-  );
-  const action = (action: string) =>
-    version &&
-    mutation.run(
-      async () => {
-        const result = await api.request<{
-          attemptId: string | null;
-          compileJobId: string | null;
-          message: string;
-          evidenceRefs: { id: string; revision: number }[];
-        }>(
-          `/notebooks/${artifact.id}/actions`,
-          'POST',
-          {
-            artifactRevision: version.revision,
-            blockId: block.id,
-            action,
-            expectedBlockRevision: block.revision,
-            answer:
-              action === 'requestCompile' || (action === 'submitAnswer' && isCode)
-                ? { kind: 'CODE', source }
-                : action === 'submitAnswer'
-                  ? { kind: 'CHOICE', optionIds: options }
-                  : null,
-            ...(action === 'requestHint' ? { hintLevel } : {}),
-            selection: action === 'predict' ? prediction : '',
-          },
-          { idempotent: true },
-        );
-        return {
-          result,
-          attempt: result.attemptId
-            ? await api.get<Attempt>(`/attempts/${result.attemptId}`)
-            : null,
-        };
-      },
-      ({ result, attempt }) => {
-        setNotice(result.message);
-        if (attempt) setFeedback(attempt);
-        if (result.compileJobId) setCompileId(result.compileJobId);
-        if (action === 'requestHint') setSeenHintLevel(hintLevel);
-        if (action === 'openEvidence') setShowEvidence(true);
-        refresh();
-      },
-    );
-  const evidence =
-    concepts.data?.items
-      .flatMap((c) => c.evidence)
-      .filter((e) =>
-        block.evidenceRefs.some((r) => r.id === e.chunkId && r.revision === e.revision),
-      ) || [];
-  return (
-    <section className="notebook-block">
-      <div className="row spread">
-        <h3>重新检查你的判断</h3>
-        <Badge>关联真实练习</Badge>
-      </div>
-      <p className="question-prompt">{block.prompt}</p>
-      {typeof block.config.studentReason === 'string' && (
-        <details>
-          <summary>上次作答上下文</summary>
-          <p className="preserve-text">{block.config.studentReason}</p>
-        </details>
-      )}
-      <Field label="先写下这次的预测或理由">
-        <textarea
-          rows={3}
-          maxLength={1000}
-          value={prediction}
-          onChange={(e) => setPrediction(e.target.value)}
-          disabled={disabled || mutation.busy}
-        />
-      </Field>
-      <button
-        disabled={
-          disabled ||
-          mutation.busy ||
-          !prediction.trim() ||
-          !block.allowedActions.includes('predict')
-        }
-        onClick={() => void action('predict')}
-      >
-        记录预测
-      </button>
-      <ErrorNotice error={exercise.error} retry={exercise.reload} />
-      {exercise.data && !isCode && (
-        <fieldset className="answer-options" disabled={disabled || mutation.busy || pending}>
-          <legend>重新选择答案</legend>
-          {exercise.data.options.map((option) => (
-            <label
-              className={`answer-option ${options.includes(option.id) ? 'selected' : ''}`}
-              key={option.id}
-            >
-              <input
-                type={exercise.data?.kind === 'SINGLE' ? 'radio' : 'checkbox'}
-                name={`notebook-${block.id}`}
-                checked={options.includes(option.id)}
-                onChange={(e) => {
-                  setOptions((p) =>
-                    exercise.data?.kind === 'SINGLE'
-                      ? [option.id]
-                      : e.target.checked
-                        ? [...p, option.id]
-                        : p.filter((id) => id !== option.id),
-                  );
-                  setFeedback(null);
-                }}
-              />
-              <span className="option-label">{option.id}</span>
-              <span>{option.text}</span>
-            </label>
-          ))}
-        </fieldset>
-      )}
-      {(isCode || block.allowedActions.includes('requestCompile')) && (
-        <Field
-          label="修改本题代码 · Main.java"
-          hint={`${sourceBytes.toLocaleString()} / 32,768 字节`}
-        >
-          <textarea
-            className="code-editor"
-            rows={14}
-            spellCheck={false}
-            maxLength={32768}
-            value={source}
-            disabled={disabled || mutation.busy || pending || jobPending(compilation.data?.status)}
-            onChange={(e) => {
-              setSource(e.target.value);
-              setFeedback(null);
-            }}
-          />
-        </Field>
-      )}
-      <div className="row wrap">
-        <button
-          className="primary"
-          disabled={
-            disabled ||
-            mutation.busy ||
-            pending ||
-            (isCode
-              ? !can('CODE_GRADING') || !source.trim() || sourceBytes > 32768
-              : options.length === 0) ||
-            !block.allowedActions.includes('submitAnswer')
-          }
-          onClick={() => void action('submitAnswer')}
-        >
-          提交复练
-        </button>
-        {block.allowedActions.includes('requestHint') && can('EXERCISE_HINTS') && (
-          <button
-            disabled={disabled || mutation.busy || pending || seenHintLevel >= 3}
-            onClick={() => void action('requestHint')}
-          >
-            {seenHintLevel >= 3 ? '已查看全部提示' : `查看第 ${hintLevel} 级提示`}
-          </button>
-        )}
-        {block.allowedActions.includes('requestCompile') && can('COMPILE_ONLY') && (
-          <button
-            disabled={
-              disabled ||
-              mutation.busy ||
-              pending ||
-              jobPending(compilation.data?.status) ||
-              !source.trim() ||
-              sourceBytes > 32768
-            }
-            onClick={() => void action('requestCompile')}
-          >
-            仅检查编译
-          </button>
-        )}
-        {block.attemptId && can('STUDY_WORKFLOW') && (
-          <button
-            disabled={disabled || mutation.busy}
-            onClick={() => navigate('agents', block.attemptId!)}
-          >
-            为这道错题创建学习任务
-          </button>
-        )}
-        <button
-          disabled={disabled || mutation.busy || !block.allowedActions.includes('openEvidence')}
-          onClick={() => void action('openEvidence')}
-        >
-          查看关联证据
-        </button>
-      </div>
-      <ErrorNotice error={mutation.error} />
-      {notice && <Confirmed>{notice}</Confirmed>}
-      <ErrorNotice error={latest.error} retry={latest.reload} />
-      <ErrorNotice error={compilation.error} retry={compilation.reload} />
-      {compilation.data && (
-        <details>
-          <summary>编译任务 · {compilation.data.status}</summary>
-          <CompileDiagnostics job={compilation.data} />
-        </details>
-      )}
-      {feedback && (
-        <section className="feedback" aria-live="polite">
-          <h3>
-            复练反馈 ·{' '}
-            {feedback.status === 'GRADED' ? (
-              `${feedback.score}/${feedback.maximum}`
-            ) : (
-              <Status value={feedback.status} />
-            )}
-          </h3>
-          <p className="preserve-text">{feedback.feedback}</p>
-          {pending && <Loading label="代码作答已入队，正在等待题目规则验证。" />}
-          <p className="muted small">重复题目家族不会增加独立掌握样本。</p>
-        </section>
-      )}
-      {showEvidence &&
-        (evidence.length ? (
-          <EvidenceList items={evidence} />
-        ) : (
-          <Empty title="未读取到匹配的知识引用">刷新课程后重试，或检查源稿是否已经失效。</Empty>
-        ))}
     </section>
   );
 }
