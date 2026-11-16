@@ -1355,7 +1355,7 @@ export function Content() {
               <Field label="课程版本号">
                 <input
                   required
-                  pattern="[A-Za-z0-9][A-Za-z0-9_.-]{0,31}"
+                  pattern="[A-Za-z0-9][A-Za-z0-9_.\-]{0,31}"
                   maxLength={32}
                   value={releaseVersion}
                   onChange={(e) => setReleaseVersion(e.target.value)}

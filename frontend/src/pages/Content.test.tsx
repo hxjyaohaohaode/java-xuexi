@@ -82,6 +82,29 @@ function fixture() {
   return { context, get, view };
 }
 
+it.each([
+  {
+    label: '课程版本号',
+    accepted: ['v1', 'Generics_2026.11-16', 'X'.repeat(32)],
+    rejected: ['-v1', 'v 1', 'v/1', '课程一', 'X'.repeat(33)],
+  },
+  {
+    label: '概念代码',
+    accepted: ['G01', 'TYPE_2', 'A'.repeat(16)],
+    rejected: ['A', 'g01', '1TYPE', 'TYPE-X', 'A'.repeat(17)],
+  },
+])(
+  'keeps the actual $label HTML pattern valid in Unicode sets mode and enforces its input boundary',
+  async ({ label, accepted, rejected }) => {
+    fixture().view();
+    const input = (await screen.findByLabelText(label)) as HTMLInputElement;
+    // HTML compiles the rendered attribute with v, rather than the older u flag.
+    const pattern = new RegExp(`^(?:${input.pattern})$`, 'v');
+    for (const value of accepted) expect(pattern.test(value), value).toBe(true);
+    for (const value of rejected) expect(pattern.test(value), value).toBe(false);
+  },
+);
+
 it('preserves every citation on revision and saving knowledge does not clear another form draft', async () => {
   const { view } = fixture();
   const request = vi.spyOn(api, 'request').mockResolvedValue(chunk);

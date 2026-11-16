@@ -75,6 +75,11 @@ function routeFromHash(): { route: Route; selection: string } {
     })(),
   };
 }
+function clearSessionRoute() {
+  // End the previous identity's private selection before another account can mount.
+  // Initial authenticated boot still reads the requested deep link unchanged.
+  history.replaceState(history.state, '', `${location.pathname}${location.search}#learn`);
+}
 export default function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [bootError, setBootError] = useState<unknown>(null);
@@ -95,6 +100,7 @@ export default function App() {
         if (generation !== sessionGeneration.current) return;
         if (e.status === 401) {
           api.clearPrivateState();
+          clearSessionRoute();
           setPreferenceOwner(null);
           setSession(null);
         } else setBootError(e);
@@ -106,6 +112,7 @@ export default function App() {
       setSessionNotice('会话已结束，请重新登录。你的已提交内容保存在服务端。');
       sessionGeneration.current += 1;
       api.clearPrivateState();
+      clearSessionRoute();
       setPreferenceOwner(null);
       setSession(null);
     };
@@ -148,6 +155,7 @@ export default function App() {
         setSessionNotice(notice || '你已退出登录。');
         sessionGeneration.current += 1;
         api.clearPrivateState();
+        clearSessionRoute();
         setPreferenceOwner(null);
         setSession(null);
       }}

@@ -103,12 +103,21 @@ export async function runWorkbenchJourney(d, check) {
     await d.click('button', '进入工作台');
     await d.fill('工作空间名称', title);
     await d.click('button', '创建工作空间');
-    await d.click('link', '知识与阅读');
+    assert.equal(
+      await d.route(),
+      '#learn',
+      'A new identity must not inherit a previous private selection',
+    );
     await d.heading('泛型与类型安全');
   };
   const logout = async () => {
     await d.click('button', '退出登录');
     await d.heading('回到你的工作台');
+    assert.equal(
+      await d.route(),
+      '#learn',
+      'Confirmed logout must clear the previous private route',
+    );
   };
   const content = async (tab) => {
     await d.click('link', '内容工作台');
@@ -333,6 +342,11 @@ export async function runWorkbenchJourney(d, check) {
         await d.text('独立审核已记录，此版本现在可以加入发布清单。');
       }
       await d.click('tab', '课程发布');
+      await d.verifyPattern(
+        '课程版本号',
+        ['v1', 'Generics_2026.11-16'],
+        ['-v1', 'v 1', 'v/1', '课程一'],
+      );
       await d.fill('课程版本号', courseVersion);
       for (const item of [baseChunk, childChunk, question, variant])
         await d.check(`${item.title} · ${item.revision}`, '#content-releases');

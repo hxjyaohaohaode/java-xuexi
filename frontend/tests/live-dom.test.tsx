@@ -208,6 +208,29 @@ function workbenchDriver(user: ReturnType<typeof userEvent.setup>): JourneyDrive
       await user.click(input);
       await user.paste(value);
     },
+    async verifyPattern(name, accepted, rejected) {
+      const input = (await label(name)) as HTMLInputElement;
+      const before = input.value;
+      expect(input.pattern).not.toBe('');
+      const expression = new RegExp(`^(?:${input.pattern})$`, 'v');
+      for (const [values, expected] of [
+        [accepted, true],
+        [rejected, false],
+      ] as const)
+        for (const value of values) {
+          expect(expression.test(value), `${name}: ${value}`).toBe(expected);
+          await user.clear(input);
+          await user.click(input);
+          await user.paste(value);
+          expect(input.value).toBe(value);
+          expect(input.checkValidity(), `${name}: native validity for ${value}`).toBe(expected);
+        }
+      await user.clear(input);
+      if (before) await user.paste(before);
+    },
+    async route() {
+      return location.hash;
+    },
     async click(kind, name, selector) {
       const target = await role(kind, name, selector);
       if (target instanceof HTMLButtonElement) await waitFor(() => expect(target).toBeEnabled());

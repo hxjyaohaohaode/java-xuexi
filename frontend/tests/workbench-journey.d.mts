@@ -1,5 +1,7 @@
 export interface JourneyDriver {
   fill(label: string, value: string, scope?: string): Promise<void>;
+  verifyPattern(label: string, accepted: string[], rejected: string[]): Promise<void>;
+  route(): Promise<string>;
   click(role: string, name: string | RegExp, scope?: string): Promise<void>;
   select(label: string, value: string, scope?: string): Promise<void>;
   check(name: string | RegExp, scope?: string): Promise<void>;

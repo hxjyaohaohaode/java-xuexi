@@ -286,6 +286,31 @@ function workbenchDriver() {
     async fill(name, value, selector) {
       await label(name, selector).fill(value);
     },
+    async verifyPattern(name, accepted, rejected) {
+      const input = label(name);
+      const before = await input.inputValue();
+      const attribute = await input.getAttribute('pattern');
+      assert.ok(attribute, `${name} must expose its actual HTML constraint`);
+      const expression = new RegExp(`^(?:${attribute})$`, 'v');
+      for (const [values, expected] of [
+        [accepted, true],
+        [rejected, false],
+      ])
+        for (const value of values) {
+          assert.equal(expression.test(value), expected, `${name}: ${value}`);
+          await input.fill(value);
+          assert.equal(await input.inputValue(), value);
+          assert.equal(
+            await input.evaluate((element) => element.checkValidity()),
+            expected,
+            `${name} native validity must enforce ${JSON.stringify(value)}`,
+          );
+        }
+      await input.fill(before);
+    },
+    async route() {
+      return page.evaluate(() => location.hash);
+    },
     async click(kind, name, selector) {
       await role(kind, name, selector).click();
     },
