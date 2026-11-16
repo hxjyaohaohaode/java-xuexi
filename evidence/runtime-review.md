@@ -1,6 +1,6 @@
 # v0.6 当前运行验收记录
 
-这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-16T02:45:22.181612+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
+这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-16T03:11:18.168795+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
 
 ## 实际结果
 
@@ -15,8 +15,8 @@
 | MySQL v0.6 业务链 | 75 项 | 实际 JDBC 引擎证明；批量导入/原子回滚、修订对比、私有评测/容量/取消、TEXT独立审核判分、六类错题块与管理统计 |
 | 编译 broker Python | 13 项 | 离线协议/边界/清理归属；真实容器隔离在远端 CI 独立执行 |
 | 验收脚本回归 | 20 项 | 临时 Git/进程夹具验证旧 PASS 复用、缺失测试、源码/JAR变化与驱动失败；不是实际 Maven、浏览器或数据库执行 |
-| H2 实际 HTTP/重启 | 93 项；170 次请求 | 单独进程、真实会话/CSRF、业务链、真实下载、重启保留与撤回后失效 |
-| MySQL 实际 HTTP/重启 | 108 项；176 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
+| H2 实际 HTTP/重启 | 93 项；169 次请求 | 单独进程、真实会话/CSRF、业务链、真实下载、重启保留与撤回后失效 |
+| MySQL 实际 HTTP/重启 | 108 项；172 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
 | 前端类型/构建/单元 | 60 项单元通过；TypeScript 与 Vite 构建成功 | 编译与组件/状态逻辑；不等于真实浏览器布局验收 |
 | 前端 DOM + 真实 HTTP | 24 条链通过 | 无服务端响应 mock；jsdom 驱动真实后端；不验证浏览器布局/原生下载 |
 | Chromium 浏览器 | 本地被环境阻止；精确提交由 GitHub Actions 运行 | 本地 AF_UNIX 创建受限，不记成通过；远端 Playwright失败会阻断CI |
@@ -105,8 +105,8 @@ python scripts/record_verification.py --check-snapshot
 
 ## 当前包与源码
 
-- JAR SHA-256：`89a43a6d84c758e1b11fca6eb629fc6d05e5df0b9bf17f9338bf56bbbf078882`。
-- 源码文件数：374；SHA-256 摘要：`e3cf9318129b127add12e9553506f79317406dee49e3f8a956606dce83e1378b`。
+- JAR SHA-256：`507c8c96dc952ee2fdf61dc8688331b7cf84ec0e2704678a91e9cbd289076592`。
+- 源码文件数：374；SHA-256 摘要：`774f474cace25807f833177b3275766cd1f7aa9db8e7ceb0ffa17d48bcc12df0`。
 - 只有本记录与机器报告自身从源码摘要排除，避免循环hash；迁移、代码、契约、页面、锁文件、文档及CI均包含。
 - 发布提交的远端结果在 [GitHub Actions](https://github.com/hxjyaohaohaode/java-xuexi/actions)核对，不能把本地环境结果当成Java17/Ubuntu/Chromium结果。
 

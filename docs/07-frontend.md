@@ -32,21 +32,23 @@
 
 当前桌面使用可收起的左导航、弹性主内容和独立页面。知识页为目录＋阅读面；练习页为题目列表＋作答；作品页为作品列表＋源稿/预览；导师页为会话列表＋消息；学习任务为目标输入＋阶段/成果。1120px 以下较复杂面板逐步合并；760px 以下导航使用菜单，内容提供焦点约束、Escape、返回焦点和滚动恢复。幻灯片已支持对象拖动/缩放和键盘等价操作；可拖动三栏、悬浮导师侧栏与任意工作区布局仍是后续方向。
 
-页面使用 `#learn`、`#practice`、`#progress`、`#lab`、`#studio/<artifactId>`、`#tutor`、`#memory`、`#settings`、`#agents`、`#content`，空间选择由当前账号持有。代码块自身可滚动，正文响应式布局；真实 320/390/768/1440 视口、软键盘和屏幕阅读器结果以实际验收报告为准。
+页面使用 `#learn`、`#practice`、`#progress`、`#lab`、`#studio/<artifactId>`、`#tutor`、`#memory`、`#settings`、`#agents`、`#content`、`#evaluation`、`#operations`，空间选择由当前账号持有；编辑、评测和运维入口按当前角色与服务能力显示。代码块自身可滚动，正文响应式布局；真实 320/390/768/1440 视口、软键盘和屏幕阅读器结果以实际验收报告为准。内容工作台在 760px 以下把六个步骤排成三列两行，当前步骤始终可见。
 
 ## 4. 页面与业务状态
 
 | 当前 hash 路由 | 核心布局与操作 | 数据/联动 | 必须区分的状态 |
 |---|---|---|---|
-| `#learn` / `#learn/<conceptId>` | 概念目录、阅读、检索、来源与前后节 | release / concepts / readings | 加载、无匹配、读取失败、已读确认 |
+| `#learn` / `#learn/<conceptId>` | 概念目录与前置路径、阅读、检索、来源与前后节 | release / concepts / readings | 加载、无匹配、读取失败、已读确认 |
 | `#lab` | 有限规则与六类代码实验 | lab session / compile job | 不支持、未配置、排队、诊断、取消、旧源码结果 |
-| `#practice` / `#practice/<exerciseId>` | 选择题或代码编辑、三级提示与反馈 | exercise / attempt / hints | 未答、PENDING、GRADED、FAILED、受助练习 |
+| `#practice` / `#practice/<exerciseId>` | 选择题、有限规则 TEXT 或代码编辑、三级提示与反馈 | exercise / attempt / hints | 未答、规则范围、PENDING、GRADED、FAILED、受助练习 |
 | `#progress` | 学习证据、复习、趋势及明细 | projection / reviews / analytics | 未练习、待投影、窗口含今天、样本不足 |
-| `#studio/<artifactId>` | 源稿、幻灯片画布、预览、素材与导出 | revisions / ASSET refs / export jobs | 脏稿、冲突、来源失效、容量、失败、实际文件完成 |
+| `#studio/<artifactId>` | 源稿、幻灯片画布、六类 Notebook 活动、预览、素材与导出 | revisions / block state / ASSET refs / export jobs | 脏稿、冲突、来源失效、容量、失败、实际文件完成 |
 | `#tutor` | 持久对话、固定上下文、证据与转文档 | tutor request / snapshot | 本地证据、模型未配置、处理中、取消、来源失效 |
 | `#agents` | 目标、预算、阶段、记录与学习成果 | agent run / teaching plan / artifact refs | 排队、运行、等待、部分完成、失败、完成 |
 | `#memory` | 个人记忆与目标 | memories / goals / contexts | 独立草稿、CAS、撤回、归档、来源失效 |
-| `#content` | 来源采集、知识/题目、审核与发布 | content authoring / approval / releases | 权限、独立脏稿、审核状态、冻结、发布冲突 |
+| `#content` | 来源采集、批量 TXT/MD/DOCX 预览、知识/题目、修订比较、审核与发布 | captures / batches / content revisions / approval / releases | 权限、独立脏稿、逐文件错误、预览过期、审核状态、冻结、发布冲突 |
+| `#evaluation` | 私有套件、固定修订、运行、逐项检索证据与 JSON 报告 | suites / runs / case results / reports | 空集、排队、取消、失败、基线、容量、版本冲突 |
+| `#operations` | 管理员实际请求耗时、队列与保留数据统计 | current role / capabilities / operations snapshot | 无样本、读取失败、旧快照、离线暂停、权限撤回 |
 | `#settings` | 主题、动效、空间、账户与会话 | preferences / profile / sessions | 保存中、CAS、改密失败、撤销、账户停用 |
 
 加载失败显示错误与可用的读取重试，表单保留输入。错误与成功反馈留在操作附近；不能用空态遮掩服务器错误。能力未启用时提供明确限制而不显示虚假的可执行入口。原页面路径草案（如 `/admin/releases`）不代表已部署路由；内容流程统一在 `#content`。

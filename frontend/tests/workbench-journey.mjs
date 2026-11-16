@@ -318,6 +318,12 @@ export async function runWorkbenchJourney(d, check) {
           await d.text('实际采集原稿', '#content-review');
           await d.capture('v06-editor-review-diff-desktop.png');
           await d.captureResponsive('v06-editor-review-diff', [320, 390]);
+          await d.captureResponsive(
+            'v06-editor-review-diff-dark',
+            [1440, 390, 320],
+            undefined,
+            'dark',
+          );
         }
         await d.fill(
           '审核意见',

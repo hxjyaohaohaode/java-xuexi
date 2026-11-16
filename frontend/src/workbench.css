@@ -156,6 +156,7 @@
   max-height: 440px;
   padding: 16px;
   background: var(--soft);
+  color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 12px;
   font-size: 13px;
@@ -999,6 +1000,14 @@
   }
 }
 @media (max-width: 760px) {
+  .content-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .content-tabs button {
+    min-width: 0;
+    padding-inline: 8px;
+  }
   .batch-texts,
   .content-diff-values,
   .notebook-code-comparison,

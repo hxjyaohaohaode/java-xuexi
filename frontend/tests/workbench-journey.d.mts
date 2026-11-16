@@ -21,7 +21,12 @@ export interface JourneyDriver {
   ): Promise<void>;
   report(name: string): Promise<any>;
   capture(name: string, scope?: string): Promise<void>;
-  captureResponsive(prefix: string, widths: number[], scope?: string): Promise<void>;
+  captureResponsive(
+    prefix: string,
+    widths: number[],
+    scope?: string,
+    systemTheme?: 'light' | 'dark',
+  ): Promise<void>;
   eventually(work: () => Promise<boolean>, message: string): Promise<void>;
 }
 export function runWorkbenchJourney(

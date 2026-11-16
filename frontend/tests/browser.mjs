@@ -35,6 +35,7 @@ const context = await browser.newContext({
   baseURL: base,
   acceptDownloads: true,
   reducedMotion: 'reduce',
+  colorScheme: 'light',
 });
 const page = await context.newPage();
 page.setDefaultTimeout(25000);
@@ -42,6 +43,7 @@ const failures = [];
 const pageErrors = [];
 const consoleErrors = [];
 const results = [];
+const visualChecks = [];
 let failurePages = [];
 const expectedConflict = { url: '', active: false, responses: 0, consoleMessages: 0 };
 function monitor(p) {
@@ -128,11 +130,91 @@ const fieldSelect = (p, title) =>
     .locator('label.field')
     .filter({ has: p.getByText(title, { exact: true }) })
     .locator('select');
+const verifyReadingSurfaces = async (p, filename) => {
+  const metrics = await p.evaluate(() => {
+    const visible = (element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && getComputedStyle(element).visibility !== 'hidden';
+    };
+    const luminance = (color) => {
+      const channels = color.match(/[\d.]+/g)?.map(Number);
+      if (!channels || channels.length < 3 || (channels.length === 4 && channels[3] !== 1))
+        throw new Error(`Expected an opaque rendered reading color, received ${color}`);
+      const linear = channels.slice(0, 3).map((channel) => {
+        const value = channel / 255;
+        return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+    };
+    const readingSurfaces = [
+      '.batch-original',
+      '.content-diff-values pre',
+      '.notebook-code-comparison pre',
+    ].flatMap((selector) => {
+      const ratios = Array.from(document.querySelectorAll(selector))
+        .filter(visible)
+        .map((element) => {
+          const style = getComputedStyle(element);
+          const foreground = luminance(style.color);
+          const background = luminance(style.backgroundColor);
+          return (
+            (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05)
+          );
+        });
+      return ratios.length
+        ? [{ selector, samples: ratios.length, minimumContrast: Math.min(...ratios) }]
+        : [];
+    });
+    const contentTabs = Array.from(document.querySelectorAll('.content-tabs'))
+      .filter(visible)
+      .map((tabs) => {
+        const frame = tabs.getBoundingClientRect();
+        const selected = Array.from(tabs.querySelectorAll('[role="tab"][aria-selected="true"]'));
+        return {
+          selectedCount: selected.length,
+          selectedFullyVisible:
+            selected.length === 1 &&
+            selected.every((element) => {
+              const rect = element.getBoundingClientRect();
+              return (
+                rect.left >= frame.left - 1 &&
+                rect.right <= frame.right + 1 &&
+                rect.top >= frame.top - 1 &&
+                rect.bottom <= frame.bottom + 1 &&
+                rect.left >= -1 &&
+                rect.right <= window.innerWidth + 1
+              );
+            }),
+        };
+      });
+    return {
+      width: window.innerWidth,
+      theme: document.documentElement.dataset.theme,
+      readingSurfaces,
+      contentTabs,
+    };
+  });
+  for (const surface of metrics.readingSurfaces)
+    assert.ok(
+      surface.minimumContrast >= 4.5,
+      `${filename}: ${surface.selector} normal text contrast must be at least 4.5:1, received ${surface.minimumContrast.toFixed(2)}:1`,
+    );
+  for (const tabs of metrics.contentTabs) {
+    assert.equal(tabs.selectedCount, 1, `${filename}: exactly one content step must be selected`);
+    assert.ok(
+      tabs.selectedFullyVisible,
+      `${filename}: the selected content step must remain fully visible`,
+    );
+  }
+  visualChecks.push({ filename, ...metrics });
+};
 const capturePage = async (p, filename) => {
   await p.evaluate(async () => {
+    await document.fonts.ready;
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   });
+  await verifyReadingSurfaces(p, filename);
   await p.screenshot({ path: path.join(out, filename), fullPage: true });
 };
 const describeControls = async (p) => {
@@ -195,8 +277,10 @@ function workbenchDriver() {
     return response.json();
   };
   const capture = async (filename, selector) => {
-    if (selector) await page.locator(selector).screenshot({ path: path.join(out, filename) });
-    else await capturePage(page, filename);
+    if (selector) {
+      await verifyReadingSurfaces(page, filename);
+      await page.locator(selector).screenshot({ path: path.join(out, filename) });
+    } else await capturePage(page, filename);
   };
   return {
     async fill(name, value, selector) {
@@ -213,6 +297,7 @@ function workbenchDriver() {
     },
     async summary(name, selector) {
       const target = scope(selector).locator('summary').filter({ hasText: name });
+      await target.waitFor({ state: 'visible' });
       assert.equal(await target.count(), 1, `Summary must be unambiguous: ${name}`);
       if (!(await target.evaluate((element) => element.parentElement.open))) await target.click();
     },
@@ -241,10 +326,13 @@ function workbenchDriver() {
       return label(name, selector).inputValue();
     },
     async absentLabel(name) {
-      assert.equal(await page.getByLabel(name, { exact: true }).count(), 0);
+      const target = page.getByLabel(name, { exact: true });
+      await target.waitFor({ state: 'detached' });
+      assert.equal(await target.count(), 0);
     },
     async clickRow(selector, text, name) {
       const target = page.locator(selector).filter({ hasText: text });
+      await target.waitFor({ state: 'visible' });
       assert.equal(await target.count(), 1, `Saved revision row should be unambiguous: ${text}`);
       await target.getByRole('button', { name, exact: true }).click();
     },
@@ -289,57 +377,88 @@ function workbenchDriver() {
       return JSON.parse(bytes.toString());
     },
     capture,
-    async captureResponsive(prefix, widths, selector) {
-      for (const width of widths) {
-        await page.setViewportSize({ width, height: 1000 });
-        await page.evaluate(async () => {
-          await document.fonts.ready;
-          await new Promise((resolve) =>
-            requestAnimationFrame(() => requestAnimationFrame(resolve)),
-          );
-        });
-        assert.ok(
-          await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
-          `${prefix} overflows the page at ${width}px`,
+    async captureResponsive(prefix, widths, selector, systemTheme) {
+      const originalScheme = await page.evaluate(() =>
+        matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+      );
+      if (systemTheme) {
+        const preference = await readJson('/me/preferences');
+        assert.equal(
+          preference.theme,
+          'system',
+          'System-theme captures require the real saved system preference',
         );
-        const regions = page.locator(
-          '.concept-map-scroll:visible,.evaluation-metric-table:visible',
+        await page.emulateMedia({ colorScheme: systemTheme });
+        await until(
+          async () =>
+            (await page.evaluate(() => document.documentElement.dataset.theme)) === systemTheme,
+          'The application must react to the browser color scheme before dark screenshots',
         );
-        for (let i = 0; i < (await regions.count()); i += 1) {
-          const region = regions.nth(i);
-          const scrollable = await region.evaluate(
-            (element) => element.scrollWidth > element.clientWidth + 1,
-          );
-          await region.focus();
-          assert.ok(
-            await region.evaluate((element) => element === document.activeElement),
-            'Overflow region must accept keyboard focus',
-          );
-          if (scrollable) {
-            await region.evaluate((element) => {
-              element.scrollLeft = 0;
-            });
-            await page.keyboard.press('ArrowRight');
-            await until(
-              async () => await region.evaluate((element) => element.scrollLeft > 0),
-              'Keyboard must reach horizontally scrolled content',
-            );
-            await region.evaluate((element) => {
-              element.scrollLeft = 0;
-            });
-          }
-        }
-        const controls = scope(selector || 'main').locator('button:visible');
-        for (let i = 0; i < (await controls.count()); i += 1) {
-          const size = await controls.nth(i).boundingBox();
-          assert.ok(
-            size && size.height >= 43,
-            `${prefix} has a button below the 44px touch target at ${width}px`,
-          );
-        }
-        await capture(`${prefix}-${width}.png`, selector);
       }
-      await page.setViewportSize({ width: 1440, height: 1000 });
+      try {
+        for (const width of widths) {
+          await page.setViewportSize({ width, height: 1000 });
+          await page.evaluate(async () => {
+            await document.fonts.ready;
+            await new Promise((resolve) =>
+              requestAnimationFrame(() => requestAnimationFrame(resolve)),
+            );
+          });
+          assert.ok(
+            await page.evaluate(
+              () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+            ),
+            `${prefix} overflows the page at ${width}px`,
+          );
+          const regions = page.locator(
+            '.concept-map-scroll:visible,.evaluation-metric-table:visible',
+          );
+          for (let i = 0; i < (await regions.count()); i += 1) {
+            const region = regions.nth(i);
+            const scrollable = await region.evaluate(
+              (element) => element.scrollWidth > element.clientWidth + 1,
+            );
+            await region.focus();
+            assert.ok(
+              await region.evaluate((element) => element === document.activeElement),
+              'Overflow region must accept keyboard focus',
+            );
+            if (scrollable) {
+              await region.evaluate((element) => {
+                element.scrollLeft = 0;
+              });
+              await page.keyboard.press('ArrowRight');
+              await until(
+                async () => await region.evaluate((element) => element.scrollLeft > 0),
+                'Keyboard must reach horizontally scrolled content',
+              );
+              await region.evaluate((element) => {
+                element.scrollLeft = 0;
+              });
+            }
+          }
+          const controls = scope(selector || 'main').locator('button:visible');
+          for (let i = 0; i < (await controls.count()); i += 1) {
+            const size = await controls.nth(i).boundingBox();
+            assert.ok(
+              size && size.height >= 43,
+              `${prefix} has a button below the 44px touch target at ${width}px`,
+            );
+          }
+          await capture(`${prefix}-${width}.png`, selector);
+        }
+      } finally {
+        await page.setViewportSize({ width: 1440, height: 1000 });
+        if (systemTheme) {
+          await page.emulateMedia({ colorScheme: originalScheme });
+          await until(
+            async () =>
+              (await page.evaluate(() => document.documentElement.dataset.theme)) ===
+              originalScheme,
+            'The application must restore its original system color scheme',
+          );
+        }
+      }
     },
     eventually: until,
   };
@@ -685,6 +804,7 @@ try {
         const persisted = await context.request.get(`${base}/api/v1/me/preferences`);
         assert.equal(persisted.status(), 200);
         assert.deepEqual(await persisted.json(), saved);
+        if (desired.theme === 'dark') await capturePage(page, 'review-settings-dark-1440.png');
         revision = saved.revision;
       }
     },
@@ -856,6 +976,7 @@ try {
     failurePages,
     pageErrors,
     consoleErrors,
+    visualChecks,
     expectedConflict: {
       url: expectedConflict.url,
       responses: expectedConflict.responses,
@@ -865,6 +986,7 @@ try {
     notes: [
       'Real demo backend and session/CSRF, no API response fixtures.',
       'Screenshots cover actual learner, editorial and administrator paths; each executed responsive capture checks page overflow, touch target heights and reachable scroll regions.',
+      'Reading surfaces are checked for rendered text contrast of at least 4.5:1; content steps must keep their selected tab visible. Dark captures use a saved dark preference or the real saved system preference reacting to browser media changes, never an injected theme attribute.',
       'Editor and administrator identities are temporary isolated test accounts; a test-account review is not a claim of human teaching review.',
       'No model provider was invoked; tutor used EVIDENCE_ONLY.',
     ],
