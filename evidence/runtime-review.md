@@ -1,6 +1,6 @@
 # v0.6 当前运行验收记录
 
-这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-16T03:11:18.168795+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
+这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-16T03:49:55.852407+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
 
 ## 实际结果
 
@@ -8,16 +8,16 @@
 |---|---|---|
 | Java/Maven | 455 项，失败/错误/跳过均为 0 | 固定语言语义、账户/会话、SQL/HTTP、编译协议、学习任务/模型协议夹具、发布、素材与原生文件导出回归 |
 | 契约与架构 | 755 项通过；129 个 implemented / 0 个 planned 操作 | 真实路由、schema、模块依赖、索引和文档对应；数量不是产品完成率 |
-| MySQL 8.4 | 195 项；88 张业务表；14 条迁移 | 真实 MySQL 建表、复合外键、唯一性、CHECK、JSON及评测/导入/审核/状态约束 |
+| MySQL 8.4 | 194 项；88 张业务表；14 条迁移 | 真实 MySQL 建表、复合外键、唯一性、CHECK、JSON及评测/导入/审核/状态约束 |
 | MySQL 隔离 | 2 项 | 实际 READ COMMITTED、锁后可见已提交写入，并有 REPEATABLE READ 对照 |
 | MySQL 内容服务 | 15 项 | 实际 JDBC 引擎证明；人工录入、审核hash、发布/激活及并发服务在真实 MySQL 上复跑 |
 | MySQL 账户与素材 | 22 项 | 实际 JDBC 引擎证明；账户关闭/会话/并发身份、UTC统计、上传/撤回/配额及下载隔离 |
 | MySQL v0.6 业务链 | 75 项 | 实际 JDBC 引擎证明；批量导入/原子回滚、修订对比、私有评测/容量/取消、TEXT独立审核判分、六类错题块与管理统计 |
 | 编译 broker Python | 13 项 | 离线协议/边界/清理归属；真实容器隔离在远端 CI 独立执行 |
 | 验收脚本回归 | 20 项 | 临时 Git/进程夹具验证旧 PASS 复用、缺失测试、源码/JAR变化与驱动失败；不是实际 Maven、浏览器或数据库执行 |
-| H2 实际 HTTP/重启 | 93 项；169 次请求 | 单独进程、真实会话/CSRF、业务链、真实下载、重启保留与撤回后失效 |
-| MySQL 实际 HTTP/重启 | 108 项；172 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
-| 前端类型/构建/单元 | 60 项单元通过；TypeScript 与 Vite 构建成功 | 编译与组件/状态逻辑；不等于真实浏览器布局验收 |
+| H2 实际 HTTP/重启 | 93 项；168 次请求 | 单独进程、真实会话/CSRF、业务链、真实下载、重启保留与撤回后失效 |
+| MySQL 实际 HTTP/重启 | 108 项；170 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
+| 前端类型/构建/单元 | 65 项单元通过；TypeScript 与 Vite 构建成功 | 编译与组件/状态逻辑；不等于真实浏览器布局验收 |
 | 前端 DOM + 真实 HTTP | 24 条链通过 | 无服务端响应 mock；jsdom 驱动真实后端；不验证浏览器布局/原生下载 |
 | Chromium 浏览器 | 本地被环境阻止；精确提交由 GitHub Actions 运行 | 本地 AF_UNIX 创建受限，不记成通过；远端 Playwright失败会阻断CI |
 
@@ -105,8 +105,8 @@ python scripts/record_verification.py --check-snapshot
 
 ## 当前包与源码
 
-- JAR SHA-256：`507c8c96dc952ee2fdf61dc8688331b7cf84ec0e2704678a91e9cbd289076592`。
-- 源码文件数：374；SHA-256 摘要：`774f474cace25807f833177b3275766cd1f7aa9db8e7ceb0ffa17d48bcc12df0`。
+- JAR SHA-256：`2d80e5428be5ab9a1e155279372ea94e5b3e9f5176b87b88897c96eb8713e0d6`。
+- 源码文件数：375；SHA-256 摘要：`0282d0c0df3ac840a5a3968a02b003800e8ea6cfc317e0a48857b5a26648c351`。
 - 只有本记录与机器报告自身从源码摘要排除，避免循环hash；迁移、代码、契约、页面、锁文件、文档及CI均包含。
 - 发布提交的远端结果在 [GitHub Actions](https://github.com/hxjyaohaohaode/java-xuexi/actions)核对，不能把本地环境结果当成Java17/Ubuntu/Chromium结果。
 
