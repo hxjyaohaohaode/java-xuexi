@@ -26,7 +26,7 @@ public final class CurriculumService {
                                String sourceSection) {}
     public record ConceptView(UUID id, String code, String title, UUID releaseId,
                               List<UUID> prerequisiteIds, List<EvidenceView> evidence,
-                              List<UUID> relatedExerciseIds) {}
+                              List<UUID> relatedExerciseIds, CourseCompanions.Supplement companion) {}
     public record OptionView(String id, String text) {}
     public record ExerciseView(UUID id, int revision, UUID releaseId, String kind, String prompt,
                                int difficulty, List<UUID> conceptIds, List<OptionView> options,String answerKind,TextRubric.Policy textPolicy) {}
@@ -34,7 +34,12 @@ public final class CurriculumService {
 
     private final JdbcTemplate jdbc;
     private final JsonCodec json;
-    public CurriculumService(JdbcTemplate jdbc, JsonCodec json) { this.jdbc = jdbc; this.json = json; }
+    private final CourseCompanions companions;
+    public CurriculumService(JdbcTemplate jdbc, JsonCodec json, CourseCompanions companions) {
+        this.jdbc = jdbc;
+        this.json = json;
+        this.companions = companions;
+    }
 
     public UUID activeRelease() {
         var values = jdbc.query("SELECT r.id FROM active_release a JOIN content_release r ON r.id=a.release_id WHERE a.singleton_id=1 AND r.status='PUBLISHED'",
@@ -57,7 +62,7 @@ public final class CurriculumService {
                 UUID id = UUID.fromString(rs.getString("id"));
                 return new ConceptView(id, rs.getString("code"), rs.getString("title"), releaseId,
                     uuidList(json.tree(rs.getObject("prerequisite_ids"))),
-                    cards.stream().filter(c -> c.conceptId().equals(id)).map(c -> evidence(c, 0)).toList(), relatedExercises(releaseId, id));
+                    cards.stream().filter(c -> c.conceptId().equals(id)).map(c -> evidence(c, 0)).toList(), relatedExercises(releaseId, id), companions.forConcept(id));
             }, releaseId.toString());
     }
 

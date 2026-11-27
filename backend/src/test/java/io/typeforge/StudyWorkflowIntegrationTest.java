@@ -34,10 +34,77 @@ class StudyWorkflowIntegrationTest {
     @AfterEach void cleanup(){for(var row:jdbc.queryForList("SELECT id FROM agent_run WHERE workspace_id=? AND status NOT IN ('COMPLETED','PARTIAL','FAILED','CANCELLED')",workspace.toString())){UUID id=UUID.fromString(row.get("id").toString());var run=runtime.get(owner,workspace,id);runtime.command(owner,workspace,id,run.runEpoch(),DurableAgentRuntime.Command.CANCEL);studies.cancelAssociated(owner,id);}}
     @Test void localWorkflowReallyPlansReviewsAndExportsEditableArtifacts(){
         var first=start();schemas.validate("AgentRun",first);var run=drain(first.id());assertEquals("COMPLETED",run.status(),json.write(run));assertEquals(2,run.planRevision());assertTrue(run.steps().stream().allMatch(s->s.status().equals("SUCCEEDED")));schemas.validate("AgentRun",run);
-        var details=studies.details(owner,run.id());schemas.validate("StudyWorkflowDetails",details);assertEquals("EVIDENCE_ONLY",details.mode());assertEquals(2,details.tutorRequestIds().size());assertEquals(4,details.artifactIds().size());assertEquals(0,run.spentTokens());assertEquals(0,run.reservedTokens());
+        var details=studies.details(owner,run.id());schemas.validate("StudyWorkflowDetails",details);assertEquals("EVIDENCE_ONLY",details.mode());assertEquals(3,details.tutorRequestIds().size());assertEquals(5,details.artifactIds().size());assertEquals(0,run.spentTokens());assertEquals(0,run.reservedTokens());
         for(var id:details.artifactIds()){var a=artifacts.get(owner,id);var v=artifacts.validateCurrentInputs(owner,id,a.currentRevision());assertEquals("DRAFT",v.reviewStatus());}
         var output=run.steps().stream().filter(s->s.key().equals("output-document")).findFirst().orElseThrow().outputRefs().get(0);assertEquals("DRAFT_ARTIFACT",output.kind());var job=exports.create(owner,output.id(),output.revision(),"DOCX",key());exports.dispatchOnce();assertEquals("SUCCEEDED",exports.get(owner,job.id()).status());assertTrue(exports.download(owner,job.id()).bytes().length>1000);
     }
+    @Test void reviewConsumesOnlyAdmittedDraftsAndDoesNotAttachLaterLearnerData() {
+        var run=start();
+        var later=workspaces.createGoal(owner,workspace,"这个目标仅供后续课堂使用",List.of("仅供后续课堂"),key());
+        assertEquals("COMPLETED",drain(run.id()).status());
+        var details=studies.details(owner,run.id());
+        assertEquals(List.of("CONCEPT","EXAMPLE"),details.teachingPlan().sections().stream().map(StudyWorkflowService.Section::role).toList());
+        assertEquals(6,details.handoffs().size());
+        assertEquals(2,details.handoffs().stream().filter(h->h.toRole().equals("fact-checker") && h.references()==1).count());
+        var review=details.tutorRequestIds().stream().map(id->tutors.get(owner,id))
+            .filter(r->r.question().contains("独立于初稿")).findFirst().orElseThrow();
+        var refs=workspaces.readContext(owner,workspace,review.snapshotId()).references();
+        assertTrue(refs.stream().noneMatch(r->r.id().equals(later.id())));
+        assertEquals(2,refs.stream().filter(r->r.kind().equals("ARTIFACT")).count());
+        assertTrue(review.answer().contains("草稿 1 引用"));
+        assertTrue(review.answer().contains("草稿 2 引用"));
+        assertTrue(details.tutorRequestIds().stream().map(id->tutors.get(owner,id)).anyMatch(r->r.answer().contains("先独立预测") || r.answer().contains("迁移练习")));
+        studies.advance(owner,workspace,run.id());
+        assertEquals(details.handoffs(),studies.details(owner,run.id()).handoffs());
+    }
+
+    @Test void explicitCorrectionDispatchesCodeCoachWithOnlySelectedSubmission() {
+        UUID exercise=selectionExercise();
+        var omitted=graded(owner,workspace,exercise,false);
+        var selected=graded(owner,workspace,exercise,false);
+        snapshot=workspaces.createContext(owner,workspace,List.of(selected.id())).id();
+        var run=studies.create(owner,workspace,new StudyWorkflowService.Input(goal,snapshot,List.of("DOCUMENT","NOTEBOOK"),input().budget(),input().mode(),List.of(selected.id())),key());
+        assertEquals("COMPLETED",drain(run.id()).status());
+        var details=studies.details(owner,run.id());
+        assertEquals("repair-first",details.teachingPlan().strategy());
+        assertEquals(List.of("REPAIR","CONCEPT","EXAMPLE"),details.teachingPlan().sections().stream().map(StudyWorkflowService.Section::role).toList());
+        assertEquals(List.of(selected.id().toString()),jdbc.queryForList("""
+            SELECT r.attempt_id FROM tutor_request r JOIN study_step_execution s ON s.request_id=r.id
+            WHERE s.run_id=? AND r.attempt_id IS NOT NULL
+            """,String.class,run.id().toString()));
+        assertTrue(details.handoffs().stream().anyMatch(h->h.fromRole().equals("code-coach") && h.toRole().equals("fact-checker")));
+        for(UUID req:details.tutorRequestIds()) {
+            var msg=tutors.get(owner,req);
+            assertTrue(workspaces.readContext(owner,workspace,msg.snapshotId()).references().stream().noneMatch(r->r.id().equals(omitted.id())));
+        }
+    }
+
+    @Test void namedGoalSkipsUnrelatedMistakeInRecentContext() {
+        UUID exercise=selectionExercise();
+        var otherMistake=graded(owner,workspace,exercise,false);
+        String different=jdbc.queryForObject("""
+            SELECT c.code FROM release_concept rc JOIN concept c ON c.id=rc.concept_id
+            WHERE rc.release_id=? AND rc.concept_id NOT IN
+              (SELECT concept_id FROM exercise_concept WHERE exercise_id=? AND exercise_revision=1)
+            ORDER BY c.code LIMIT 1
+            """,String.class,DemoContentInitializer.RELEASE_ID.toString(),exercise.toString());
+        var newGoal=workspaces.createGoal(owner,workspace,"学习 "+different,List.of("解释本节规则"),key());
+        var context=workspaces.createContext(owner,workspace);
+        assertTrue(context.references().stream().anyMatch(ref->ref.id().equals(otherMistake.id())));
+        var run=studies.create(owner,workspace,new StudyWorkflowService.Input(newGoal.id(),context.id(),
+            List.of("DOCUMENT"),input().budget(),input().mode()),key());
+        studies.advance(owner,workspace,run.id());
+        studies.advance(owner,workspace,run.id());
+        var details=studies.details(owner,run.id());
+        assertEquals("concept-first",details.teachingPlan().strategy());
+        assertTrue(details.teachingPlan().sections().stream().noneMatch(section->section.role().equals("REPAIR")));
+        assertFalse(details.tutorRequestIds().isEmpty());
+        assertEquals(0,jdbc.queryForObject("""
+            SELECT COUNT(*) FROM study_step_execution s JOIN tutor_request r ON r.id=s.request_id
+            WHERE s.run_id=? AND r.attempt_id IS NOT NULL
+            """,Integer.class,run.id().toString()));
+    }
+
     @Test void retryKeyReusesRunAndChangedOutputsConflict(){var key=key();var run=studies.create(owner,workspace,input(),key);assertEquals(run.id(),studies.create(owner,workspace,input(),key).id());var different=new StudyWorkflowService.Input(goal,snapshot,List.of("DOCUMENT"),input().budget(),input().mode());assertEquals("IDEMPOTENCY_CONFLICT",assertThrows(DomainException.class,()->studies.create(owner,workspace,different,key)).code());}
     @Test void modelModeDoesNotPretendToWorkWithoutConfiguredProvider(){var model=new StudyWorkflowService.Input(goal,snapshot,List.of("DOCUMENT"),input().budget(),TutorService.Mode.MODEL);assertEquals("TUTOR_MODEL_UNAVAILABLE",assertThrows(DomainException.class,()->studies.create(owner,workspace,model,key())).code());}
     @Test void notebookNeedsRealGradedAttempt(){var notebook=new StudyWorkflowService.Input(goal,snapshot,List.of("NOTEBOOK"),input().budget(),input().mode());assertEquals(400,assertThrows(DomainException.class,()->studies.create(owner,workspace,notebook,key())).status());}

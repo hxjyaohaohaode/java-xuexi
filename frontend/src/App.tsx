@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { api } from './api';
 import { useMutation, useResource, useWorkspaceEvents } from './hooks';
-import { WorkspaceContext, type Route } from './context';
+import { WorkspaceContext, classroomScenes, type ClassroomScene, type Route } from './context';
 import { Dialog, ErrorNotice, Field, Loading, Empty, lockBodyScroll } from './components/ui';
 import { Auth } from './pages/Auth';
 import { Learning } from './pages/Learning';
@@ -60,19 +60,24 @@ const navigation: [Route, string, typeof BookOpen][] = [
   ['evaluation', '检索评测', BarChart3],
   ['operations', '运行状态', Activity],
 ];
-function routeFromHash(): { route: Route; selection: string } {
-  const [route, selection = ''] = location.hash.slice(1).split('/');
+function routeFromHash() {
+  const [path, query] = location.hash.slice(1).split('?');
+  const [route, encoded = ''] = path.split('/');
+  const params = new URLSearchParams(query);
+  const scene = params.get('scene') as ClassroomScene;
+  let selection = '';
+  try {
+    selection = decodeURIComponent(encoded);
+  } catch {
+    // An invalid share link can still open the course directory.
+  }
   return {
-    route: ([...navigation.map((n) => n[0]), 'settings'] as string[]).includes(route)
+    route: ([...navigation.map((item) => item[0]), 'settings'] as string[]).includes(route)
       ? (route as Route)
-      : 'learn',
-    selection: (() => {
-      try {
-        return decodeURIComponent(selection);
-      } catch {
-        return '';
-      }
-    })(),
+      : ('learn' as Route),
+    selection,
+    scene: classroomScenes.includes(scene) ? scene : ('read' as ClassroomScene),
+    exercise: params.get('exercise') || '',
   };
 }
 function clearSessionRoute() {
@@ -354,7 +359,7 @@ function WorkspaceShell({
   const menuButton = useRef<HTMLButtonElement>(null);
   const menuNavigation = useRef(false);
   const scrollPositions = useRef(new Map<string, number>());
-  const routeKey = `${locationState.route}/${locationState.selection}`;
+  const routeKey = `${locationState.route}/${locationState.selection}/${locationState.scene}/${locationState.exercise}`;
   const previousRoute = useRef(routeKey);
   const [tick, setTick] = useState(0);
   const refresh = () => {
@@ -425,6 +430,16 @@ function WorkspaceShell({
         events: stream.events,
         navigate,
         selection: locationState.selection,
+        classroomScene: locationState.scene,
+        classroomExercise: locationState.exercise,
+        openClassroom: (id, scene, exercise) => {
+          const params = new URLSearchParams();
+          if (scene !== 'read') params.set('scene', scene);
+          if (scene === 'practice' && exercise) params.set('exercise', exercise);
+          const suffix = params.size ? '?' + params.toString() : '';
+          location.hash = 'learn/' + encodeURIComponent(id) + suffix;
+          setMobileOpen(false);
+        },
         can: (c) => capabilities.enabled.includes(c),
         endSession,
       }}

@@ -36,11 +36,17 @@ class CompileHttpProtocolTest {
     @BeforeEach void start() throws Exception {
         server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);executor=Executors.newFixedThreadPool(4);server.setExecutor(executor);
         server.createContext("/v1/cancel/",exchange->{cancellations.incrementAndGet();byte[] body="{}".getBytes(StandardCharsets.UTF_8);exchange.sendResponseHeaders(200,body.length);exchange.getResponseBody().write(body);exchange.close();});
-        server.createContext("/v1/compile",exchange->{
+        server.createContext("/v1/",exchange->{
             JsonNode input=json.tree(new String(exchange.getRequestBody().readAllBytes(),StandardCharsets.UTF_8));received.set(input);authorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
             if(mode.get().equals("slow")){try{Thread.sleep(1600);}catch(InterruptedException error){Thread.currentThread().interrupt();}}
             var checks=new ArrayList<Map<String,Object>>();for(JsonNode check:input.path("checks"))checks.add(Map.of("id",check.path("id").asText(),"status","SUCCEEDED","diagnosticCodes",List.of(),"harnessOnly",false));
             var result=new java.util.LinkedHashMap<String,Object>();result.put("protocol",CompileSettings.PROTOCOL);result.put("isolation","container-per-job-v1");result.put("jobId",input.path("jobId").asText());result.put("leaseToken",input.path("leaseToken").asText());result.put("sourceHash",input.path("sourceHash").asText());result.put("jdkVersion","javac 17.0.21");result.put("status","SUCCEEDED");result.put("diagnostics",List.of());result.put("outputTruncated",false);result.put("checks",checks);
+            if(exchange.getRequestURI().getPath().equals("/v1/run")) {
+                result.put("protocol","typeforge-run-v1");result.put("language",input.path("language").asText());
+                result.put("runtimeVersion","Python 3.10");result.put("output","42\n");
+                if(mode.get().equals("warning"))result.put("diagnostics",List.of(Map.of("code","compiler.warn.test","severity","WARNING","line",1,"column",2,"message","Fixture warning")));
+                result.put("stdinHash",mode.get().equals("wrongStdin")?"0".repeat(64):json.sha256(input.path("stdin").asText()));
+            }
             if(mode.get().equals("wrongHash"))result.put("sourceHash","f".repeat(64));
             if(mode.get().equals("wrongLease"))result.put("leaseToken",UUID.randomUUID().toString());
             if(mode.get().equals("noIsolation"))result.put("isolation","host-javac");
@@ -62,6 +68,20 @@ class CompileHttpProtocolTest {
     @Test void sendsOnlyFixedProtocolAndReturnsAuthoritativeStructuredOutcome(){
         var input=request();var result=provider.compile(input,()->true);assertEquals("SUCCEEDED",result.status());assertEquals(input.sourceHash(),result.sourceHash());assertEquals("Bearer "+TOKEN,authorization.get());
         assertFalse(received.get().has("endpoint"));assertFalse(received.get().has("flags"));assertFalse(received.get().toString().contains(TOKEN));assertEquals("public class Main {}",received.get().path("source").asText());
+    }
+    @Test void programTransportKeepsStdinAndLanguageBoundToTheLease(){
+        var config=new CompileSettings("http://127.0.0.1:"+server.getAddress().getPort()+"/v1/compile",TOKEN,true,false,3000,4,256,200,true);
+        var enabled=new HttpCompileProvider(config,json);
+        var input=request();
+        var run=new CompileProtocol.Request(input.jobId(),input.leaseToken(),"print(input())",json.sha256("print(input())"),
+            List.of(),new CompileProtocol.Execution("PYTHON","42\n"));
+        assertFalse(provider.enabledCapabilities().contains("UNTRUSTED_CODE_EXECUTION"));
+        assertEquals("EXECUTION_DISABLED",assertThrows(CompileProtocol.Failure.class,()->provider.compile(run,()->true)).code());
+        var success=enabled.compile(run,()->true);
+        assertEquals("42\n",success.output());assertEquals("Python 3.10",success.runtimeVersion());
+        assertEquals("42\n",received.get().path("stdin").asText());assertFalse(received.get().has("checks"));
+        mode.set("warning");assertEquals("WARNING",enabled.compile(run,()->true).diagnostics().get(0).severity());
+        mode.set("wrongStdin");assertEquals("COMPILER_PROTOCOL_ERROR",assertThrows(CompileProtocol.Failure.class,()->enabled.compile(run,()->true)).code());
     }
     @Test void mismatchedHashLeaseAndIsolationPolicyFailClosed(){
         for(String value:List.of("wrongHash","wrongLease","noIsolation","duplicate","unknownError")){mode.set(value);assertEquals("COMPILER_PROTOCOL_ERROR",assertThrows(CompileProtocol.Failure.class,()->provider.compile(request(),()->true)).code(),value);}

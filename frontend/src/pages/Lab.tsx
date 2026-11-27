@@ -7,28 +7,39 @@ import { Badge, Empty, ErrorNotice, Field, Loading, SectionTitle } from '../comp
 import { CompilePanel } from '../components/Compiler';
 import type { LabResult } from '../types';
 
-export function Lab() {
+export function Lab({ initialConceptCode = '' }: { initialConceptCode?: string } = {}) {
   const { workspace, session, can, tick, refresh } = useWorkspace();
+  const draftScope = `${session.userId}.${workspace.id}${initialConceptCode ? '.' + initialConceptCode : ''}`;
+  const readWrite = ['G09', 'G10', 'G11', 'G12'].includes(initialConceptCode);
+  const lower = ['G11', 'G12'].includes(initialConceptCode);
+  const container = lower
+    ? 'List<? super Integer>'
+    : initialConceptCode === 'G09'
+      ? 'List<?>'
+      : 'List<? extends Number>';
   const [sourceType, setSourceType] = useSessionDraft(
-    `tf.lab.sourceType.${session.userId}.${workspace.id}`,
-    'List<Integer>',
+    `tf.lab.sourceType.${draftScope}`,
+    readWrite ? container : 'List<Integer>',
   );
   const [targetType, setTargetType] = useSessionDraft(
-    `tf.lab.targetType.${session.userId}.${workspace.id}`,
-    'List<Number>',
+    `tf.lab.targetType.${draftScope}`,
+    readWrite
+      ? lower
+        ? 'Integer'
+        : initialConceptCode === 'G09'
+          ? 'Object'
+          : 'Number'
+      : 'List<Number>',
   );
   const [labType, setLabType] = useSessionDraft(
-    `tf.lab.labType.${session.userId}.${workspace.id}`,
-    'ASSIGNMENT',
+    `tf.lab.labType.${draftScope}`,
+    readWrite ? 'READ_WRITE' : 'ASSIGNMENT',
   );
   const [operation, setOperation] = useSessionDraft(
-    `tf.lab.operation.${session.userId}.${workspace.id}`,
-    'READ',
+    `tf.lab.operation.${draftScope}`,
+    lower ? 'WRITE' : 'READ',
   );
-  const [prediction, setPrediction] = useSessionDraft(
-    `tf.lab.prediction.${session.userId}.${workspace.id}`,
-    'UNKNOWN',
-  );
+  const [prediction, setPrediction] = useSessionDraft(`tf.lab.prediction.${draftScope}`, 'UNKNOWN');
   const [result, setResult] = useState<LabResult | null>(null);
   const mutation = useMutation();
   const history = useResource<LabResult[]>(
@@ -40,7 +51,7 @@ export function Lab() {
       <>
         <SectionTitle title="类型实验" />
         <Empty title="当前服务未启用类型实验">可先阅读知识卡并进行客观练习。</Empty>
-        <CompilePanel />
+        <CompilePanel initialConceptCode={initialConceptCode} />
       </>
     );
   return (
@@ -246,7 +257,7 @@ export function Lab() {
           )}
         </section>
       </div>
-      <CompilePanel />
+      <CompilePanel initialConceptCode={initialConceptCode} />
       <section className="panel">
         <h2>最近的实验</h2>
         <ErrorNotice error={history.error} retry={history.reload} />

@@ -13,7 +13,12 @@ export type Route =
   | 'evaluation'
   | 'operations'
   | 'agents';
+export const classroomScenes = ['read', 'map', 'practice', 'lab', 'review', 'workshop'] as const;
+export type ClassroomScene = (typeof classroomScenes)[number];
 export interface WorkspaceState {
+  classroomScene?: ClassroomScene;
+  classroomExercise?: string;
+  openClassroom?: (conceptId: string, scene: ClassroomScene, exerciseId?: string) => void;
   workspace: Workspace;
   session: Session;
   capabilities: Capabilities;

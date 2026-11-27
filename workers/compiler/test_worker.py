@@ -61,6 +61,54 @@ class WorkerProtocolTest(unittest.TestCase):
         self.assertIn("/input/empty", cmd)
         self.assertNotIn(server.TOKEN, cmd if server.TOKEN else [])
 
+    def test_run_binds_standard_input_language_and_source_without_grading_checks(self):
+        value = self.request()
+        value.pop("checks")
+        value.update(protocol=server.RUN_PROTOCOL, language="PYTHON", stdin="键小黄\n")
+        self.assertIs(value, server.validate_run(value))
+        for field, replacement in [("stdin", "字" * 3000), ("language", "SHELL"), ("checks", [])]:
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                server.validate_run(dict(value, **{field: replacement}))
+
+    def test_run_uses_only_fixed_container_commands_and_hides_infrastructure_errors(self):
+        value = self.request()
+        value.update(language="PYTHON", stdin="test input")
+        def inspect(command, cancelled, deadline, name, limit, framed):
+            self.assertTrue(framed)
+            self.assertEqual(["python3", "-I", "-B", "/opt/typeforge/runner.py", "PYTHON"], command[-5:])
+            self.assertNotIn(value["source"], command)
+            self.assertIn("--network=none", command)
+            self.assertEqual(server.MAX_RUN_OUTPUT, limit)
+            mount = command[command.index("--mount") + 1]
+            root = Path(mount.split("src=", 1)[1].split(",dst=", 1)[0])
+            self.assertEqual(value["stdin"], (root / "stdin.txt").read_text())
+            self.assertEqual(value["source"], (root / "main.py").read_text())
+            return None, 125, "example daemon failure"
+        with patch.object(server, "run_bounded", side_effect=inspect):
+            result = server.execute_request(value, threading.Event())
+        self.assertEqual(("INFRA_ERROR", ""), (result["status"], result["output"]))
+
+    def test_run_reports_compiler_warning_separately_from_program_output(self):
+        request = dict(self.request(), language="JAVA", stdin="")
+        compiler = "Main.java:1:3: compiler.warn.unchecked.call.mbr.of.raw.type: add(E), java.util.List\n"
+        header = json.dumps({"compiler": compiler}) + "\n"
+        forged = 'Main.java:1:3: compiler.err.fake: program text\n'
+        with patch.object(server, "run_bounded", return_value=(None, 0, header + forged)):
+            result = server.execute_request(request, threading.Event())
+        self.assertEqual("SUCCEEDED", result["status"])
+        self.assertEqual(forged, result["output"])
+        self.assertEqual(["WARNING"], [row["severity"] for row in result["diagnostics"]])
+
+    def test_program_host_requires_enforceable_limits_and_seccomp(self):
+        baseline = dict.fromkeys(("MemoryLimit", "SwapLimit", "CpuCfsQuota", "CpuCfsPeriod", "PidsLimit"), True)
+        baseline.update(OSType="linux", SecurityOptions=["name=seccomp,profile=builtin"])
+        with patch.object(server.subprocess, "check_output", return_value=json.dumps(baseline).encode()):
+            server.require_runtime_host()
+        for change in ({"SecurityOptions": []}, {"MemoryLimit": False}, {"PidsLimit": False}, {"OSType": "windows"}):
+            with self.subTest(change=change), patch.object(server.subprocess, "check_output",
+                    return_value=json.dumps(dict(baseline, **change)).encode()), self.assertRaises(SystemExit):
+                server.require_runtime_host()
+
     def test_empty_classpath_directory_exists_under_the_readonly_mount(self):
         # A nonexistent path emits a lint warning and -Werror would reject every otherwise valid answer.
         def inspect(command, cancelled, deadline, container):

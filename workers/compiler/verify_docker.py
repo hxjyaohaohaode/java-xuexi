@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Real Docker compile-only acceptance. Missing Docker is a failure, never a skipped/pass result.
+"""Real Docker compile and run acceptance. Missing Docker is a failure, never a skipped/pass result.
 
-Build the repository worker image before running. The 120-second budget covers verification and
-cleanup, not image download/build. No learner bytecode, annotation processor, shell or probe program
-is executed: only the broker's fixed javac command runs inside containers. docker pause injects a
+Build the repository worker image before running. The 210-second budget covers verification and
+cleanup, not image download/build. Fixed Java and Python exercises run only inside the worker containers. docker pause injects a
 deadline failure without depending on a particular CPU's compiler speed.
 """
 from __future__ import annotations
@@ -62,7 +61,7 @@ class Verification:
         self.image = image
         self.report_path = report
         self.started = time.monotonic()
-        self.deadline = self.started + 105
+        self.deadline = self.started + 195
         self.root = Path(tempfile.mkdtemp(prefix="typeforge-worker-ci-")).resolve()
         self.token = secrets.token_urlsafe(48)
         self.broker = None
@@ -71,7 +70,7 @@ class Verification:
         self.url = None
         self.docker_ready = False
         self.report = {"schemaVersion": 1, "status": "FAILED", "requiresDocker": True,
-                       "scope": "Actual container compile-only protocol, observed isolation/resource configuration, cancellation, deadline and bounded diagnostics; not an escape or model-quality audit.",
+                       "scope": "Actual classroom compilation and Java/Python runtime, observed isolation/resource configuration, cancellation, deadline and bounded diagnostics; not an escape or model-quality audit.",
                        "checks": [], "cleanup": {"status": "NOT_STARTED"}}
 
     def remaining(self, maximum=10):
@@ -173,7 +172,7 @@ class Verification:
             port = listener.getsockname()[1]
         self.url = f"http://127.0.0.1:{port}"
         environment = dict(os.environ, TYPEFORGE_COMPILER_TOKEN=self.token, TYPEFORGE_COMPILER_IMAGE=image,
-                           TYPEFORGE_COMPILER_PORT=str(port), TYPEFORGE_COMPILER_BIND="127.0.0.1", TMPDIR=str(self.root))
+                           TYPEFORGE_EXECUTION_ENABLED="true", TYPEFORGE_COMPILER_PORT=str(port), TYPEFORGE_COMPILER_BIND="127.0.0.1", TMPDIR=str(self.root))
         self.broker = subprocess.Popen([sys.executable, str(Path(__file__).with_name("server.py"))],
                                       env=environment, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                                       stderr=subprocess.DEVNULL, start_new_session=True)
@@ -184,13 +183,15 @@ class Verification:
                 health = self.http("/health")
                 require(health.get("ready") is True and health.get("protocol") == PROTOCOL and health.get("isolation") == ISOLATION, "BROKER_HEALTH_MISMATCH")
                 require(health.get("imageId") == image and re.fullmatch(r"javac 17[.0-9+_a-zA-Z-]*", health.get("jdkVersion", "")), "BROKER_IMAGE_OR_JDK_MISMATCH")
+                require(health.get("executionEnabled") is True and health["pythonVersion"].startswith("Python 3."), "PYTHON_UNAVAILABLE")
+                self.report["pythonVersion"] = health["pythonVersion"]
                 self.report["jdkVersion"] = health["jdkVersion"]
                 return
             except (URLError, ConnectionError, TimeoutError):
                 time.sleep(0.1)
         raise VerificationFailure("BROKER_READINESS_TIMEOUT")
 
-    def verify_policy(self, container):
+    def verify_policy(self, container, executing=False):
         host, config = container["HostConfig"], container["Config"]
         require(container.get("State", {}).get("Running") is True, "NO_RUNNING_CONTAINER")
         require(config.get("User") == "65534:65534" and host.get("Privileged") is False, "CONTAINER_USER_POLICY")
@@ -205,11 +206,15 @@ class Verification:
         require(len(binds) == 1 and binds[0].get("Destination") == "/input" and binds[0].get("RW") is False, "HOST_MOUNT_POLICY")
         require(all(mount.get("Type") == "bind" or mount.get("Type") == "tmpfs" and mount.get("Destination") == "/tmp" for mount in mounts), "UNADMITTED_MOUNT")
         command = config.get("Cmd", [])
-        require(command and command[0] == "javac" and all(flag in command for flag in ("-proc:none", "-Werror", "-Xlint:all", "/input/empty")), "COMPILE_ONLY_POLICY")
+        require(host.get("LogConfig", {}).get("Type") == "none", "UNBOUNDED_CONTAINER_LOGS")
+        if executing:
+            require(command == ["timeout", "--signal=KILL", "18s", "python3", "-I", "-B", "/opt/typeforge/runner.py", "PYTHON"], "PROGRAM_ENTRYPOINT_POLICY")
+        else:
+            require(command and command[0] == "javac" and all(flag in command for flag in ("-proc:none", "-Werror", "-Xlint:all", "/input/empty")), "COMPILE_ONLY_POLICY")
         require(self.token not in json.dumps(container), "CONTAINER_CREDENTIAL_LEAK")
-        self.report["observedContainerPolicy"] = {"nonRoot": True, "network": "none", "rootFilesystem": "read-only",
+        self.report["observedRuntimePolicy" if executing else "observedContainerPolicy"] = {"nonRoot": True, "network": "none", "rootFilesystem": "read-only",
             "capabilitiesDropped": "ALL", "noNewPrivileges": True, "memoryBytes": host["Memory"], "pids": host["PidsLimit"],
-            "nanoCpus": host["NanoCpus"], "readonlySourceMount": True, "annotationProcessing": "disabled", "execution": "javac-only"}
+            "nanoCpus": host["NanoCpus"], "readonlySourceMount": True, "annotationProcessing": "disabled", "execution": "bounded-python-runner" if executing else "javac-only"}
 
     def live(self, future):
         end = time.monotonic() + 5
@@ -239,6 +244,26 @@ class Verification:
         require("static void verify" not in json.dumps(result), "HIDDEN_SOURCE_EXPOSED")
         return {"positive": "SUCCEEDED", "negative": "COMPILE_ERROR", "negativeLocation": "harness-only"}
 
+    def program(self, language, source, stdin, expected, text="", truncated=False, warning=None):
+        job = self.request(source)
+        job.pop("checks")
+        job.update(protocol="typeforge-run-v1", language=language, stdin=stdin)
+        result = self.http("/v1/run", job)
+        require(result.get("protocol") == "typeforge-run-v1" and result.get("isolation") == ISOLATION, "RUN_PROTOCOL")
+        require(all(result.get(key) == job[key] for key in ("language", "jobId", "leaseToken", "sourceHash")), "RUN_IDENTITY")
+        require(result.get("stdinHash") == hashlib.sha256(stdin.encode()).hexdigest(), "RUN_INPUT")
+        require(result.get("runtimeVersion") == self.report["pythonVersion" if language == "PYTHON" else "jdkVersion"], "RUN_TOOLCHAIN")
+        require(result.get("status") == expected and result.get("outputTruncated") is truncated, "RUN_OUTCOME")
+        output = result.get("output")
+        require(isinstance(output, str) and len(output.encode()) <= 16384 and text in output, "RUN_OUTPUT")
+        if warning:
+            require(any(d["severity"] == "WARNING" and d["code"] == warning for d in result["diagnostics"]), "COURSE_WARNING_MISSING")
+        if expected == "SUCCEEDED":
+            require(output == text, "STDOUT_MISMATCH")
+        if expected == "COMPILE_ERROR":
+            require(any(row["severity"] == "ERROR" for row in result["diagnostics"]), "RUN_DIAGNOSTICS")
+        return {"language": language, "outcome": expected, "outputBytes": len(output.encode())}
+
     def request_bounds(self):
         self.http("/v1/compile", self.request("字" * 11000), expected=400)
         self.http("/v1/compile", expected=400, raw=b" " * 131073)
@@ -256,6 +281,15 @@ class Verification:
         require(future.result(timeout=self.remaining(12))["status"] == "CANCELLED", "CANCELLATION_DID_NOT_WIN")
         return {"outcome": "CANCELLED", "actualRunningContainerObserved": True}
 
+    def runtime_cancellation(self):
+        future = self.executor.submit(self.program, "PYTHON", "import time; time.sleep(60)", "", "CANCELLED")
+        container = self.live(future)
+        self.verify_policy(container, executing=True)
+        request = self.jobs[-1]
+        result = self.http("/v1/cancel/" + request["jobId"], {"leaseToken": request["leaseToken"]})
+        require(result.get("cancelRequested") is True, "RUNTIME_CANCEL_NOT_ADMITTED")
+        return future.result(timeout=self.remaining(12))
+
     def deadline_test(self):
         future = self.executor.submit(self.compile, self.request(heavy_source()))
         container = self.live(future)
@@ -269,7 +303,7 @@ class Verification:
         return {"outcome": "RESOURCE_LIMIT", "outputTruncated": True, "diagnosticCount": len(result["diagnostics"])}
 
     def cleanup(self):
-        self.deadline = min(self.started + 120, time.monotonic() + 15)
+        self.deadline = min(self.started + 210, time.monotonic() + 15)
         self.executor.shutdown(wait=False, cancel_futures=True)
         if self.broker is not None and self.broker.poll() is None:
             # Request-handler threads launch their own CLI children; inspect every thread in our broker.
@@ -307,7 +341,7 @@ class Verification:
             raise VerificationFailure("VERIFICATION_INTERRUPTED_OR_DEADLINE")
         signal.signal(signal.SIGALRM, stop)
         signal.signal(signal.SIGTERM, stop)
-        signal.alarm(105)
+        signal.alarm(195)
         try:
             self.start()
             self.case("valid-generics", lambda: self.outcome(VALID, "SUCCEEDED"))
@@ -318,6 +352,24 @@ class Verification:
             self.case("live-isolation-policy-and-cancellation", self.cancellation)
             self.case("actual-worker-deadline", self.deadline_test)
             self.case("actual-output-boundary", self.output_bounds)
+            java = 'class Demo { public static void main(String[] a) { System.out.println(new java.util.Scanner(System.in).nextInt()*2); } }'
+            self.case("java-peer-demo-stdin-stdout", lambda: self.program("JAVA", java, "21\n", "SUCCEEDED", "42\n"))
+            self.case("java-run-compile-error", lambda: self.program("JAVA", INVALID, "", "COMPILE_ERROR"))
+            self.case("python-unicode-stdin-stdout", lambda: self.program("PYTHON", "print(input().upper())", "a学习\n", "SUCCEEDED", "A学习\n"))
+            self.case("python-exception", lambda: self.program("PYTHON", "print(1 / 0)", "", "RUNTIME_ERROR", "ZeroDivisionError"))
+            self.case("python-syntax", lambda: self.program("PYTHON", "def", "", "COMPILE_ERROR", "SyntaxError"))
+            self.case("live-program-policy-and-cancellation", self.runtime_cancellation)
+            self.case("python-runtime-deadline", lambda: self.program("PYTHON", "import time; time.sleep(60)", "", "TIMED_OUT"))
+            self.case("python-output-limit", lambda: self.program("PYTHON", "print('x'*17000)", "", "RESOURCE_LIMIT", "xxx", True))
+            course = Path(__file__).resolve().parents[2] / "knowledge/peer-course-20261118.json"
+            lessons = json.loads(course.read_text(encoding="utf-8"))["examples"]
+            require(len(lessons) == 16 and len({item["id"] for item in lessons}) == 16, "COURSE_CASE_COVERAGE")
+            for item in lessons:
+                require(hashlib.sha256(item["code"].encode()).hexdigest() == item["sha256"], "COURSE_SOURCE_CHANGED")
+                outcome = "SUCCEEDED" if item["compiles"] else "COMPILE_ERROR"
+                stdout = (item["stdout"] + "\n") if item["stdout"] is not None else ""
+                self.case("course-" + item["id"], lambda: self.program("JAVA", item["code"], "", outcome, stdout, warning=item["warning"]))
+            self.case("java-missing-main", lambda: self.program("JAVA", "class Helper {}", "", "RUNTIME_ERROR"))
             self.report["status"] = "PASSED"
         except BaseException as error:
             self.report["failureCode"] = str(error) if isinstance(error, VerificationFailure) else "UNEXPECTED_" + type(error).__name__.upper()

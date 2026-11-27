@@ -1,6 +1,9 @@
 # 模块接手指南：已实现、未实现与下一步
 
-本文件是继续开发的主入口。**当前为 v0.6 联动学习工作台：129 个公开操作都有实际路由实现，当前没有仅占位的 planned 操作。** 具体请求、响应和操作状态由[契约索引](../contracts/README.md)生成；最后一次真实运行结果见[验收记录](../evidence/runtime-review.md)。接口实现数量不等于完整产品完成率，运行时仍明确 `businessReady=false`。
+本轮课堂改造、两份发布与上游互通详见[逐项需求与验收清单](25-integrated-classroom.md)。新增的本人学习路径、课堂现场、OpenMAIC 可移植场景、Harness 插件、Java/Python 隔离运行和课内样例分别覆盖 M02/M04/M05/M06/M09/M13/M14/M15。本页的 v0.6 基线用于追溯。
+
+
+本文件是继续开发的主入口。**当前为 v0.6 联动学习工作台：130 个公开操作都有实际路由实现，当前没有仅占位的 planned 操作。** 具体请求、响应和操作状态由[契约索引](../contracts/README.md)生成；最后一次真实运行结果见[验收记录](../evidence/runtime-review.md)。接口实现数量不等于完整产品完成率，运行时仍明确 `businessReady=false`。
 
 `contracts/modules.json` 的 `partial` 表示模块已有实际子能力、产品范围仍有剩余。M11 已有真实私有检索评测工作台；其标签来自套件所有者，仍不代表独立教学实验或真人贡献认定。A/B 是待两位真实成员认领的职责标签，不能当作已发生的个人贡献。外部模型和编译 worker 必须按部署能力启用，不能用协议夹具冒充真实服务验收。
 
@@ -11,7 +14,7 @@
 | M01 身份、权限、偏好 | 注册登录、CSRF、UUID/epoch 会话绑定；显示资料 CAS、改密、设备会话撤销、账号关闭；数据库原子认证限流、ETag 偏好；关闭经领域端口撤销任务与素材 | 邮件等可核验找回流程、面向运维的角色撤权界面、完整隐私擦除策略与多实例 Servlet 会话部署 | `identity/AccountService`、`AccountClosureService`、`AuthenticationLimit`、`PreferenceService` |
 | M02 知识地图与阅读 | 固定 release 的概念、前置、知识卡、练习关联；阅读事件与按空间的历史恢复，真实前置分层图与可访问文本路径、上下游导航 | 大规模图编辑、完整人工审核语料与教学可用性评测 | `curriculum/CurriculumService`、`learning/ReadingService` |
 | M03 类型实验 | ASSIGNMENT/READ_WRITE 有限类型推演；边界、推断、捕获、擦除、原始类型改造、API 设计六组可编辑正反例；配置编译 worker 后运行真实编译检查与诊断 | 更广泛类型系统建模、反编译/桥接字节码与运行时实验、实际教学效果验证 | `lab/FiniteTypeEvaluator`、`CodeLabCatalog`、`LabService` |
-| M04 编译诊断与沙箱 | 持久编译队列、配额、源码 hash、租约/超时/取消、公开诊断；独立 HTTP broker 每次任务用受限 Docker 容器执行固定 Java 17 编译，API JVM 不编译用户代码；独立 CI 已通过八项真实容器检查 | 生产宿主部署、持续容量与运维验收；任意程序执行、算法输出及运行时性能判定尚未开放 | `compiler/CompileService`、`CompileWorker`、`HttpCompileProvider`、`workers/compiler/` |
+| M04 编译诊断与沙箱 | 持久编译队列、配额、源码 hash、租约/超时/取消、公开诊断；独立 HTTP broker 每次任务用受限 Docker 容器执行固定 Java 17 编译，API JVM 不编译用户代码；独立开关支持 Java 17 与 Python 3 真实运行，标准输入、输出和运行错误关联同一工作空间；原编译链有八项历史容器检查 | 当前运行链在目标宿主的验收、持续容量与生产运维；算法输出自动评分与运行时性能判定 | `compiler/CompileService`、`CompileWorker`、`HttpCompileProvider`、`workers/compiler/` |
 | M05 练习与判分 | 客观选项集合精确判分、版本及幂等、作答历史；CODE 题经审核的正向/反向编译契约检查后异步判分；多层提示及同题族受助记录；独立审核收据约束的 TEXT 精确规范化判分 | 开放自然语言语义判分、运行时算法题、完整综合重构题集与人工校准 | `exercise/LearningService`、`CodeGradeConsumer`、`compiler/CodeRubric` |
 | M06 学习证据与复习 | 独立题族证据、复习项、阅读活动、投影新鲜度；UTC 每日真实统计、相邻时间窗比较，空数据不伪造时长或掌握度 | 校准学习模型、个性化复习间隔和有实验证据的推荐策略 | `learning/LearningEvidenceProjection`、`operations/LearningAnalyticsService` |
 | M07 数据集与加工 | 实际来源登记、原稿/清洗稿、规范化 hash 去重、采集详情与知识来源链；1–8 个 TXT/MD/DOCX 有界解析、私有预览/原子采集/取消/过期，前端逐项清洗 | PDF/OCR、经过授权的自动抓取、相似去重评测及失败恢复工具 | `ingestion/ManualIngestionService`、`BatchImportService`、`BoundedDocumentText` |
@@ -63,7 +66,7 @@ EVIDENCE_ONLY 从实际课程证据整理，不调用模型。MODEL 必须有服
 
 ### 5. 用户代码只进入独立容器编译边界
 
-API JVM 从不编译或运行用户输入。独立 broker 每个检查启动新的 Docker 容器，非 root、无网络、只读基础系统、丢弃 capabilities，限定 CPU/内存/PIDs/输出/时间并禁用注解处理。当前只允许 `COMPILE_ONLY`，不运行生成字节码；没有 Docker 时拒绝启动，不退回主机 `javac`。
+API JVM 从不编译或运行用户输入。独立 broker 每个检查启动新的 Docker 容器，非 root、无网络、只读基础系统、丢弃 capabilities，限定 CPU/内存/PIDs/输出/时间并禁用注解处理。`COMPILE_ONLY` 保持原有严格编译判分。API 与 broker 显式启用执行后，`COMPILE_AND_RUN` 允许由固定入口运行 Java 17 或 Python 3 学习程序，输入输出均有边界。没有 Docker 时拒绝启动。
 
 队列、源码 hash、worker 协议、检查清单、lease、超时和取消共同保护结果。仓库内固定语义测试可在构建时使用 JavaCompiler，但不能把它当线上沙箱。本地执行环境没有 Docker；本轮已在独立 GitHub Actions 宿主通过八项真实容器检查，核对资源与隔离配置，并实际验证编译、取消、超时、输出限制和零残留清理，见[对应 CI 记录](https://github.com/hxjyaohaohaode/java-xuexi/actions/runs/43743602623/job/132901926094)。该结果不等于生产宿主部署、容量压测或通用逃逸认证；部署见 [worker 说明](../workers/compiler/README.md)。
 

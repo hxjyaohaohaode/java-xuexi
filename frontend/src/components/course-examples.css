@@ -1,0 +1,39 @@
+.course-examples {
+  margin-block: 1.75rem;
+  min-inline-size: 0;
+}
+.course-examples h3 {
+  margin-block-end: 0.8rem;
+}
+.course-examples select {
+  max-inline-size: 100%;
+}
+.course-examples pre {
+  max-inline-size: 100%;
+  overflow: auto;
+  white-space: pre;
+  padding: 0.85rem 1rem;
+  border-radius: 0.7rem;
+}
+.course-source {
+  background: var(--panel-soft, rgba(128, 128, 128, 0.08));
+  font-size: 0.9em;
+  line-height: 1.6;
+  tab-size: 4;
+}
+.course-example-actions {
+  gap: 1rem;
+  margin-block: 0.5rem;
+}
+.course-examples details {
+  margin-block: 0.35rem;
+}
+.course-examples summary {
+  cursor: pointer;
+  padding-block: 0.65rem;
+}
+.course-examples .course-edition {
+  display: inline-block;
+  font-size: 0.85rem;
+  margin-block-start: 0.45rem;
+}

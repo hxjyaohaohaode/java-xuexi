@@ -37,9 +37,9 @@ public class FrameworkController {
     @GetMapping("/api/v1/capabilities")
     public Map<String,Object> capabilities() {
         var enabled=new ArrayList<>(List.of("SESSION_AUTH","PUBLISHED_COURSE_READ","BM25_RETRIEVAL","CHOICE_GRADING","EXERCISE_HINTS","ORDERED_EVENTS","OUTBOX_PROJECTIONS","CONTEXT_AND_REVOCATION","ARTIFACT_DSL_VERSIONING","NOTEBOOK_SOURCE","LOCAL_EVIDENCE_WORKFLOW","DURABLE_DAG_CONTROL","USER_PREFERENCES","READING_EVENTS","FINITE_TYPE_LAB","NOTEBOOK_ACTIONS","STATIC_EXPORT","TUTOR_EVIDENCE_ONLY","EDITORIAL_PUBLISHING","MANUAL_INGESTION","OFFICE_PDF_EXPORT","ACCOUNT_LIFECYCLE","LEARNING_ANALYTICS","READING_HISTORY","OPERATIONS_METRICS"));
-        var unavailable=new ArrayList<>(List.of("UNTRUSTED_CODE_EXECUTION","MEDIA_GENERATION"));
+        var unavailable=new ArrayList<>(List.of("MEDIA_GENERATION"));
         adapters.stream().flatMap(adapter->adapter.enabledCapabilities().stream()).sorted().distinct().filter(capability->!enabled.contains(capability)).forEach(enabled::add);
-        for(String capability:List.of("TUTOR_MODEL","LLM_PLANNING","COMPILE_ONLY","CODE_GRADING","PRIVATE_ASSETS")) if(!enabled.contains(capability)) unavailable.add(capability);
+        for(String capability:List.of("TUTOR_MODEL","LLM_PLANNING","COMPILE_ONLY","CODE_GRADING","PRIVATE_ASSETS","UNTRUSTED_CODE_EXECUTION")) if(!enabled.contains(capability)) unavailable.add(capability);
         if(!enabled.contains("TUTOR_MODEL")) unavailable.add("LLM_TUTOR");
         if(new ClassPathResource("static/index.html").exists()) enabled.add("FRONTEND");else unavailable.add("FRONTEND");
         return Map.of("runtimeVersion","0.6","businessReady",false,

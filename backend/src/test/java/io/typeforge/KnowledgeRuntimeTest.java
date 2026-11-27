@@ -47,6 +47,44 @@ class KnowledgeRuntimeTest {
         initializer.initialize();
     }
 
+    @Test void classroomEditionAddsDistinctGradedOpportunitiesForEveryConceptWithoutChangingPreviousRelease() {
+        assertEquals(12, curriculum.exercises(release, null, null, 100).items().size());
+        initializer.initializeClassroomEdition();
+        initializer.initializeClassroomEdition();
+        var current = DemoContentInitializer.CLASSROOM_RELEASE_ID;
+        assertEquals(current, curriculum.activeRelease());
+        assertEquals(12, curriculum.exercises(release, null, null, 100).items().size());
+        assertEquals(33, curriculum.exercises(current, null, null, 100).items().size());
+        assertTrue(curriculum.concepts(current).stream().allMatch(c -> c.relatedExerciseIds().size() >= 2));
+    }
+
+    @Test void peerPackMatchesAllPublishedConceptsAndTheOriginalRetrievalChecks() throws Exception {
+        var concepts = curriculum.concepts(release);
+        assertTrue(concepts.stream().allMatch(c -> c.companion() != null && !c.companion().examples().isEmpty()));
+        var originals = concepts.stream().flatMap(c -> c.companion().examples().stream()).distinct().toList();
+        assertEquals(16, originals.size());
+        assertEquals(16, originals.stream().map(e -> e.id()).distinct().count());
+        assertTrue(originals.stream().allMatch(e -> json.sha256(e.code()).equals(e.sha256())));
+        var reviews = concepts.stream().flatMap(c -> c.companion().reviews().stream()).toList();
+        assertEquals(5, reviews.size());
+        assertEquals(2, reviews.stream().filter(r -> r.correction() != null).count());
+        var reader = new com.fasterxml.jackson.databind.ObjectMapper();
+        try (var input = getClass().getResourceAsStream("/course/peer-search-20261118.json")) {
+            var queries = reader.readTree(input);
+            assertEquals(13, queries.size());
+            for (var q : queries) {
+                var expected = q.get("expectedPrimaryConcept").asText();
+                var result = search.search(release, q.get("query").asText(), null, 5);
+                if (expected.isEmpty()) {
+                    assertTrue(result.insufficientEvidence() && result.items().isEmpty(), q.get("id").asText());
+                } else {
+                    var found = result.items().get(0).conceptId();
+                    assertEquals(expected, concepts.stream().filter(c -> c.id().equals(found)).findFirst().orElseThrow().code());
+                }
+            }
+        }
+    }
+
     @Test void demoInitializerIsOptInAndCreatesNoPretendStudentsOrHumanReview() {
         assertTrue(context.getBeansOfType(DemoContentInitializer.class).isEmpty());
         assertEquals("DISABLED", jdbc.queryForObject("SELECT status FROM app_user WHERE id=?", String.class, DemoContentInitializer.AUTHOR_ID.toString()));

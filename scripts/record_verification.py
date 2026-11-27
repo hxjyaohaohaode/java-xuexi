@@ -179,21 +179,33 @@ def main():
     frontend['integration']={'driver':dom_steps['driver'],'status':'PASS','jarSha256':jar_hash,
                             'steps':dom_steps['steps'],'limits':dom_steps['limits'],
                             'runtime':compact(dom)}
-    frontend['graphicalBrowser']={'localStatus':'BLOCKED_BY_ENVIRONMENT',
-        'reason':'Local Chromium cannot create required AF_UNIX sockets; no sandbox bypass was attempted.',
-        'remoteGate':'Real Chromium Playwright integration is required in .github/workflows/baseline.yml on the exact pushed commit.'}
+    graphics = read_bound('frontend/test-results/browser-runtime-report.json', 'frontend', ('scripts/browser_runtime.py',))
+    observations = read('frontend/test-results/browser-report.json')
+    require(graphics.get('status') == observations.get('status') == 'PASS'
+            and graphics.get('jarSha256') == jar_hash and graphics.get('jarUnchanged') is True
+            and graphics.get('driver') == 'browser' and graphics.get('exitCode') == 0,
+            'Graphical browser must use the same unchanged packaged JAR')
+    require(graphics.get('driverReportSha256') == hashlib.sha256(
+            (ROOT/'frontend/test-results/browser-report.json').read_bytes()).hexdigest(),
+            'Browser results do not match the driver receipt')
+    browser_cases = observations.get('results', [])
+    require(browser_cases and all(item.get('status') == 'PASS' for item in browser_cases),
+            'Graphical browser checks are incomplete')
+    frontend['graphicalBrowser'] = {'localStatus': 'PASS', 'results': browser_cases,
+                                    'runtime': compact(graphics)}
     require_unchanged(static['verificationInputs'], ROOT)
     require(hashlib.sha256(jar.read_bytes()).hexdigest()==jar_hash and capture_dist(ROOT)==dist,
             'Verified JAR or frontend dist changed while assembling evidence')
     report={'schemaVersion':'1.2','result':'PASS',
-        'scope':'v0.6 implemented runtime/local verification; graphical browser is an independent remote CI gate; not final course acceptance',
+        'scope':'Integrated classroom verification including the packaged browser journey; isolated code execution is separately verified in CI',
         'recordedAt':dt.datetime.now(dt.timezone.utc).isoformat(),
-        'baselineCommit':'0e9d1bce53e96bdd0e84fe0d5d8a55bf59fd3bec',
-        'environment':{'os':'Linux','maven':'3.9.11','jdk':'17.0.21','compilerRelease':17,
+        'baselineCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+        'environment':{'os':'Linux', 'maven':subprocess.check_output(['mvn','--version'],text=True).splitlines()[0],
+                       'jdk':subprocess.check_output(['javac','-version'],text=True).strip(),'compilerRelease':17,
                        'springBoot':pom.find('m:parent/m:version',ns).text,'mysql':mysql['engine'],
                        'node':subprocess.check_output(['node','--version'],text=True).strip(),
                        'python':subprocess.check_output(['python','--version'],text=True).strip(),
-                       'localMysqlMode':'official isolated server; not Docker'},
+                       'localMysqlMode':mysql.get('mode', 'see schema report')},
         'sourceSnapshot':current,
         'java':compact(java),
         'frontend':frontend,'contractsAndArchitecture':compact(static),'mysqlSchema':compact(mysql),'mysqlIsolation':compact(isolation),'mysqlEditorial':compact(editorial),'mysqlAccountsAndAssets':compact(private_modules),'mysqlV06Modules':compact(v06_modules),'compilerPython':compact(compiler_unit),'verificationGuards':compact(verification_guards),
@@ -202,14 +214,18 @@ def main():
         'remoteCi':{'status':'VERIFY_EXACT_COMMIT_IN_GITHUB_ACTIONS','workflow':'.github/workflows/baseline.yml',
                     'note':'This report records local gates. The published commit Actions run independently verifies Java 17, Docker MySQL, the actual isolated javac worker and real Chromium.'},
         'notVerified':['real supplier model teaching quality or billing invoices','unrestricted autonomous planner and full expert/media tool roster',
-                       'untrusted user-code execution sandbox','generative image/audio/video services and production deployment of the isolated compiler service',
+                       'production deployment of the Java/Python execution service','generative image/audio/video services and production deployment of the isolated compiler service',
                        'formal human review of the complete course corpus','production load/SLO/backup restore',
                        'hard-kill recovery of paid external effects with a real provider','final grading or individual student contributions']}
     write_report(ROOT/REPORT, report)
     test_table='\n'.join(f"| `{suite['name'].rsplit('.',1)[-1]}` | {suite['tests']} | 0 / 0 / 0 |" for suite in suites)
-    review=f'''# v0.6 当前运行验收记录
+    review=f'''# 联动课堂运行验收记录
 
 这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：{report['recordedAt']}。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
+
+## 课程组交付的来源
+
+同学的 11 月 18 日课程包对应 4a725a4，收录八类材料、可运行 JAR、答辩 PPT、实操视频、16 份原始 Java 样例及 5 道导师问答的历史复核。新课堂将原始代码和订正接入概念阅读与实验。[原始提交](https://github.com/hxjyaohaohaode/java-xuexi/pull/1) · [课程发布包与原始回执](https://github.com/wioo111/java-xuexi/releases/tag/typeforge-course-20261118) · [课堂需求与验收清单](../docs/25-integrated-classroom.md)
 
 ## 实际结果
 
@@ -228,9 +244,9 @@ def main():
 | MySQL 实际 HTTP/重启 | {len(smokes['mysql']['checks'])} 项；{len(smokes['mysql']['http'])} 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
 | 前端类型/构建/单元 | {unit['numTotalTests']} 项单元通过；TypeScript 与 Vite 构建成功 | 编译与组件/状态逻辑；不等于真实浏览器布局验收 |
 | 前端 DOM + 真实 HTTP | {len(dom_steps['steps'])} 条链通过 | 无服务端响应 mock；jsdom 驱动真实后端；不验证浏览器布局/原生下载 |
-| Chromium 浏览器 | 本地被环境阻止；精确提交由 GitHub Actions 运行 | 本地 AF_UNIX 创建受限，不记成通过；远端 Playwright失败会阻断CI |
+| Chromium 浏览器 | {len(browser_cases)} 个检查段通过 | 真实浏览器操作同一份 JAR；CI 另行验证推送的提交 |
 
-Java 各测试类的实际汇总：
+Java 测试类汇总
 
 | 测试类 | 测试数 | 失败 / 错误 / 跳过 |
 |---|---:|---|

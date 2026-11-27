@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { verifyClassroom } from './classroom-journey.mjs';
 import { runWorkbenchJourney } from './workbench-journey.mjs';
 
 // A real integration test. No intercepted fixture answers or mocked backend responses.
@@ -522,6 +523,10 @@ try {
     await page.getByText('服务端已记录本次阅读。', { exact: true }).waitFor();
     await capturePage(page, '01-learning-desktop.png');
   });
+  await check(
+    'in-place classroom, responsive tutor, lesson-scoped activities and portable OpenMAIC download',
+    async () => verifyClassroom(page, capturePage),
+  );
   await check(
     'wrong answer creates evidence notebook, real hints and an assisted new attempt',
     async () => {

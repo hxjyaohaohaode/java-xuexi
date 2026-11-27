@@ -6,7 +6,7 @@ permissions:
   contents: read
 jobs:
   isolated-compiler:
-    name: Real compile-only Docker worker
+    name: Isolated Java and Python code worker
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -16,9 +16,9 @@ jobs:
           python-version: '3.12'
       - name: Verify broker protocol and cancellation regressions
         run: python -m unittest discover -s workers/compiler -p 'test_*.py'
-      - name: Build the dedicated Java 17 compile image
+      - name: Build the Java 17 and Python 3 workspace image
         run: docker build -t typeforge-compiler:jdk17 workers/compiler
-      - name: Verify actual isolation, generics, hidden checks and recovery
+      - name: Verify isolation, grading, Java and Python execution, and failure recovery
         run: python workers/compiler/verify_docker.py --image typeforge-compiler:jdk17 --report .work/compiler-docker-verification.json
       - name: Upload sanitized real-container verification
         if: always()
@@ -96,11 +96,18 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - name: Load classroom tools in the official DeepSeek Harness registry
+        working-directory: integrations/dsh-classroom
+        run: |
+          npm ci
+          npm test
       - name: Install the locked frontend dependencies
         working-directory: frontend
         run: npm ci
       - name: Verify and bind the complete fresh frontend build
         run: python scripts/verify_frontend.py
+      - name: Verify original peer course Java sources and their observed output
+        run: python scripts/verify_course_examples.py
       - name: Verify Java semantics, transactions and package the runtime
         run: python scripts/verify_java.py
       - name: Verify HTTP linkage and restart persistence on H2 files
@@ -140,6 +147,8 @@ jobs:
       - name: Install Chromium for the real browser integration
         working-directory: frontend
         run: npx playwright install --with-deps chromium
+      - name: Run Java and Python from the packaged classroom in Chromium
+        run: node frontend/tests/program-runtime.mjs
       - name: Verify the real browser against the packaged application
         run: python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar
       - name: Upload sanitized runtime and isolation reports only
@@ -156,6 +165,7 @@ jobs:
             .work/mysql-content-verification.json
             .work/mysql-account-assets-verification.json
             .work/mysql-v06-modules-verification.json
+            frontend/test-results/program-runtime.json
             frontend/test-results/browser-runtime-report.json
             frontend/test-results/browser-report.json
             frontend/test-results/*.png

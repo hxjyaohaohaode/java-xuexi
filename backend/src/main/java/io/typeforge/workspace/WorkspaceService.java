@@ -186,12 +186,31 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
                 if(byId.size()!=selected.size())throw DomainException.missing();
                 selected.forEach(id->refs.add(byId.get(id)));
             }
-            if(refs.size()>64)throw DomainException.invalid("A context cannot exceed 64 immutable references");
-            UUID id=UUID.randomUUID();
-            String hash=json.hash(Map.of("workspaceId",workspace,"revision",current.revision(),"sequence",current.eventSequence(),"references",refs));
-            jdbc.update("INSERT INTO context_snapshot(id,workspace_id,workspace_revision,event_sequence,references_json,content_hash) VALUES(?,?,?,?,?,?)",id.toString(),workspace.toString(),current.revision(),current.eventSequence(),json.write(refs),hash);
-            return new Context(id,workspace,current.revision(),current.eventSequence(),List.copyOf(refs),hash);
+            return saveSnapshot(current,refs);
         });
+    }
+
+    /** Reviews inherit only the admitted learner context and the drafts handed off by this run. */
+    public Context extendWithDrafts(UUID owner, UUID workspace, UUID source, List<Reference> drafts) {
+        return tx.execute(status -> {
+            var current = lockOwned(owner,workspace);
+            var base = readContext(owner,workspace,source);
+            if (drafts.isEmpty() || drafts.stream().anyMatch(ref -> !ref.kind().equals("ARTIFACT"))) {
+                throw DomainException.invalid("A teaching review must receive an admitted specialist draft");
+            }
+            var refs = new ArrayList<>(base.references());
+            refs.addAll(drafts);
+            validateReferences(owner,workspace,refs);
+            return saveSnapshot(current,refs);
+        });
+    }
+
+    private Context saveSnapshot(OwnedWorkspace current, List<Reference> refs) {
+        if(refs.size()>64)throw DomainException.invalid("A context cannot exceed 64 immutable references");
+        UUID id=UUID.randomUUID();
+        String hash=json.hash(Map.of("workspaceId",current.id(),"revision",current.revision(),"sequence",current.eventSequence(),"references",refs));
+        jdbc.update("INSERT INTO context_snapshot(id,workspace_id,workspace_revision,event_sequence,references_json,content_hash) VALUES(?,?,?,?,?,?)",id.toString(),current.id().toString(),current.revision(),current.eventSequence(),json.write(refs),hash);
+        return new Context(id,current.id(),current.revision(),current.eventSequence(),List.copyOf(refs),hash);
     }
     private Reference contextAttempt(ResultSet rs) throws SQLException {
         String hash=json.hash(Map.of("answer",json.tree(rs.getString("answer")),"feedback",json.tree(rs.getString("feedback")),"score",rs.getBigDecimal("score")));

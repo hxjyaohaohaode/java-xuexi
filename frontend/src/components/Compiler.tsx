@@ -7,7 +7,7 @@ import { Badge, Dialog, Empty, ErrorNotice, Field, Loading, Status } from './ui'
 import type { CompileJob, LabResult } from '../types';
 
 export const starterSource =
-  'import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<Integer> numbers = List.of(1, 2, 3);\n        List<? extends Number> readable = numbers;\n        Number first = readable.get(0);\n    }\n}\n';
+  'import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<Integer> numbers = List.of(1, 2, 3);\n        List<? extends Number> readable = numbers;\n        System.out.println(readable.get(0));\n    }\n}\n';
 export const jobPending = (status?: string) =>
   !!status && ['QUEUED', 'RUNNING', 'COMPILING'].includes(status);
 type LabExample = {
@@ -21,54 +21,95 @@ type LabExample = {
   sourceUrl: string;
 };
 
-export function CompilePanel() {
+const pythonStarter = 'numbers = [1, 2, 3]\nprint(numbers[0])\n';
+const conceptLabs: Record<string, string> = {
+  G04: 'inference',
+  G05: 'inference',
+  G07: 'bounds',
+  G08: 'bounds',
+  G12: 'api-design',
+  G13: 'capture',
+  G14: 'erasure',
+  G16: 'raw-refactor',
+};
+type LessonExample = { id: string; title: string; code: string };
+
+export function CompilePanel({
+  initialConceptCode = '',
+  lessonExample,
+}: {
+  initialConceptCode?: string;
+  lessonExample?: LessonExample;
+} = {}) {
   const { workspace, session, tick, can, refresh } = useWorkspace();
-  const [source, setSource] = useSessionDraft(
-    `tf.compiler.source.${session.userId}.${workspace.id}`,
+  const draftScope = `${session.userId}.${workspace.id}${initialConceptCode ? '.' + initialConceptCode : ''}`;
+  const [javaSource, setJavaSource] = useSessionDraft(
+    `tf.compiler.source.${draftScope}`,
     starterSource,
   );
-  const [jobId, setJobId] = useSessionDraft(
-    `tf.compiler.job.${session.userId}.${workspace.id}`,
+  const [pythonSource, setPythonSource] = useSessionDraft(
+    `tf.compiler.python.${draftScope}`,
+    pythonStarter,
+  );
+  const [stdin, setStdin] = useSessionDraft(`tf.compiler.stdin.${draftScope}`, '');
+  const [submittedInput, setSubmittedInput] = useSessionDraft(
+    `tf.compiler.lastInput.${draftScope}`,
     '',
   );
+  const [submittedBuffers, setSubmittedBuffers] = useSessionDraft(
+    `tf.compiler.lastBuffers.${draftScope}`,
+    { JAVA: '', PYTHON: '' },
+  );
+  const [jobId, setJobId] = useSessionDraft(`tf.compiler.job.${draftScope}`, '');
   const [submittedSource, setSubmittedSource] = useSessionDraft(
-    `tf.compiler.submitted.${session.userId}.${workspace.id}`,
+    `tf.compiler.submitted.${draftScope}`,
     '',
   );
   const [labType, setLabType] = useSessionDraft(
-    `tf.compiler.labType.${session.userId}.${workspace.id}`,
-    'COMPILE_ONLY',
+    `tf.compiler.labType.${draftScope}`,
+    can('UNTRUSTED_CODE_EXECUTION') ? 'RUN_JAVA' : 'COMPILE_ONLY',
   );
   const [prediction, setPrediction] = useSessionDraft(
-    `tf.compiler.prediction.${session.userId}.${workspace.id}`,
+    `tf.compiler.prediction.${draftScope}`,
     'UNKNOWN',
   );
-  const [labId, setLabId] = useSessionDraft(
-    `tf.compiler.labId.${session.userId}.${workspace.id}`,
-    '',
-  );
+  const [labId, setLabId] = useSessionDraft(`tf.compiler.labId.${draftScope}`, '');
   const [poll, setPoll] = useState(0);
   const examples = useResource<LabExample[]>('/labs/examples');
-  const [exampleId, setExampleId] = useState('');
+  const [exampleId, setExampleId] = useState(conceptLabs[initialConceptCode] || '');
+  const isPython = labType === 'RUN_PYTHON';
+  const isRun = isPython || labType === 'RUN_JAVA';
+  const isExperiment = !isRun && labType !== 'COMPILE_ONLY';
+  const canSubmit = can(isRun ? 'UNTRUSTED_CODE_EXECUTION' : 'COMPILE_ONLY');
+  const source = isPython ? pythonSource : javaSource;
+  const setSource = isPython ? setPythonSource : setJavaSource;
+  const stdinBytes = new TextEncoder().encode(stdin).byteLength;
   const [negative, setNegative] = useState(false);
   const [replacement, setReplacement] = useState<{ source: string; labType: string } | null>(null);
   const example = examples.data?.find((item) => item.id === exampleId) || examples.data?.[0];
   const exampleSource = example && (negative ? example.negativeSource : example.positiveSource);
   const mutation = useMutation();
-  const job = useResource<CompileJob>(
-    jobId && can('COMPILE_ONLY') ? `/compile-jobs/${jobId}` : null,
-    poll + tick,
-  );
-  const history = useResource<CompileJob[]>(
-    can('COMPILE_ONLY') ? `/workspaces/${workspace.id}/compile-jobs` : null,
-    tick,
-  );
+  const job = useResource<CompileJob>(jobId ? `/compile-jobs/${jobId}` : null, poll + tick);
+  const history = useResource<CompileJob[]>(`/workspaces/${workspace.id}/compile-jobs`, tick);
   const experiment = useResource<LabResult>(labId ? `/labs/sessions/${labId}` : null, tick + poll);
-  const waiting = jobPending(job.data?.status);
+  const waiting = jobPending(job.data?.status) || (!!jobId && !job.data && job.loading);
   const sourceBytes = new TextEncoder().encode(source).byteLength;
-  useUnsavedChanges(source !== starterSource && source !== submittedSource);
+  useUnsavedChanges(
+    (javaSource !== starterSource && javaSource !== submittedBuffers.JAVA) ||
+      (pythonSource !== pythonStarter && pythonSource !== submittedBuffers.PYTHON) ||
+      (isRun && stdin !== submittedInput),
+  );
+  function loadJava(code: string, nextMode: string) {
+    if (javaSource !== starterSource && javaSource.trim() && javaSource !== code) {
+      setReplacement({ source: code, labType: nextMode });
+    } else {
+      setJavaSource(code);
+      setLabType(nextMode);
+      setPrediction('UNKNOWN');
+    }
+  }
   usePolling(
-    can('COMPILE_ONLY') && (waiting || (!!jobId && !job.data)),
+    waiting,
     () => setPoll((value) => value + 1),
     job.loading || experiment.loading,
     !!job.error || !!experiment.error,
@@ -80,18 +121,28 @@ export function CompilePanel() {
     }
   }, [job.data?.id, job.data?.status]);
   return (
-    <section className="panel compile-panel" aria-label="Java 编译工作台">
+    <section className="panel compile-panel" aria-label="代码工作台">
       <div className="row spread wrap">
         <h2>
           <Braces size={20} />
-          Java 编译工作台
+          代码工作台
         </h2>
-        <Badge>只编译，不运行用户程序</Badge>
+        <Badge>
+          {can('UNTRUSTED_CODE_EXECUTION') ? '隔离运行 · Java / Python' : 'Java / Python'}
+        </Badge>
       </div>
-      <p className="muted">
-        检查完整的
-        Main.java，保留编译器诊断和这次源码的摘要。编译结果是代码证据，课程作答会另按题目规则判分。
-      </p>
+      {lessonExample && (
+        <div className="row spread wrap">
+          <span>{lessonExample.title}</span>
+          <button
+            type="button"
+            disabled={mutation.busy || waiting}
+            onClick={() => loadJava(lessonExample.code, 'RUN_JAVA')}
+          >
+            载入本课示例
+          </button>
+        </div>
+      )}
       {examples.data?.length ? (
         <details className="lab-examples">
           <summary>从六组类型实验开始</summary>
@@ -143,16 +194,12 @@ export function CompilePanel() {
                   阅读对应的 Java 语言规范
                 </a>
                 <button
-                  disabled={mutation.busy || source === exampleSource}
-                  onClick={() => {
-                    if (source !== starterSource && source.trim() && source !== exampleSource)
-                      setReplacement({ source: exampleSource!, labType: example.labType });
-                    else {
-                      setSource(exampleSource!);
-                      setLabType(example.labType);
-                      setPrediction('UNKNOWN');
-                    }
-                  }}
+                  disabled={
+                    mutation.busy ||
+                    waiting ||
+                    (javaSource === exampleSource && labType === example.labType)
+                  }
+                  onClick={() => loadJava(exampleSource!, example.labType)}
                 >
                   填入编辑器
                 </button>
@@ -166,20 +213,30 @@ export function CompilePanel() {
       ) : (
         <ErrorNotice error={examples.error} retry={examples.reload} />
       )}
-      {!can('COMPILE_ONLY') && (
-        <Empty title="独立编译服务尚未配置">
-          可以阅读示例、编辑代码和进行上方类型规则实验；配置服务后可提交真实编译。
+      {!canSubmit && (
+        <Empty title={isRun ? '隔离运行服务尚未启用' : '独立编译服务尚未配置'}>
+          代码可以在这里编辑和保存草稿。
+          {isRun && can('COMPILE_ONLY')
+            ? '当前可选择 Java 编译检查。'
+            : '连接课程的专用 Docker worker 后即可提交。'}
         </Empty>
       )}
       <div className="compiler-layout">
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (!can('COMPILE_ONLY') || waiting || sourceBytes > 32768 || !source.trim()) return;
+            if (
+              !canSubmit ||
+              waiting ||
+              sourceBytes > 32768 ||
+              !source.trim() ||
+              (isRun && stdinBytes > 8192)
+            )
+              return;
             const current = source;
             void mutation.run(
               async () => {
-                if (labType !== 'COMPILE_ONLY') {
+                if (isExperiment) {
                   const value = await api.request<LabResult>(
                     '/labs/sessions',
                     'POST',
@@ -201,7 +258,8 @@ export function CompilePanel() {
                     workspaceId: workspace.id,
                     releaseId: workspace.releaseId,
                     source: current,
-                    mode: 'COMPILE_ONLY',
+                    mode: isRun ? 'COMPILE_AND_RUN' : 'COMPILE_ONLY',
+                    ...(isRun ? { language: isPython ? 'PYTHON' : 'JAVA', stdin } : {}),
                   },
                   { idempotent: true },
                 );
@@ -211,19 +269,26 @@ export function CompilePanel() {
                 setJobId(value.jobId);
                 setLabId(value.labId);
                 setSubmittedSource(current);
+                setSubmittedBuffers((previous) => ({
+                  ...previous,
+                  [isPython ? 'PYTHON' : 'JAVA']: current,
+                }));
+                setSubmittedInput(isRun ? stdin : '');
                 refresh();
               },
             );
           }}
         >
           <div className="two-column">
-            <Field label="代码实验主题">
+            <Field label="语言和任务">
               <select
                 disabled={mutation.busy || waiting}
                 value={labType}
                 onChange={(event) => setLabType(event.target.value)}
               >
-                <option value="COMPILE_ONLY">自由编译检查</option>
+                <option value="RUN_JAVA">Java · 运行程序</option>
+                <option value="RUN_PYTHON">Python · 运行程序</option>
+                <option value="COMPILE_ONLY">Java · 严格编译检查</option>
                 {examples.data?.map((item) => (
                   <option value={item.labType} key={item.id}>
                     {item.title}
@@ -231,7 +296,7 @@ export function CompilePanel() {
                 ))}
               </select>
             </Field>
-            {labType !== 'COMPILE_ONLY' && (
+            {isExperiment && (
               <Field label="先预测编译结果">
                 <select
                   disabled={mutation.busy || waiting}
@@ -245,7 +310,16 @@ export function CompilePanel() {
               </Field>
             )}
           </div>
-          <Field label="Main.java" hint="代码只发送给已配置的独立编译服务。">
+          <Field
+            label={isPython ? 'main.py' : 'Main.java'}
+            hint={
+              isPython
+                ? '可使用 Python 标准库。'
+                : isRun
+                  ? '入口为 Main 或课程示例中的 Demo。'
+                  : 'Java 17 · 严格类型检查。'
+            }
+          >
             <textarea
               className="code-editor"
               spellCheck={false}
@@ -257,12 +331,26 @@ export function CompilePanel() {
               onChange={(e) => setSource(e.target.value)}
             />
           </Field>
+          {isRun && (
+            <Field label="标准输入" hint="按行填写程序读取的数据，最多 8 KiB。">
+              <textarea
+                rows={2}
+                value={stdin}
+                spellCheck={false}
+                maxLength={8192}
+                disabled={mutation.busy}
+                onChange={(event) => setStdin(event.target.value)}
+              />
+            </Field>
+          )}
+          {isRun && stdinBytes > 8192 && <p className="field-error">标准输入超过 8 KiB。</p>}
           <div className="row spread wrap">
             <span className="muted small">{sourceBytes.toLocaleString()} / 32,768 字节</span>
             <button
               className="primary"
               disabled={
-                !can('COMPILE_ONLY') ||
+                !canSubmit ||
+                (isRun && stdinBytes > 8192) ||
                 mutation.busy ||
                 waiting ||
                 !source.trim() ||
@@ -270,7 +358,13 @@ export function CompilePanel() {
               }
             >
               <Play size={16} />
-              {mutation.busy ? '正在提交…' : waiting ? '正在编译…' : '提交编译'}
+              {mutation.busy
+                ? '正在提交…'
+                : waiting
+                  ? '任务处理中…'
+                  : isRun
+                    ? '运行代码'
+                    : '提交编译'}
             </button>
           </div>
           {sourceBytes > 32768 && <p className="field-error">源码超过 32 KiB，请缩短后提交。</p>}
@@ -278,7 +372,7 @@ export function CompilePanel() {
         </form>
         <section className="compile-result" aria-live="polite">
           <div className="row spread">
-            <h3>编译与诊断</h3>
+            <h3>运行结果与诊断</h3>
             {job.data && <Status value={job.data.status} />}
           </div>
           <ErrorNotice error={job.error} retry={job.reload} />
@@ -287,11 +381,18 @@ export function CompilePanel() {
             <Loading />
           ) : job.data ? (
             <>
-              {submittedSource && source !== submittedSource && (
-                <p className="notice warning">
-                  代码已修改。下面显示的是上次提交的结果，尚未验证当前编辑内容。
-                </p>
+              {!submittedSource && (
+                <p className="muted small">正在查看已保存的任务。编辑器保留当前草稿。</p>
               )}
+              {submittedSource &&
+                (source !== submittedSource ||
+                  (isRun && stdin !== submittedInput) ||
+                  (job.data.language && job.data.language !== (isPython ? 'PYTHON' : 'JAVA')) ||
+                  (job.data.mode && (job.data.mode === 'COMPILE_AND_RUN') !== isRun)) && (
+                  <p className="notice warning">
+                    下面是上次提交的结果。请重新提交以验证当前代码和输入。
+                  </p>
+                )}
               <CompileDiagnostics job={job.data} />
               {experiment.data && (
                 <div className="lab-observation">
@@ -323,12 +424,12 @@ export function CompilePanel() {
                   }
                 >
                   <Square size={14} />
-                  取消编译任务
+                  取消任务
                 </button>
               )}
             </>
           ) : (
-            <Empty title="等待一次真实编译">先写下你的代码，再检查类型边界与诊断位置。</Empty>
+            <Empty title="等待提交">运行后可查看程序输出或编译器诊断。</Empty>
           )}
         </section>
       </div>
@@ -341,7 +442,7 @@ export function CompilePanel() {
             <button
               className="primary"
               onClick={() => {
-                setSource(replacement.source);
+                setJavaSource(replacement.source);
                 setLabType(replacement.labType);
                 setPrediction('UNKNOWN');
                 setReplacement(null);
@@ -352,37 +453,37 @@ export function CompilePanel() {
           </div>
         </Dialog>
       )}
-      {can('COMPILE_ONLY') && (
-        <details className="compile-history">
-          <summary>这个工作空间的近期编译任务</summary>
-          <ErrorNotice error={history.error} retry={history.reload} />
-          {!history.data?.length ? (
-            <p className="muted small">还没有编译任务。</p>
-          ) : (
-            history.data.map((item) => (
-              <div key={item.id} className="history-row">
-                <div>
-                  <Status value={item.status} />
-                  <small className="muted">
-                    {' '}
-                    · {new Date(item.createdAt).toLocaleString('zh-CN')}
-                  </small>
-                </div>
-                <button
-                  className="text-button"
-                  onClick={() => {
-                    setJobId(item.id);
-                    setLabId('');
-                    setSubmittedSource('');
-                  }}
-                >
-                  查看诊断
-                </button>
+      <details className="compile-history">
+        <summary>这个工作空间的近期代码任务</summary>
+        <ErrorNotice error={history.error} retry={history.reload} />
+        {!history.data?.length ? (
+          <p className="muted small">还没有编译任务。</p>
+        ) : (
+          history.data.map((item) => (
+            <div key={item.id} className="history-row">
+              <div>
+                <Status value={item.status} />
+                <small className="muted">
+                  {' '}
+                  · {item.language === 'PYTHON' ? 'Python' : 'Java'}{' '}
+                  {item.mode === 'COMPILE_AND_RUN' ? '运行' : '编译'} ·{' '}
+                  {new Date(item.createdAt).toLocaleString('zh-CN')}
+                </small>
               </div>
-            ))
-          )}
-        </details>
-      )}
+              <button
+                className="text-button"
+                onClick={() => {
+                  setJobId(item.id);
+                  setLabId('');
+                  setSubmittedSource('');
+                }}
+              >
+                查看诊断
+              </button>
+            </div>
+          ))
+        )}
+      </details>
     </section>
   );
 }
@@ -422,18 +523,29 @@ export function CompileDiagnostics({ job }: { job: CompileJob }) {
           ))}
         </ol>
       )}
+      {job.mode === 'COMPILE_AND_RUN' && (
+        <p className="muted small">
+          {job.language === 'PYTHON' ? 'Python' : 'Java'} · 标准输出与错误输出
+        </p>
+      )}
       {job.output && <pre className="compiler-output">{job.output}</pre>}
-      {job.outputTruncated && <p className="muted small">诊断输出超过容量限制，已截断显示。</p>}
+      {job.outputTruncated && <p className="muted small">输出超过容量限制，已截断显示。</p>}
       {job.finishedAt &&
         !job.errorCode &&
         !job.diagnostics.length &&
         !job.output &&
-        job.status === 'SUCCEEDED' && <p className="confirmed">编译已完成，没有返回诊断。</p>}
+        job.status === 'SUCCEEDED' && (
+          <p className="confirmed">
+            {job.mode === 'COMPILE_AND_RUN'
+              ? '程序正常结束，没有输出。'
+              : '编译已完成，没有返回诊断。'}
+          </p>
+        )}
       <details>
         <summary>查看编译证据</summary>
         <dl className="metadata">
-          <dt>JDK</dt>
-          <dd>{job.jdkVersion || '尚未返回'}</dd>
+          <dt>工具链</dt>
+          <dd>{job.runtimeVersion || job.jdkVersion || '尚未返回'}</dd>
           <dt>源码摘要</dt>
           <dd>
             <code>{job.sourceHash}</code>

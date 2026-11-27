@@ -20,7 +20,7 @@ public final class CompileController {
     @PostMapping("/compile-jobs") @ResponseStatus(HttpStatus.ACCEPTED)
     public CompileService.Job create(Principal principal,@RequestBody JsonNode input,@RequestHeader("Idempotency-Key") String key){
         schemas.validate("CompileInput",input);
-        return compiler.create(owner(principal),UUID.fromString(input.path("workspaceId").asText()),UUID.fromString(input.path("releaseId").asText()),input.path("source").asText(),input.path("mode").asText(),key);
+        return compiler.create(owner(principal),UUID.fromString(input.path("workspaceId").asText()),UUID.fromString(input.path("releaseId").asText()),input.path("source").asText(),input.path("mode").asText(),input.path("language").asText("JAVA"),input.path("stdin").asText(""),key);
     }
     @GetMapping("/compile-jobs/{id}") public CompileService.Job get(Principal principal,@PathVariable UUID id){return compiler.get(owner(principal),id);}
     @GetMapping("/workspaces/{id}/compile-jobs") public List<CompileService.Job> list(Principal principal,@PathVariable UUID id){return compiler.list(owner(principal),id);}

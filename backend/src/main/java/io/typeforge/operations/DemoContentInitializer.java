@@ -30,6 +30,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 public final class DemoContentInitializer implements ApplicationRunner {
     public static final String ORIGIN = "demo-authored-code-reviewed";
     public static final UUID RELEASE_ID = stableId("release:v1");
+    public static final UUID CLASSROOM_RELEASE_ID = stableId("release:classroom-v2");
     public static final UUID AUTHOR_ID = stableId("disabled-system-author");
     private static final String VERSION = "demo-generics-v1";
     private final JdbcTemplate jdbc;
@@ -40,7 +41,10 @@ public final class DemoContentInitializer implements ApplicationRunner {
     public DemoContentInitializer(JdbcTemplate jdbc, TransactionTemplate tx, JsonCodec json, Clock clock) {
         this.jdbc = jdbc; this.tx = tx; this.json = json; this.clock = clock;
     }
-    @Override public void run(ApplicationArguments arguments) { initialize(); }
+    @Override public void run(ApplicationArguments arguments) {
+        initialize();
+        initializeClassroomEdition();
+    }
 
     public void initialize() {
         JsonNode concepts = read("knowledge/concepts.json");
@@ -93,15 +97,7 @@ public final class DemoContentInitializer implements ApplicationRunner {
                     jdbc.update("INSERT INTO release_chunk(release_id,chunk_id,chunk_revision) VALUES(?,?,?)", RELEASE_ID.toString(), chunk.toString(), 1);
                 }
                 for (JsonNode question : content.path("exercises")) {
-                    UUID exercise = stableId("exercise:" + question.path("code").asText() + ":v1");
-                    var answer = Map.of("optionIds", question.path("correctOptionIds"), "options", question.path("options"),
-                        "explanation", question.path("explanation").asText(), "misconceptions", question.path("misconceptions"), "origin", ORIGIN);
-                    jdbc.update("INSERT INTO exercise(id,revision,family_id,kind,difficulty,prompt,answer_spec,rubric_version,status,author_id,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                        exercise.toString(), 1, exercise.toString(), question.path("kind").asText(), question.path("difficulty").asInt(), question.path("prompt").asText(),
-                        json.write(answer), "choice-v1", "REVIEWED", AUTHOR_ID.toString(), now);
-                    jdbc.update("INSERT INTO exercise_concept(exercise_id,exercise_revision,concept_id,weight) VALUES(?,?,?,?)",
-                        exercise.toString(), 1, conceptIds.get(question.path("conceptCode").asText()).toString(), java.math.BigDecimal.ONE);
-                    jdbc.update("INSERT INTO release_exercise(release_id,exercise_id,exercise_revision) VALUES(?,?,?)", RELEASE_ID.toString(), exercise.toString(), 1);
+                    addQuestion(RELEASE_ID, question, conceptIds.get(question.path("conceptCode").asText()), now);
                 }
                 if (jdbc.queryForList("SELECT singleton_id FROM active_release WHERE singleton_id=1").isEmpty()) {
                     jdbc.update("INSERT INTO active_release(singleton_id,release_id,revision) VALUES(?,?,?)", 1, RELEASE_ID.toString(), 1);
@@ -115,6 +111,52 @@ public final class DemoContentInitializer implements ApplicationRunner {
             // A simultaneous demo startup may have completed the same atomic initialization.
             if (!alreadyInitialized(manifestHash)) throw collision;
         }
+    }
+
+    private void addQuestion(UUID release, JsonNode question, UUID conceptId, Timestamp now) {
+        UUID exercise = stableId("exercise:" + question.path("code").asText() + ":v1");
+        var answer = Map.of("optionIds", question.path("correctOptionIds"), "options", question.path("options"),
+            "explanation", question.path("explanation").asText(), "misconceptions", question.path("misconceptions"), "origin", ORIGIN);
+        jdbc.update("INSERT INTO exercise(id,revision,family_id,kind,difficulty,prompt,answer_spec,rubric_version,status,author_id,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            exercise.toString(), 1, exercise.toString(), question.path("kind").asText(), question.path("difficulty").asInt(), question.path("prompt").asText(),
+            json.write(answer), "choice-v1", "REVIEWED", AUTHOR_ID.toString(), now);
+        jdbc.update("INSERT INTO exercise_concept(exercise_id,exercise_revision,concept_id,weight) VALUES(?,?,?,?)",
+            exercise.toString(), 1, conceptId.toString(), java.math.BigDecimal.ONE);
+        jdbc.update("INSERT INTO release_exercise(release_id,exercise_id,exercise_revision) VALUES(?,?,?)", release.toString(), exercise.toString(), 1);
+    }
+
+    /** A new immutable edition; existing workspaces and independently published courses keep their releases. */
+    public void initializeClassroomEdition() {
+        JsonNode questions = read("knowledge/classroom-practice-v2.json");
+        var old = RELEASE_ID.toString();
+        var next = CLASSROOM_RELEASE_ID.toString();
+        tx.executeWithoutResult(status -> {
+            // Both demo initializers serialize here, including on an existing H2/MySQL installation.
+            String active = jdbc.queryForObject("SELECT release_id FROM active_release WHERE singleton_id=1 FOR UPDATE", String.class);
+            String parentHash = jdbc.queryForObject("SELECT manifest_hash FROM content_release WHERE id=?", String.class, old);
+            String hash = json.hash(Map.of("parent", parentHash, "questions", questions, "companion", read("knowledge/peer-course-20261118.json")));
+            var existing = jdbc.queryForList("SELECT manifest_hash FROM content_release WHERE id=?", String.class, next);
+            if (!existing.isEmpty()) {
+                if (!hash.equals(existing.get(0))) throw new IllegalStateException("Classroom edition differs from its published manifest");
+                return;
+            }
+            var now = Timestamp.from(clock.instant());
+            jdbc.update("INSERT INTO content_release(id,version,status,manifest_hash,created_by,published_at,created_at) VALUES(?,?,?,?,?,?,?)",
+                next, "demo-classroom-v2", "PUBLISHED", hash, AUTHOR_ID.toString(), now, now);
+            jdbc.update("INSERT INTO release_concept(release_id,concept_id,title,prerequisite_ids) SELECT ?,concept_id,title,prerequisite_ids FROM release_concept WHERE release_id=?", next, old);
+            jdbc.update("INSERT INTO release_chunk(release_id,chunk_id,chunk_revision) SELECT ?,chunk_id,chunk_revision FROM release_chunk WHERE release_id=?", next, old);
+            jdbc.update("INSERT INTO release_exercise(release_id,exercise_id,exercise_revision) SELECT ?,exercise_id,exercise_revision FROM release_exercise WHERE release_id=?", next, old);
+            var conceptIds = new HashMap<String,UUID>();
+            jdbc.query("SELECT c.code,c.id FROM concept c JOIN release_concept rc ON rc.concept_id=c.id WHERE rc.release_id=?",
+                rs -> { conceptIds.put(rs.getString(1), UUID.fromString(rs.getString(2))); }, old);
+            for (JsonNode question : questions) {
+                addQuestion(CLASSROOM_RELEASE_ID, question, conceptIds.get(question.path("conceptCode").asText()), now);
+            }
+            if (old.equals(active)) jdbc.update("UPDATE active_release SET release_id=?,revision=revision+1 WHERE singleton_id=1", next);
+            jdbc.update("INSERT INTO audit_event(id,actor_id,action,resource_id,trace_id,safe_metadata,created_at) VALUES(?,?,?,?,?,?,?)",
+                stableId("audit:classroom-v2").toString(), AUTHOR_ID.toString(), "DEMO_CONTENT_INITIALIZED", next, "demo-classroom-v2",
+                json.write(Map.of("origin", ORIGIN, "humanReview", false, "newExercises", questions.size(), "parentRelease", old)), now);
+        });
     }
 
     private boolean alreadyInitialized(String hash) {

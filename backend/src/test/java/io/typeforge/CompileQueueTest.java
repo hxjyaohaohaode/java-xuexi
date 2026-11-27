@@ -39,7 +39,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 /** Real SQL queue and event integration; manually supplied outcomes are protocol fixtures, not isolation evidence. */
 @SpringBootTest(properties={
     "spring.datasource.url=jdbc:h2:mem:compiler-queue;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DEFAULT_NULL_ORDERING=HIGH",
-    "typeforge.compiler.enabled=true","typeforge.compiler.worker-url=http://127.0.0.1:9/v1/compile",
+    "typeforge.compiler.execution-enabled=true","typeforge.compiler.enabled=true","typeforge.compiler.worker-url=http://127.0.0.1:9/v1/compile",
     "typeforge.compiler.worker-token=fixture-compiler-secret-at-least-32-characters","typeforge.compiler.dispatch-enabled=false"
 })
 @ActiveProfiles({"test","demo"})
@@ -108,14 +108,32 @@ class CompileQueueTest {
         var waiting=submit(SOURCE,key());jdbc.update("UPDATE compile_job SET created_at=? WHERE id=?",Timestamp.from(Instant.now().minusSeconds(601)),waiting.id().toString());
         compiler.recoverExpired();assertEquals("TIMED_OUT",compiler.get(owner,waiting.id()).status());
     }
-    @Test void unsupportedExecutionOversizedUtf8AndCrossReleaseNeverEnterQueue(){
-        assertEquals(503,assertThrows(DomainException.class,()->compiler.create(owner,workspace,RELEASE,SOURCE,"COMPILE_AND_RUN",key())).status());
+    @Test void invalidCodeJobOptionsOversizedUtf8AndCrossReleaseNeverEnterQueue(){
+        assertEquals(400,assertThrows(DomainException.class,()->compiler.create(owner,workspace,RELEASE,SOURCE,"COMPILE_ONLY","PYTHON","",key())).status());
+        assertEquals(400,assertThrows(DomainException.class,()->compiler.create(owner,workspace,RELEASE,SOURCE,"COMPILE_AND_RUN","PYTHON","汉".repeat(3000),key())).status());
         assertEquals(400,assertThrows(DomainException.class,()->submit("字".repeat(11000),key())).status());
         assertEquals(400,assertThrows(DomainException.class,()->submit("\0",key())).status());
         assertEquals(400,assertThrows(DomainException.class,()->submit("\uD800",key())).status());
         assertEquals(400,assertThrows(DomainException.class,()->compiler.create(owner,workspace,UUID.randomUUID(),SOURCE,"COMPILE_ONLY",key())).status());
         assertTrue(compiler.list(owner,workspace).isEmpty());
     }
+    @Test void executionPersistsInputAndOutputAndNeverProducesAGrade(){
+        String idem=key(),source="print(input())",stdin="学习\n";
+        var job=compiler.create(owner,workspace,RELEASE,source,"COMPILE_AND_RUN","PYTHON",stdin,idem);
+        assertEquals(job.id(),compiler.create(owner,workspace,RELEASE,source,"COMPILE_AND_RUN","PYTHON",stdin,idem).id());
+        assertEquals(409,assertThrows(DomainException.class,()->compiler.create(owner,workspace,RELEASE,source,"COMPILE_AND_RUN","PYTHON","other",idem)).status());
+        var ticket=compiler.claimNext();
+        assertEquals(job.id(),ticket.id());assertEquals(stdin,ticket.request().execution().stdin());
+        assertTrue(ticket.request().checks().isEmpty());
+        var result=new CompileProtocol.Result("SUCCEEDED",ticket.request().sourceHash(),"javac 17",List.of(),false,List.of(),"Python 3.10",stdin);
+        assertTrue(compiler.accept(ticket,result));
+        var saved=compiler.get(owner,job.id());
+        assertEquals("PYTHON",saved.language());assertEquals("COMPILE_AND_RUN",saved.mode());
+        assertEquals(stdin,saved.output());assertEquals("Python 3.10",saved.runtimeVersion());assertNull(saved.jdkVersion());
+        schemas.validate("CompileJob",tree(saved));assertTrue(learning.list(owner,workspace).isEmpty());
+        assertEquals(404,assertThrows(DomainException.class,()->compiler.get(account(),job.id())).status());
+    }
+
     @Test void codeAttemptWaitsForAllChecksAndOnlyThenProducesLearningEvidence(){
         UUID exercise=exercise();var attempt=learning.submit(owner,workspace,RELEASE,exercise,1,tree(Map.of("kind","CODE","source",SOURCE)),key());
         assertEquals("PENDING",attempt.status());assertNull(attempt.score());assertNull(attempt.evidenceRef());assertNotNull(attempt.jobId());schemas.validate("Attempt",tree(attempt));

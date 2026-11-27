@@ -1,6 +1,6 @@
 # Java 后端：启动、配置与接手
 
-Java 17、Spring Boot 3.5.16、Maven 3.9.x；版本 `0.6.0-SNAPSHOT`，`-Xlint:all -Werror`。当前 129 个公开操作均有实际路由实现，但运行时继续报告 `businessReady=false`，不把接口数量当作完整产品完成率。当前能力与剩余范围集中在[模块接手指南](../docs/02-modules.md)，操作字段见[契约索引](../contracts/README.md)，实际验证见[当前验收](../evidence/runtime-review.md)。
+Java 17、Spring Boot 3.5.16、Maven 3.9.x；版本 `0.6.0-SNAPSHOT`，`-Xlint:all -Werror`。当前 130 个公开操作均有实际路由实现，但运行时继续报告 `businessReady=false`，不把接口数量当作完整产品完成率。当前能力与剩余范围集中在[模块接手指南](../docs/02-modules.md)，操作字段见[契约索引](../contracts/README.md)，实际验证见[当前验收](../evidence/runtime-review.md)。
 
 ## 1. 构建与本地运行
 
@@ -59,7 +59,7 @@ TYPEFORGE_EDITOR_USERS=editor-a,editor-b java -jar backend/target/typeforge-back
 
 ## 4. 独立编译 worker 与代码题
 
-编译默认关闭，`/api/v1/capabilities` 会报告 `COMPILE_ONLY`/`CODE_GRADING` 当前是否可用。启用时先按[独立编译 worker 说明](../workers/compiler/README.md)在专用 Linux 主机部署 Python broker 和 Docker，再由 API 的服务端安全配置提供：
+代码运行可通过仓库的 [Java/Python 完整课堂启动器](../workers/compiler/README.md) 启动。服务分开部署时可通过 `typeforge.compiler.execution-enabled=true` 与 broker 侧 `TYPEFORGE_EXECUTION_ENABLED=true` 开启。单独启动 API 时，编译默认关闭，`/api/v1/capabilities` 会报告 `COMPILE_ONLY`/`CODE_GRADING` 当前是否可用。启用时先按[独立编译 worker 说明](../workers/compiler/README.md)在专用 Linux 主机部署 Python broker 和 Docker，再由 API 的服务端安全配置提供：
 
 ```properties
 typeforge.compiler.enabled=true
@@ -67,7 +67,7 @@ typeforge.compiler.worker-url=http://127.0.0.1:8091/v1/compile
 typeforge.compiler.worker-token=<至少32字符的服务端随机令牌>
 ```
 
-跨主机使用 HTTPS 和受保护网络；浏览器不能选择 worker 地址、镜像、文件路径、编译参数或令牌。broker 启动时固定镜像 ID，任务在新建的非 root、无网络、只读基础系统 Docker 容器内执行 Java 17 编译，禁用注解处理并限制 CPU、内存、PIDs、输出和时间。**API JVM 从不编译或运行用户代码，broker 没有主机编译降级。** 当前只编译，不运行生成字节码。
+跨主机使用 HTTPS 和受保护网络；浏览器不能选择 worker 地址、镜像、文件路径、编译参数或令牌。broker 启动时固定镜像 ID，任务在新建的非 root、无网络、只读基础系统 Docker 容器内执行 Java 17 编译，禁用注解处理并限制 CPU、内存、PIDs、输出和时间。**API JVM 从不编译或运行用户代码，broker 没有主机编译降级。** 启用执行开关后，普通课堂实验也可在独立镜像中运行 Java 17 和 Python 3，按题目契约判分的路径继续只编译。
 
 | API 编译配置 | 默认值与含义 |
 | --- | --- |

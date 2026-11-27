@@ -61,6 +61,9 @@ public final class TutorService {
         this.jdbc=jdbc;this.tx=tx;this.workspaces=workspaces;this.events=events;this.json=json;this.clock=clock;this.settings=settings;this.provider=provider;
     }
 
+    TeachingTurn teachingTurn(Ticket ticket) { return TeachingTurn.resolve(jdbc,json,ticket); }
+    TutorAnswerProvider.Answer localAnswer(TeachingTurn turn,Prompt prompt) { return turn.localAnswer(jdbc,json,prompt); }
+
     public ConversationSummary createConversation(UUID owner,ConversationInput input,String key) {
         WorkspaceService.requireKey(key);
         if(input==null || input.workspaceId()==null || input.releaseId()==null) throw DomainException.invalid("A workspace and its fixed release are required");

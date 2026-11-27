@@ -34,6 +34,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @Component
 public final class HttpCompileProvider implements RuntimeCapabilityProvider {
     private static final int MAX_RESPONSE=196608;
+    private static final String RUN_PROTOCOL="typeforge-run-v1";
     private static final Set<String> STATUSES=Set.of("SUCCEEDED","COMPILE_ERROR","TIMED_OUT","RESOURCE_LIMIT","INFRA_ERROR","CANCELLED");
     private final CompileSettings settings;
     private final JsonCodec json;
@@ -45,16 +46,24 @@ public final class HttpCompileProvider implements RuntimeCapabilityProvider {
         parser=new ObjectMapper().enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY,DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
         parser.getFactory().setStreamReadConstraints(StreamReadConstraints.builder().maxNestingDepth(16).maxStringLength(MAX_RESPONSE).maxNumberLength(32).build());
     }
-    @Override public Set<String> enabledCapabilities() {return settings.configured()?Set.of("COMPILE_ONLY","CODE_GRADING"):Set.of();}
+    @Override public Set<String> enabledCapabilities() {return settings.executionEnabled()?Set.of("COMPILE_ONLY","CODE_GRADING","UNTRUSTED_CODE_EXECUTION"):settings.configured()?Set.of("COMPILE_ONLY","CODE_GRADING"):Set.of();}
     public String fingerprint() {return settings.configured()?json.hash(Map.of("endpoint",settings.endpoint().toString(),"protocol",CompileSettings.PROTOCOL,"isolation","container-per-job-v1")):null;}
     public void requireConfigured() {if(!settings.configured()) throw new DomainException("COMPILER_UNAVAILABLE",503,"An explicitly enabled isolated compiler worker is required");}
     public CompileProtocol.Result compile(CompileProtocol.Request input,BooleanSupplier active) {
         requireConfigured();
         if(TransactionSynchronizationManager.isActualTransactionActive()) throw new IllegalStateException("Compiler HTTP must not run inside a database transaction");
         var checks=input.checks().stream().map(check->Map.of("id",check.id(),"source",check.source())).toList();
-        byte[] body=json.write(Map.of("protocol",CompileSettings.PROTOCOL,"jobId",input.jobId(),"leaseToken",input.leaseToken(),"source",input.source(),"sourceHash",input.sourceHash(),"checks",checks)).getBytes(StandardCharsets.UTF_8);
+        var execution=input.execution();
+        if(execution!=null && !settings.executionEnabled()) throw new CompileProtocol.Failure("EXECUTION_DISABLED");
+        var payload=new java.util.HashMap<String,Object>();
+        payload.put("protocol",execution==null?CompileSettings.PROTOCOL:RUN_PROTOCOL);
+        payload.put("jobId",input.jobId());payload.put("leaseToken",input.leaseToken());
+        payload.put("source",input.source());payload.put("sourceHash",input.sourceHash());
+        if(execution==null) payload.put("checks",checks);
+        else {payload.put("language",execution.language());payload.put("stdin",execution.stdin());}
+        byte[] body=json.write(payload).getBytes(StandardCharsets.UTF_8);
         if(body.length>131072) throw new CompileProtocol.Failure("COMPILER_REQUEST_TOO_LARGE");
-        HttpRequest request=HttpRequest.newBuilder(settings.endpoint()).timeout(Duration.ofMillis(settings.timeoutMillis()))
+        HttpRequest request=HttpRequest.newBuilder(execution==null?settings.endpoint():settings.endpoint().resolve("/v1/run")).timeout(Duration.ofMillis(settings.timeoutMillis()))
             .header("Content-Type","application/json").header("Accept","application/json").header("Authorization","Bearer "+settings.token())
             .POST(HttpRequest.BodyPublishers.ofByteArray(body)).build();
         var pending=http.sendAsync(request,ignored->new LimitedBody(MAX_RESPONSE));
@@ -81,10 +90,11 @@ public final class HttpCompileProvider implements RuntimeCapabilityProvider {
     private CompileProtocol.Result parse(byte[] bytes,CompileProtocol.Request request) {
         try {
             JsonNode root=parser.readTree(bytes);
-            if(root==null || !root.isObject() || !CompileSettings.PROTOCOL.equals(root.path("protocol").asText())
+            boolean run=request.execution()!=null;
+            if(root==null || !root.isObject() || !(run?RUN_PROTOCOL:CompileSettings.PROTOCOL).equals(root.path("protocol").asText())
                 || !"container-per-job-v1".equals(root.path("isolation").asText())
                 || !request.jobId().toString().equals(root.path("jobId").asText()) || !request.leaseToken().toString().equals(root.path("leaseToken").asText())
-                || !request.sourceHash().equals(root.path("sourceHash").asText()) || !STATUSES.contains(root.path("status").asText())
+                || !request.sourceHash().equals(root.path("sourceHash").asText()) || !(STATUSES.contains(root.path("status").asText()) || run && "RUNTIME_ERROR".equals(root.path("status").asText()))
                 || !root.path("jdkVersion").isTextual() || !root.path("jdkVersion").asText().matches("[A-Za-z0-9 ._+()\\-]{1,64}")
                 || !root.path("outputTruncated").isBoolean() || !root.path("diagnostics").isArray() || root.path("diagnostics").size()>100
                 || !root.path("checks").isArray() || root.path("checks").size()>8) throw new CompileProtocol.Failure("COMPILER_PROTOCOL_ERROR");
@@ -107,13 +117,24 @@ public final class HttpCompileProvider implements RuntimeCapabilityProvider {
                 if(row.path("status").asText().equals("SUCCEEDED") && !codes.isEmpty() || row.path("status").asText().equals("COMPILE_ERROR") && codes.isEmpty()) throw new CompileProtocol.Failure("COMPILER_PROTOCOL_ERROR");
                 checkResults.add(new CompileProtocol.CheckResult(row.path("id").asText(),row.path("status").asText(),codes,row.path("harnessOnly").asBoolean()));
             }
-            if(root.path("status").asText().equals("SUCCEEDED") && (!seen.equals(allowed) || diagnostics.stream().anyMatch(d->!d.severity().equals("NOTE")) || root.path("outputTruncated").asBoolean())) throw new CompileProtocol.Failure("COMPILER_INCOMPLETE_RESULT");
+            if(root.path("status").asText().equals("SUCCEEDED") && (!seen.equals(allowed) || diagnostics.stream().anyMatch(d->run?d.severity().equals("ERROR"):!d.severity().equals("NOTE")) || root.path("outputTruncated").asBoolean())) throw new CompileProtocol.Failure("COMPILER_INCOMPLETE_RESULT");
             if(root.path("status").asText().equals("COMPILE_ERROR") && diagnostics.stream().noneMatch(d->d.severity().equals("ERROR"))) throw new CompileProtocol.Failure("COMPILER_PROTOCOL_ERROR");
+            String output="",runtimeVersion=root.path("jdkVersion").asText();
+            if(run) {
+                var execution=request.execution();
+                if(!execution.language().equals(root.path("language").asText()) ||
+                    !json.sha256(execution.stdin()).equals(root.path("stdinHash").asText()) ||
+                    !root.path("output").isTextual() || root.path("output").asText().length()>16384 ||
+                    !root.path("runtimeVersion").isTextual() || !root.path("runtimeVersion").asText().matches("[A-Za-z0-9 ._+()-]{1,64}"))
+                    throw new CompileProtocol.Failure("COMPILER_PROTOCOL_ERROR");
+                output=root.path("output").asText();runtimeVersion=root.path("runtimeVersion").asText();
+                if(output.contains(settings.token()) || runtimeVersion.contains(settings.token())) throw new CompileProtocol.Failure("COMPILER_PROTOCOL_ERROR");
+            }
             String text=new String(bytes,StandardCharsets.UTF_8);
             // Check decoded public fields too: escaped JSON must not bypass credential-echo rejection.
             if(text.contains(settings.token()) || root.path("jdkVersion").asText().contains(settings.token())
                 || diagnostics.stream().anyMatch(d->d.message().contains(settings.token()) || d.code().contains(settings.token()))) throw new CompileProtocol.Failure("COMPILER_PROTOCOL_ERROR");
-            return new CompileProtocol.Result(root.path("status").asText(),request.sourceHash(),root.path("jdkVersion").asText(),diagnostics,root.path("outputTruncated").asBoolean(),checkResults);
+            return new CompileProtocol.Result(root.path("status").asText(),request.sourceHash(),root.path("jdkVersion").asText(),diagnostics,root.path("outputTruncated").asBoolean(),checkResults,runtimeVersion,output);
         } catch(CompileProtocol.Failure failure) {throw failure;}
         catch(java.io.IOException | IllegalArgumentException failure) {throw new CompileProtocol.Failure("COMPILER_PROTOCOL_ERROR");}
     }

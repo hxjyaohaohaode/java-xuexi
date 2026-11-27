@@ -3,7 +3,6 @@ package io.typeforge.tutor;
 import io.typeforge.retrieval.LocalKnowledgeSearch;
 import io.typeforge.shared.DomainException;
 import io.typeforge.tutor.TutorAnswerProvider.Answer;
-import io.typeforge.tutor.TutorAnswerProvider.Usage;
 import jakarta.annotation.PreDestroy;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,19 +44,13 @@ public final class TutorWorker {
         TutorService.Ticket ticket=service.claimNext();
         if(ticket==null) return false;
         try {
-            String query=ticket.question().length()>500?ticket.question().substring(0,500):ticket.question();
-            var evidence=search.search(ticket.releaseId(),query,null,4).items();
+            TeachingTurn turn=service.teachingTurn(ticket);
+            var evidence=search.search(ticket.releaseId(),turn.searchText(),null,4).items();
             var prompt=service.prepare(ticket,evidence);
             if(evidence.isEmpty()) { service.fail(ticket,"INSUFFICIENT_EVIDENCE",null);return true; }
             Answer answer;
             if(ticket.mode()==TutorService.Mode.EVIDENCE_ONLY) {
-                var text=new StringBuilder("本地证据整理（未调用语言模型）\n\n");
-                int index=0;
-                for(var source:evidence) {
-                    String excerpt=source.excerpt().length()>1500?source.excerpt().substring(0,1500):source.excerpt();
-                    text.append(++index).append(". ").append(source.title()).append("\n").append(excerpt).append("\n\n");
-                }
-                answer=new Answer(text.toString(),evidence.stream().map(source->source.chunkId()).toList(),"可打开下方版本化来源核对原文；需要连贯的个性化模型讲解时，请显式选择已配置的模型模式。",new Usage(0,0,0));
+                answer=service.localAnswer(turn,prompt);
             } else {
                 byte[] body=provider.body(prompt);
                 service.markDispatched(ticket);

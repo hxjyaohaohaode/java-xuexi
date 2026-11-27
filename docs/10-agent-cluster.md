@@ -2,6 +2,10 @@
 
 这是以学生工作空间和目标为中心的完整专家集群设计。v0.6 已实现持久任务图、本地证据工作流、持久导师请求、显式配置的 HTTP 模型调用，以及受限的规划→专家→独立复核→可编辑草稿学习任务。课程、练习、记忆、私有素材、作品与原生文件导出通过版本化引用联动，用户代码编译由独立 worker 执行。十四角色通用自治、任意工具循环和媒体生产仍是后续目标。当前状态以 [契约](../contracts/README.md) 与运行 capabilities 为准，验证见 [本轮记录](../evidence/runtime-review.md)；当前工作流细节见 [学习任务与原生导出](23-study-and-exports.md)。
 
+课堂集成参考 OpenMAIC 调度器对当前场景证据的固定和向专家的显式交接，以及 DeepSeek Harness 的持久角色/工具注册和运行记录。具体实现沿用现有 Java 事务、任务图和学生的固定课堂版本。课外也可安装仓库内的 DSH bundle，由其官方工具注册表实际加载当前课的资料与下一步建议。复核与依赖的实现说明见 [课堂工作流](23-study-and-exports.md) 和 [Harness 插件](../integrations/dsh-classroom/README.md)。
+
+[OpenMAIC 导演与场景证据源码](https://github.com/THU-MAIC/OpenMAIC/blob/240e8228de8228f949ca90ab10c270f42729f2de/lib/chat/pi/director-loop.ts) · [DSH 会话角色配置投影](https://github.com/deepseek-ai/deepseek-harness/blob/4b399c39a6d1479cd84ca591b4d7c88e24d38a96/packages/preset/agent-preset-registry/src/session.ts)
+
 ### 当前执行边界
 
 | 实现入口 | 已执行的行为 | 尚未接入的目标 |

@@ -6,11 +6,25 @@ import { Badge, Empty, ErrorNotice, Loading, SectionTitle } from '../components/
 import { LearningAnalytics } from '../components/LearningAnalytics';
 import type { Concept, Progress, Review } from '../types';
 
-export function ProgressPage() {
+export function ProgressPage({ lesson }: { lesson?: Concept } = {}) {
   const { workspace, tick, refresh, navigate, can } = useWorkspace();
   const [projectionTick, setProjectionTick] = useState(0);
-  const progress = useResource<Progress>('/me/progress', tick + projectionTick);
-  const reviews = useResource<Review[]>('/me/reviews', tick + projectionTick);
+  const allProgress = useResource<Progress>('/me/progress', tick + projectionTick);
+  const progress =
+    lesson && allProgress.data
+      ? {
+          ...allProgress,
+          data: {
+            ...allProgress.data,
+            items: allProgress.data.items.filter((item) => item.conceptId === lesson.id),
+          },
+        }
+      : allProgress;
+  const allReviews = useResource<Review[]>('/me/reviews', tick + projectionTick);
+  const reviews =
+    lesson && allReviews.data
+      ? { ...allReviews, data: allReviews.data.filter((item) => item.conceptId === lesson.id) }
+      : allReviews;
   const concepts = useResource<{ items: Concept[] }>(`/concepts?releaseId=${workspace.releaseId}`);
   const mutation = useMutation();
   usePolling(
@@ -20,15 +34,24 @@ export function ProgressPage() {
     !!progress.error || !!reviews.error,
   );
   const name = (id: string) => concepts.data?.items.find((c) => c.id === id)?.title || '关联概念';
-  const pending = reviews.data?.filter((r) => r.status === 'PENDING' || r.status === 'DUE') || [];
+  const pending =
+    reviews.data?.filter(
+      (r) =>
+        (!lesson || r.conceptId === lesson.id) && (r.status === 'PENDING' || r.status === 'DUE'),
+    ) || [];
   return (
     <>
-      <SectionTitle
-        eyebrow="让证据决定下一步"
-        title="进度与复习"
-        description="这里展示账号积累的独立样本与服务端复习安排。阅读时长、点击次数和重复刷题不会冒充掌握程度。"
-      />
-      {can('LEARNING_ANALYTICS') && <LearningAnalytics version={projectionTick} />}
+      {lesson && (
+        <p className="muted small">这里汇总你在本账号内对「{lesson.title}」的作答与复习安排。</p>
+      )}
+      {!lesson && (
+        <SectionTitle
+          eyebrow="让证据决定下一步"
+          title="进度与复习"
+          description="这里展示账号积累的独立样本与服务端复习安排。阅读时长、点击次数和重复刷题不会冒充掌握程度。"
+        />
+      )}
+      {!lesson && can('LEARNING_ANALYTICS') && <LearningAnalytics version={projectionTick} />}
       <ErrorNotice error={progress.error} retry={progress.reload} />
       {progress.loading && !progress.data ? (
         <Loading />

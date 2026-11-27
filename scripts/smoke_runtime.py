@@ -377,7 +377,7 @@ class Smoke:
                    and all(item["releaseId"] == release and item["evidence"] for item in concepts))
         page = client.request("GET", API + "/exercises?" + query + "&limit=100")
         self.check("public exercise DTOs omit answer specifications and hidden grading data",
-                   8 <= len(page["items"]) <= 12
+                   len(page["items"]) == 33 and {cid for item in page["items"] for cid in item["conceptIds"]} == {c["id"] for c in concepts}
                    and all(set(item) == {"id", "revision", "releaseId", "kind", "prompt", "difficulty", "conceptIds", "options", "answerKind", "textPolicy"}
                            and item["answerKind"] == "CHOICE" and item["textPolicy"] is None
                            and all(set(option) == {"id", "text"} for option in item["options"])

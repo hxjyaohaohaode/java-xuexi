@@ -14,7 +14,7 @@ import {
   SectionTitle,
   Status,
 } from '../components/ui';
-import type { Context, Conversation, Page, Run, TutorRequest } from '../types';
+import type { Concept, Context, Conversation, Page, Run, TutorRequest } from '../types';
 
 const terminalTutor = ['COMPLETED', 'INSUFFICIENT_EVIDENCE', 'FAILED', 'CANCELLED'];
 const terminalRun = ['COMPLETED', 'PARTIAL', 'FAILED', 'CANCELLED'];
@@ -47,22 +47,26 @@ export function Tutor() {
     </>
   );
 }
-function ConversationPanel() {
+export function ConversationPanel({
+  lesson,
+  attemptId,
+}: { lesson?: Concept; attemptId?: string } = {}) {
   const { workspace, session, can, tick, refresh } = useWorkspace();
+  const scope = [session.userId, workspace.id, ...(lesson ? [lesson.id] : [])].join('.');
+  const prefix = lesson ? `【${lesson.code} · ${lesson.title}】\n` : '';
+  const maxLength = 4000 - prefix.length;
   const conversations = useResource<Page<Conversation>>(
-    can('TUTOR_EVIDENCE_ONLY')
+    can('TUTOR_EVIDENCE_ONLY') && !lesson
       ? `/tutor/conversations?workspaceId=${workspace.id}&limit=100`
       : null,
     tick,
   );
   const [conversationId, setConversationId] = useState(() =>
-    readSaved<string>(`tf.conversation.${session.userId}.${workspace.id}`, ''),
+    readSaved<string>(`tf.conversation.${scope}`, ''),
   );
-  const [question, setQuestion] = useSessionDraft(
-    `tf.question.${session.userId}.${workspace.id}`,
-    '',
-  );
+  const [question, setQuestion] = useSessionDraft(`tf.question.${scope}`, '');
   useUnsavedChanges(!!question.trim());
+  const [includeAttempt, setIncludeAttempt] = useState(false);
   const [mode, setMode] = useState<'EVIDENCE_ONLY' | 'MODEL'>('EVIDENCE_ONLY');
   const [hintLevel, setHintLevel] = useState(1);
   const [poll, setPoll] = useState(0);
@@ -75,8 +79,7 @@ function ConversationPanel() {
       setConversationId(conversations.data.items[0].id);
   }, [conversations.data, conversationId]);
   useEffect(() => {
-    if (conversationId)
-      writeSaved(`tf.conversation.${session.userId}.${workspace.id}`, conversationId);
+    if (conversationId) writeSaved(`tf.conversation.${scope}`, conversationId);
   }, [conversationId, workspace.id, session.userId]);
   usePolling(
     !!detail.data?.messages.some((message) => !terminalTutor.includes(message.status)),
@@ -96,19 +99,24 @@ function ConversationPanel() {
       {
         workspaceId: workspace.id,
         releaseId: workspace.releaseId,
-        title: question.trim().slice(0, 120) || '泛型学习对话',
+        title: ((lesson ? lesson.title + ' · ' : '') + (question.trim() || '课堂对话')).slice(
+          0,
+          120,
+        ),
       },
       { idempotent: true },
     );
     return conversation.id;
   };
   const send = () => {
-    if (!question.trim() || mutation.busy) return;
+    if (!question.trim() || question.length > maxLength || mutation.busy) return;
+    const selectedAttempt = includeAttempt ? attemptId : undefined;
     void mutation.run(
       async () => {
-        const key = `tf.tutor-preparing.${session.userId}.${workspace.id}`;
+        const key = `tf.tutor-preparing.${scope}`;
         type Preparation = {
           question: string;
+          selectedAttempt?: string;
           mode: string;
           hintLevel: number;
           conversationId?: string;
@@ -116,32 +124,51 @@ function ConversationPanel() {
         };
         let prepared = readSaved<Preparation>(key, {
           question,
+          selectedAttempt,
           mode,
           hintLevel,
           conversationId: conversationId || undefined,
         });
         if (
           prepared.question !== question ||
+          prepared.selectedAttempt !== selectedAttempt ||
           prepared.mode !== mode ||
           prepared.hintLevel !== hintLevel ||
           (conversationId && prepared.conversationId !== conversationId)
         )
-          prepared = { question, mode, hintLevel, conversationId: conversationId || undefined };
+          prepared = {
+            question,
+            selectedAttempt,
+            mode,
+            hintLevel,
+            conversationId: conversationId || undefined,
+          };
         if (!prepared.conversationId) {
           prepared.conversationId = await create();
           writeSaved(key, prepared);
         }
         const id = prepared.conversationId;
-        writeSaved(`tf.conversation.${session.userId}.${workspace.id}`, id);
+        writeSaved(`tf.conversation.${scope}`, id);
         if (!prepared.snapshotId) {
-          const context = await api.request<Context>(`/workspaces/${workspace.id}/context`, 'POST');
+          const context = await api.request<Context>(
+            `/workspaces/${workspace.id}/context`,
+            'POST',
+            selectedAttempt ? { attemptIds: [selectedAttempt] } : undefined,
+          );
           prepared.snapshotId = context.id;
           writeSaved(key, prepared);
         }
         const request = await api.request<TutorRequest>(
           '/tutor/requests',
           'POST',
-          { conversationId: id, snapshotId: prepared.snapshotId, mode, question, hintLevel },
+          {
+            conversationId: id,
+            snapshotId: prepared.snapshotId,
+            mode,
+            question: prefix + question,
+            ...(selectedAttempt ? { attemptId: selectedAttempt } : {}),
+            hintLevel,
+          },
           { idempotent: true },
         );
         removeSaved(key);
@@ -156,35 +183,37 @@ function ConversationPanel() {
     );
   };
   return (
-    <div className="tutor-layout">
-      <aside className="conversation-list">
-        <button
-          className="wide"
-          disabled={mutation.busy}
-          onClick={() =>
-            void mutation.run(create, (id) => {
-              setConversationId(id);
-              refresh();
-            })
-          }
-        >
-          <Plus size={16} />
-          新建对话
-        </button>
-        <ErrorNotice error={conversations.error} retry={conversations.reload} />
-        {conversations.data?.items.map((c) => (
+    <div className={lesson ? 'lesson-conversation' : 'tutor-layout'}>
+      {!lesson && (
+        <aside className="conversation-list">
           <button
-            className={c.id === conversationId ? 'selected' : ''}
+            className="wide"
             disabled={mutation.busy}
-            aria-pressed={c.id === conversationId}
-            onClick={() => setConversationId(c.id)}
-            key={c.id}
+            onClick={() =>
+              void mutation.run(create, (id) => {
+                setConversationId(id);
+                refresh();
+              })
+            }
           >
-            <strong>{c.title}</strong>
-            <small>{new Date(c.createdAt).toLocaleDateString('zh-CN')}</small>
+            <Plus size={16} />
+            新建对话
           </button>
-        ))}
-      </aside>
+          <ErrorNotice error={conversations.error} retry={conversations.reload} />
+          {conversations.data?.items.map((c) => (
+            <button
+              className={c.id === conversationId ? 'selected' : ''}
+              disabled={mutation.busy}
+              aria-pressed={c.id === conversationId}
+              onClick={() => setConversationId(c.id)}
+              key={c.id}
+            >
+              <strong>{c.title}</strong>
+              <small>{new Date(c.createdAt).toLocaleDateString('zh-CN')}</small>
+            </button>
+          ))}
+        </aside>
+      )}
       <section className="conversation-main">
         <div className="conversation-toolbar">
           <Field label="回答方式">
@@ -213,6 +242,17 @@ function ConversationPanel() {
             </select>
           </Field>
         </div>
+        {attemptId && lesson && (
+          <label className="lesson-attach">
+            <input
+              type="checkbox"
+              checked={includeAttempt}
+              disabled={mutation.busy}
+              onChange={(e) => setIncludeAttempt(e.target.checked)}
+            />
+            附上本节最近一次关联作答
+          </label>
+        )}
         {mode === 'MODEL' && (
           <p className="provider-disclosure">
             发送到管理员配置的模型供应商：本次问题、最多 4
@@ -236,8 +276,9 @@ function ConversationPanel() {
             ))
           ) : (
             <Empty title="从一个具体疑问开始">
-              例如：“为什么 List&lt;Integer&gt; 不能赋给
-              List&lt;Number&gt;？”本地模式只整理当前发布版本的知识证据。
+              {lesson
+                ? `问题将附上「${lesson.title}」作为检索上下文。`
+                : '例如：“为什么 List<Integer> 不能赋给 List<Number>？”'}
             </Empty>
           )}
         </div>
@@ -256,7 +297,7 @@ function ConversationPanel() {
             disabled={mutation.busy}
             rows={3}
             value={question}
-            maxLength={4000}
+            maxLength={maxLength}
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={(e) => {
               if (submitOnEnter(e)) {
@@ -268,7 +309,7 @@ function ConversationPanel() {
           />
           <div className="row spread">
             <span className="muted small">
-              {question.length}/4000 ·{' '}
+              {question.length}/{maxLength} ·{' '}
               {mode === 'EVIDENCE_ONLY'
                 ? '本地课程证据 · 不调用大语言模型'
                 : '将调用已配置的模型供应商'}

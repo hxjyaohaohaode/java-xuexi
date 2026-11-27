@@ -42,7 +42,7 @@ flowchart TB
 
 目标分层要求领域规则不依赖 Controller、HTTP 或供应商 SDK，Controller 只调用应用服务。v0.6 采用显式 JDBC 应用服务落实事务与归属，尚未把所有 SQL 拆成独立 repository adapter；后续按业务稳定程度拆分，不能把目录形式当作已完成解耦。共享模块只放通用 ID、分页、错误、JSON/Schema 与版本边界，不承接全部业务逻辑。闭户通过 `AccountClosureParticipant` 端口回调各模块，避免 identity 反向依赖业务形成环。
 
-API JVM 永不编译或运行用户代码。`CompileWorker` 通过固定 HTTP 协议调用独立 broker，后者以无网络、非 root、只读根文件系统、资源/时间上限和 `-proc:none` 容器进行编译，不执行产物。API 内的 JavaCompiler 测试只编译仓库固定案例；真实 Docker 隔离检查是独立 CI 门禁，不能以协议测试代替。
+API JVM 永不编译或运行用户代码。`CompileWorker` 通过固定 HTTP 协议调用独立 broker，后者以无网络、非 root、只读根文件系统、资源/时间上限和 `-proc:none` 容器执行严格 Java 编译检查。显式启用运行服务后，独立运行协议可在同等隔离下编译并执行 Java 入口，或用 CPython 解释 Python 源码；两种语言支持标准输入和有界输出。API 内的 JavaCompiler 测试只编译仓库固定案例；真实 Docker 隔离检查是独立 CI 门禁，不能以协议测试代替。
 
 ## 3. 核心身份与版本
 

@@ -155,7 +155,7 @@ export function Practice() {
     </>
   );
 }
-function Question({
+export function Question({
   exercise,
   onAttempt,
 }: {

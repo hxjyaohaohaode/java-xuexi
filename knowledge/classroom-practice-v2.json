@@ -1,0 +1,590 @@
+[
+  {
+    "code": "P01",
+    "conceptCode": "G01",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "类型安全在哪一步起作用？已声明 List<String> names，编译器遇到 names.add(17) 会怎样？",
+    "options": [
+      {
+        "id": "A",
+        "text": "运行到 add 才抛出数组存储异常"
+      },
+      {
+        "id": "B",
+        "text": "自动调用 toString() 后加入"
+      },
+      {
+        "id": "C",
+        "text": "编译阶段拒绝调用"
+      }
+    ],
+    "correctOptionIds": [
+      "C"
+    ],
+    "explanation": "编译器用 String 检查 add 的形参，Integer 无法转换为 String。",
+    "misconceptions": [
+      "GENERIC_CHECK_STAGE"
+    ]
+  },
+  {
+    "code": "P02",
+    "conceptCode": "G02",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "同一个泛型类 Box<T> 中，哪种声明可以编译？",
+    "options": [
+      {
+        "id": "A",
+        "text": "static <U> U echo(U value) { return value; }"
+      },
+      {
+        "id": "B",
+        "text": "static T shared;"
+      },
+      {
+        "id": "C",
+        "text": "T create() { return new T(); }"
+      }
+    ],
+    "correctOptionIds": [
+      "A"
+    ],
+    "explanation": "静态方法可以自己声明类型参数 U。静态成员不属于某个 Box<T> 的具体实例。",
+    "misconceptions": [
+      "STATIC_TYPE_PARAMETER"
+    ]
+  },
+  {
+    "code": "P03",
+    "conceptCode": "G03",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "接口 Source<T> 声明 T get()。类 Text 实现 Source<String>，哪个方法能履行这个契约？",
+    "options": [
+      {
+        "id": "A",
+        "text": "private String get()"
+      },
+      {
+        "id": "B",
+        "text": "public String get()"
+      },
+      {
+        "id": "C",
+        "text": "public Object get()"
+      }
+    ],
+    "correctOptionIds": [
+      "B"
+    ],
+    "explanation": "覆盖方法对外公开且返回类型满足已绑定的 String 契约。",
+    "misconceptions": [
+      "INTERFACE_SUBSTITUTION"
+    ]
+  },
+  {
+    "code": "P04",
+    "conceptCode": "G04",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "在普通类里声明独立的泛型静态方法，哪个签名合法？",
+    "options": [
+      {
+        "id": "A",
+        "text": "static E first<E>(List<E> xs)"
+      },
+      {
+        "id": "B",
+        "text": "static E<E> first(List<E> xs)"
+      },
+      {
+        "id": "C",
+        "text": "static <E> E first(List<E> xs)"
+      }
+    ],
+    "correctOptionIds": [
+      "C"
+    ],
+    "explanation": "方法的类型参数放在返回类型之前，作用域覆盖形参和返回类型。",
+    "misconceptions": [
+      "METHOD_TYPE_SCOPE"
+    ]
+  },
+  {
+    "code": "P05",
+    "conceptCode": "G05",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "对于 static <T extends Number> T id(T x)，哪个调用能通过编译？",
+    "options": [
+      {
+        "id": "A",
+        "text": "Number n = id(2.5);"
+      },
+      {
+        "id": "B",
+        "text": "String s = id(\"2.5\");"
+      },
+      {
+        "id": "C",
+        "text": "Integer n = id(2.5);"
+      }
+    ],
+    "correctOptionIds": [
+      "A"
+    ],
+    "explanation": "实参和赋值目标都参与推断。Double 满足 Number 上界，可向上转型为 Number。",
+    "misconceptions": [
+      "INFERENCE_CONSTRAINT"
+    ]
+  },
+  {
+    "code": "P06",
+    "conceptCode": "G06",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "List<Integer> values 需要以 Number 读取，哪种声明还能防止经新引用写入 Double？",
+    "options": [
+      {
+        "id": "A",
+        "text": "List<Object> view = values;"
+      },
+      {
+        "id": "B",
+        "text": "List<? extends Number> view = values;"
+      },
+      {
+        "id": "C",
+        "text": "List<Number> view = values;"
+      }
+    ],
+    "correctOptionIds": [
+      "B"
+    ],
+    "explanation": "上界通配符保留实际元素类型未知这一事实，不能通过 view.add(2.5) 写入。",
+    "misconceptions": [
+      "GENERIC_INVARIANCE"
+    ]
+  },
+  {
+    "code": "P07",
+    "conceptCode": "G07",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "参数声明为 <T extends Number>。仅凭这个上界，哪个操作一定能通过静态检查？",
+    "options": [
+      {
+        "id": "A",
+        "text": "对 T 类型变量调用 compareTo(另一个 T)"
+      },
+      {
+        "id": "B",
+        "text": "对 T 类型变量直接使用 + 合并两个值"
+      },
+      {
+        "id": "C",
+        "text": "对 T 类型变量调用 doubleValue()"
+      }
+    ],
+    "correctOptionIds": [
+      "C"
+    ],
+    "explanation": "上界保证 Number 的成员可用；Comparable 和数值运算并不由该声明保证。",
+    "misconceptions": [
+      "BOUND_MEMBERS"
+    ]
+  },
+  {
+    "code": "P08",
+    "conceptCode": "G08",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "在类型参数界限中同时使用类 Number 和接口 Comparable<T>，哪种写法合法？",
+    "options": [
+      {
+        "id": "A",
+        "text": "<T extends Number & Comparable<T>>"
+      },
+      {
+        "id": "B",
+        "text": "<T extends Comparable<T> & Number>"
+      },
+      {
+        "id": "C",
+        "text": "<T extends Number, Comparable<T>>"
+      }
+    ],
+    "correctOptionIds": [
+      "A"
+    ],
+    "explanation": "交叉上界中类界限必须最先出现，后续接口界限用 & 连接。",
+    "misconceptions": [
+      "INTERSECTION_ORDER"
+    ]
+  },
+  {
+    "code": "P09",
+    "conceptCode": "G09",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "List<?> view 引用一个可变 ArrayList<String>。哪组操作在静态类型上都合法？",
+    "options": [
+      {
+        "id": "A",
+        "text": "Object x = view.get(0); view.add(\"x\");"
+      },
+      {
+        "id": "B",
+        "text": "Object x = view.get(0); view.clear();"
+      },
+      {
+        "id": "C",
+        "text": "String x = view.get(0); view.clear();"
+      }
+    ],
+    "correctOptionIds": [
+      "B"
+    ],
+    "explanation": "无界通配符允许读取 Object 和调用 clear。声明本身不保证集合可变，题目已给出可变实现。",
+    "misconceptions": [
+      "WILDCARD_MUTABILITY"
+    ]
+  },
+  {
+    "code": "P10",
+    "conceptCode": "G10",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "List<? extends Number> numbers 只有这个声明。哪种做法满足编译期读写约束？",
+    "options": [
+      {
+        "id": "A",
+        "text": "numbers.add(Integer.valueOf(1));"
+      },
+      {
+        "id": "B",
+        "text": "Double d = numbers.get(0);"
+      },
+      {
+        "id": "C",
+        "text": "Number n = numbers.get(0);"
+      }
+    ],
+    "correctOptionIds": [
+      "C"
+    ],
+    "explanation": "读取的元素至少可当作 Number。实际子类型未知，不能保证为 Double，也不能写入任意 Integer。",
+    "misconceptions": [
+      "EXTENDS_WRITE"
+    ]
+  },
+  {
+    "code": "P11",
+    "conceptCode": "G11",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "List<? super Integer> sink = new ArrayList<Number>(); Number n = Integer.valueOf(2); 哪行能编译？",
+    "options": [
+      {
+        "id": "A",
+        "text": "sink.add(Integer.valueOf(2));"
+      },
+      {
+        "id": "B",
+        "text": "sink.add(n);"
+      },
+      {
+        "id": "C",
+        "text": "Integer first = sink.get(0);"
+      }
+    ],
+    "correctOptionIds": [
+      "A"
+    ],
+    "explanation": "add 按表达式的静态类型检查。n 的静态类型为 Number；从 sink 读取的通用静态类型为 Object。",
+    "misconceptions": [
+      "SUPER_READ_WRITE"
+    ]
+  },
+  {
+    "code": "P12",
+    "conceptCode": "G12",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "要将整数列表元素追加到数值列表，复制函数的形参如何表达数据流？",
+    "options": [
+      {
+        "id": "A",
+        "text": "List<Object> source, List<Object> target"
+      },
+      {
+        "id": "B",
+        "text": "List<? extends T> source, List<? super T> target"
+      },
+      {
+        "id": "C",
+        "text": "List<? super T> source, List<? extends T> target"
+      }
+    ],
+    "correctOptionIds": [
+      "B"
+    ],
+    "explanation": "源端要读出 T，目标端要接收 T。这组形参同时支持 List<Integer> 和 List<Number>。",
+    "misconceptions": [
+      "PECS_DIRECTION"
+    ]
+  },
+  {
+    "code": "P13",
+    "conceptCode": "G13",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "void swap(List<?> xs) 需要交换同一列表中两个元素，哪种实现可以保留类型关系？",
+    "options": [
+      {
+        "id": "A",
+        "text": "把 xs 直接赋给 List<Object> 再交换"
+      },
+      {
+        "id": "B",
+        "text": "把 get 的值转为 Object 后调用 xs.set"
+      },
+      {
+        "id": "C",
+        "text": "将 xs 交给私有 <E> void swapKnown(List<E> ys) 辅助方法"
+      }
+    ],
+    "correctOptionIds": [
+      "C"
+    ],
+    "explanation": "辅助方法命名同一次捕获的未知类型 E，使读取和回写共享该类型。",
+    "misconceptions": [
+      "WILDCARD_CAPTURE"
+    ]
+  },
+  {
+    "code": "P14",
+    "conceptCode": "G14",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "Source<String> 实现类覆盖 String get() 后，编译器生成桥接方法主要为了什么？",
+    "options": [
+      {
+        "id": "A",
+        "text": "擦除后仍让通过父接口的虚调用落到正确实现"
+      },
+      {
+        "id": "B",
+        "text": "为每种类型实参生成独立的泛型类"
+      },
+      {
+        "id": "C",
+        "text": "运行时把每次写入泛型集合的值都检查一遍"
+      }
+    ],
+    "correctOptionIds": [
+      "A"
+    ],
+    "explanation": "编译器在适当时生成桥接方法以维持擦除后的覆盖与多态。",
+    "misconceptions": [
+      "ERASURE_BRIDGE"
+    ]
+  },
+  {
+    "code": "P15",
+    "conceptCode": "G15",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "哪种数组创建表达式在 Java 17 中合法？",
+    "options": [
+      {
+        "id": "A",
+        "text": "new List<? extends Number>[2]"
+      },
+      {
+        "id": "B",
+        "text": "new List<?>[2]"
+      },
+      {
+        "id": "C",
+        "text": "new List<String>[2]"
+      }
+    ],
+    "correctOptionIds": [
+      "B"
+    ],
+    "explanation": "无界通配符的参数化类型可具体化；带具体实参或上界通配符的列表类型不能这样创建数组。",
+    "misconceptions": [
+      "REIFIABLE_ARRAY"
+    ]
+  },
+  {
+    "code": "P16",
+    "conceptCode": "G16",
+    "kind": "SINGLE",
+    "difficulty": 2,
+    "prompt": "借 raw List 引用向 List<String> 添加 42，之后执行 String s = strings.get(0)。哪种结果与常规 javac 一致？",
+    "options": [
+      {
+        "id": "A",
+        "text": "一律在写入时抛 ArrayStoreException"
+      },
+      {
+        "id": "B",
+        "text": "raw 写入会自动把整数变成字符串"
+      },
+      {
+        "id": "C",
+        "text": "写入有 unchecked 警告，取值时隐式转换可能抛 ClassCastException"
+      }
+    ],
+    "correctOptionIds": [
+      "C"
+    ],
+    "explanation": "擦除后的列表能保存错误类型。通过参数化引用读入 String 时会执行类型转换。",
+    "misconceptions": [
+      "RAW_HEAP_POLLUTION"
+    ]
+  },
+  {
+    "code": "P17",
+    "conceptCode": "G01",
+    "kind": "SINGLE",
+    "difficulty": 3,
+    "prompt": "一个方法接受 List<String>。仅凭泛型声明，哪件事仍需程序自己检查？",
+    "options": [
+      {
+        "id": "A",
+        "text": "列表是否为空，以及第一个元素是否为 null"
+      },
+      {
+        "id": "B",
+        "text": "返回的元素能否赋给 Object"
+      },
+      {
+        "id": "C",
+        "text": "String 是否继承 Object"
+      }
+    ],
+    "correctOptionIds": [
+      "A"
+    ],
+    "explanation": "泛型声明不表达容器非空或元素非空，访问和业务校验仍有独立条件。",
+    "misconceptions": [
+      "GENERIC_RUNTIME_CHECKS"
+    ]
+  },
+  {
+    "code": "P18",
+    "conceptCode": "G02",
+    "kind": "SINGLE",
+    "difficulty": 3,
+    "prompt": "分别创建 new Box<String>() 和 new Box<Integer>()。两者的 getClass().equals(...) 通常得到什么？",
+    "options": [
+      {
+        "id": "A",
+        "text": "抛异常，泛型对象不能调用 getClass()"
+      },
+      {
+        "id": "B",
+        "text": "true，这两个参数化实例共享同一个运行时类"
+      },
+      {
+        "id": "C",
+        "text": "false，每种实参各自生成一个运行时类"
+      }
+    ],
+    "correctOptionIds": [
+      "B"
+    ],
+    "explanation": "类型实参用于编译检查；普通泛型类的两个参数化实例可以共享同一个 Class 对象。",
+    "misconceptions": [
+      "PARAMETERIZED_CLASS_IDENTITY"
+    ]
+  },
+  {
+    "code": "P19",
+    "conceptCode": "G07",
+    "kind": "SINGLE",
+    "difficulty": 3,
+    "prompt": "泛型方法 <T extends Comparable<? super T>> T max(T a, T b) 为什么能调用 a.compareTo(b)？",
+    "options": [
+      {
+        "id": "A",
+        "text": "所有对象都定义了 compareTo"
+      },
+      {
+        "id": "B",
+        "text": "运行时自动为 T 生成 Comparable 实现"
+      },
+      {
+        "id": "C",
+        "text": "上界保证 a 可以比较 T 或其父类型的值"
+      }
+    ],
+    "correctOptionIds": [
+      "C"
+    ],
+    "explanation": "Comparable<? super T> 的参数可接收 T，b 的声明类型正是 T。",
+    "misconceptions": [
+      "RECURSIVE_BOUND"
+    ]
+  },
+  {
+    "code": "P20",
+    "conceptCode": "G09",
+    "kind": "SINGLE",
+    "difficulty": 3,
+    "prompt": "List<?> xs 的实际类型参数未知。在静态检查下，以下哪个 add 调用可通过？",
+    "options": [
+      {
+        "id": "A",
+        "text": "xs.add(null)"
+      },
+      {
+        "id": "B",
+        "text": "xs.add(new Object())"
+      },
+      {
+        "id": "C",
+        "text": "xs.add(\"hello\")"
+      }
+    ],
+    "correctOptionIds": [
+      "A"
+    ],
+    "explanation": "null 可转换为任意引用类型。集合实现仍可能在运行时拒绝 null 或不支持修改。",
+    "misconceptions": [
+      "WILDCARD_NULL"
+    ]
+  },
+  {
+    "code": "P21",
+    "conceptCode": "G12",
+    "kind": "SINGLE",
+    "difficulty": 3,
+    "prompt": "方法只把 List<? super Integer> 当作写入目标。调用者可以传哪个现有列表？",
+    "options": [
+      {
+        "id": "A",
+        "text": "ArrayList<Short>"
+      },
+      {
+        "id": "B",
+        "text": "ArrayList<Object>"
+      },
+      {
+        "id": "C",
+        "text": "ArrayList<Double>"
+      }
+    ],
+    "correctOptionIds": [
+      "B"
+    ],
+    "explanation": "Object 是 Integer 的父类型；Double 和 Short 都不是 Integer 的父类型。",
+    "misconceptions": [
+      "PECS_ARGUMENT"
+    ]
+  }
+]

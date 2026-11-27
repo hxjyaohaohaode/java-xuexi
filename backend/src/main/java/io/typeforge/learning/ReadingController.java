@@ -13,7 +13,10 @@ import org.springframework.web.bind.annotation.*;
 public class ReadingController {
     private final ReadingService readings;
     private final IdentityService users;
-    public ReadingController(ReadingService readings,IdentityService users) {this.readings=readings;this.users=users;}
+    private final PersonalLearningPath path;
+    public ReadingController(ReadingService readings,IdentityService users,PersonalLearningPath path) {this.readings=readings;this.users=users;this.path=path;}
+    @GetMapping("/workspaces/{id}/learning-path")
+    public PersonalLearningPath.Path path(Principal principal,@PathVariable UUID id) {return path.get(users.session(principal.getName()).userId(),id);}
     @PostMapping("/learning-events") @ResponseStatus(HttpStatus.CREATED)
     public ReadingService.Receipt record(Principal principal,@RequestBody JsonNode input,@RequestHeader("Idempotency-Key") String key) {return readings.record(users.session(principal.getName()).userId(),input,key);}
     @GetMapping("/workspaces/{id}/readings")

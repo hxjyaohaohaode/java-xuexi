@@ -14,10 +14,16 @@ public final class CompileSettings {
     private final String token;
     private final boolean enabled;
     private final boolean dispatchEnabled;
+    private final boolean executionEnabled;
+    public boolean executionEnabled() { return configured() && executionEnabled; }
     private final int timeoutMillis;
     private final int maxPending;
     private final int globalPending;
     private final int dailyLimit;
+    public CompileSettings(String url,String token,boolean enabled,boolean dispatchEnabled,int timeoutMillis,int maxPending,int globalPending,int dailyLimit) {
+        this(url,token,enabled,dispatchEnabled,timeoutMillis,maxPending,globalPending,dailyLimit,false);
+    }
+    @org.springframework.beans.factory.annotation.Autowired
     public CompileSettings(@Value("${typeforge.compiler.worker-url:}") String url,
                            @Value("${typeforge.compiler.worker-token:}") String token,
                            @Value("${typeforge.compiler.enabled:false}") boolean enabled,
@@ -25,7 +31,9 @@ public final class CompileSettings {
                            @Value("${typeforge.compiler.timeout-millis:45000}") int timeoutMillis,
                            @Value("${typeforge.compiler.max-pending:4}") int maxPending,
                            @Value("${typeforge.compiler.global-pending:256}") int globalPending,
-                           @Value("${typeforge.compiler.daily-limit:200}") int dailyLimit) {
+                           @Value("${typeforge.compiler.daily-limit:200}") int dailyLimit,
+                           @Value("${typeforge.compiler.execution-enabled:false}") boolean executionEnabled) {
+        this.executionEnabled=executionEnabled;
         this.endpoint=url==null || url.isBlank()?null:URI.create(url);
         this.token=token==null?"":token;
         this.enabled=enabled;this.dispatchEnabled=dispatchEnabled;
