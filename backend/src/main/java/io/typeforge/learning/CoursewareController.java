@@ -23,16 +23,23 @@ public class CoursewareController {
     @PostMapping @ResponseStatus(HttpStatus.CREATED)
     public PersonalCourseware.Plan generate(Principal principal, @PathVariable UUID id, @PathVariable UUID conceptId,
             @RequestBody JsonNode input, @RequestHeader("Idempotency-Key") String key) {
-        if (!input.isObject() || input.size() > 2) throw DomainException.invalid("Invalid courseware settings");
+        if (!input.isObject() || input.size() > 3) throw DomainException.invalid("Invalid courseware settings");
         input.fieldNames().forEachRemaining(name -> {
-            if (!Set.of("snapshotId", "approach").contains(name) || !input.get(name).isTextual())
+            if (!Set.of("snapshotId", "approach", "brief").contains(name) || (!name.equals("brief") && !input.get(name).isTextual()))
                 throw DomainException.invalid("Invalid courseware setting");
         });
+        PersonalCourseware.Brief brief=null;
+        if (input.has("brief")) {
+            var settings=input.get("brief");
+            if (!settings.isObject() || settings.size()!=2 || !settings.path("interest").isTextual() || !settings.path("requirements").isTextual())
+                throw DomainException.invalid("The lesson brief needs interest and requirements");
+            brief=new PersonalCourseware.Brief(settings.get("interest").textValue(),settings.get("requirements").textValue());
+        }
         UUID snapshot;
         try { snapshot = input.has("snapshotId") ? UUID.fromString(input.get("snapshotId").asText()) : null; }
         catch (IllegalArgumentException failure) { throw DomainException.invalid("Invalid snapshot identifier"); }
         return lessons.generate(users.session(principal.getName()).userId(), id, conceptId, snapshot,
-            input.path("approach").asText("AUTO"), key);
+            input.path("approach").asText("AUTO"), brief, key);
     }
 
     @GetMapping

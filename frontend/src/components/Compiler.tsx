@@ -3,6 +3,7 @@ import { Braces, Play, Square } from 'lucide-react';
 import { api } from '../api';
 import { useWorkspace } from '../context';
 import { useMutation, usePolling, useResource, useSessionDraft, useUnsavedChanges } from '../hooks';
+import { RunDebrief } from './RunDebrief';
 import { Badge, Dialog, Empty, ErrorNotice, Field, Loading, Status } from './ui';
 import type { CompileJob, LabResult } from '../types';
 
@@ -37,15 +38,23 @@ type LessonExample = { id: string; title: string; code: string };
 export function CompilePanel({
   initialConceptCode = '',
   lessonExample,
+  initialLessonExample,
+  onDiscuss,
 }: {
   initialConceptCode?: string;
   lessonExample?: LessonExample;
+  initialLessonExample?: LessonExample;
+  onDiscuss?: (text: string) => void;
 } = {}) {
   const { workspace, session, tick, can, refresh } = useWorkspace();
-  const draftScope = `${session.userId}.${workspace.id}${initialConceptCode ? '.' + initialConceptCode : ''}`;
+  const courseScope = `${session.userId}.${workspace.id}${initialConceptCode ? '.' + initialConceptCode : ''}`;
+  const draftScope = initialLessonExample
+    ? courseScope + '.exercise.' + initialLessonExample.id
+    : courseScope;
+  const initialJava = initialLessonExample?.code || starterSource;
   const [javaSource, setJavaSource] = useSessionDraft(
     `tf.compiler.source.${draftScope}`,
-    starterSource,
+    initialJava,
   );
   const [pythonSource, setPythonSource] = useSessionDraft(
     `tf.compiler.python.${draftScope}`,
@@ -95,7 +104,7 @@ export function CompilePanel({
   const waiting = jobPending(job.data?.status) || (!!jobId && !job.data && job.loading);
   const sourceBytes = new TextEncoder().encode(source).byteLength;
   useUnsavedChanges(
-    (javaSource !== starterSource && javaSource !== submittedBuffers.JAVA) ||
+    (javaSource !== initialJava && javaSource !== submittedBuffers.JAVA) ||
       (pythonSource !== pythonStarter && pythonSource !== submittedBuffers.PYTHON) ||
       (isRun && stdin !== submittedInput),
   );
@@ -131,6 +140,9 @@ export function CompilePanel({
           {can('UNTRUSTED_CODE_EXECUTION') ? '隔离运行 · Java / Python' : 'Java / Python'}
         </Badge>
       </div>
+      {initialLessonExample && (
+        <p className="muted">{initialLessonExample.title} · 本题草稿单独保存，可以修改后再运行。</p>
+      )}
       {lessonExample && (
         <div className="row spread wrap">
           <span>{lessonExample.title}</span>
@@ -394,6 +406,14 @@ export function CompilePanel({
                   </p>
                 )}
               <CompileDiagnostics job={job.data} />
+              {job.data.finishedAt && (
+                <RunDebrief
+                  key={job.data.id}
+                  job={job.data}
+                  history={history.data || []}
+                  onDiscuss={onDiscuss}
+                />
+              )}
               {experiment.data && (
                 <div className="lab-observation">
                   <p className="muted small">{experiment.data.explanation}</p>

@@ -59,11 +59,22 @@ public final class TutorService {
     private final HttpTutorModelProvider provider;
     private final io.typeforge.workspace.LearningContextJournal learningJournal;
     private final StudyContextJournal journal;
+    private final io.typeforge.compiler.CompilationGateway compiler;
     public TutorService(JdbcTemplate jdbc,TransactionTemplate tx,WorkspaceService workspaces,EventJournal events,JsonCodec json,Clock clock,TutorSettings settings,HttpTutorModelProvider provider) {
+        this(jdbc,tx,workspaces,events,json,clock,settings,provider,null);
+    }
+    @org.springframework.beans.factory.annotation.Autowired
+    public TutorService(JdbcTemplate jdbc,TransactionTemplate tx,WorkspaceService workspaces,EventJournal events,JsonCodec json,
+                        Clock clock,TutorSettings settings,HttpTutorModelProvider provider,io.typeforge.compiler.CompilationGateway compiler) {
+        this.compiler=compiler;
         this.jdbc=jdbc;this.tx=tx;this.workspaces=workspaces;this.events=events;this.json=json;this.clock=clock;this.settings=settings;this.provider=provider;
         this.learningJournal=new io.typeforge.workspace.LearningContextJournal(jdbc,tx,workspaces,json);
         this.journal=new StudyContextJournal(jdbc,workspaces,learningJournal,json);
     }
+
+    private CoursewareSlideSource courseware;
+    @org.springframework.beans.factory.annotation.Autowired
+    void attachCourseware(CoursewareSlideSource source) { this.courseware=source; }
 
     UUID teachingConcept(TeachingTurn turn) { return turn.runId()==null?null:StudyContextJournal.courseConcept(jdbc,turn.runId()); }
     TeachingTurn teachingTurn(Ticket ticket) { return TeachingTurn.resolve(jdbc,json,ticket); }
@@ -208,6 +219,9 @@ public final class TutorService {
                 :learningJournal.read(row.owner(),row.workspace(),roleContext.learningContextId());
             var learner=new ArrayList<Map<String,Object>>();
             boolean personal=roleContext!=null && checkpoint.conceptId()!=null;
+            if(personal && courseware!=null && row.mode()==Mode.MODEL)
+                courseware.edition(row.owner(),row.workspace(),turn.runId()).flatMap(ReviewedApplication::from)
+                    .ifPresent(activity->learner.add(activity.input()));
             if(personal && turn.role().equals("PLANNER")) learner.add(Map.of("kind","PERSONAL_LESSON"));
             for(var fact:checkpoint.facts()) {
                 if(fact.kind().equals("GOAL") && (roleContext==null || personal)) learner.add(Map.of("kind","GOAL","id",fact.sourceId(),"text",fact.text()));
@@ -216,9 +230,26 @@ public final class TutorService {
             if(row.attempt()!=null) {
                 // Explicit selection can rehydrate an older, compacted-away attempt from this manifest.
                 learningJournal.recall(row.owner(),row.workspace(),checkpoint.id(),"ATTEMPT",row.attempt());
-                var attempts=jdbc.queryForList("SELECT a.answer,a.score FROM exercise_attempt a JOIN workspace_attempt wa ON wa.attempt_id=a.id WHERE a.id=? AND a.user_id=? AND wa.workspace_id=? AND a.status='GRADED'",row.attempt().toString(),row.owner().toString(),row.workspace().toString());
+                var attempts=jdbc.query("""
+                    SELECT a.answer,a.score,a.maximum,a.hint_level,e.prompt FROM exercise_attempt a
+                    JOIN exercise e ON e.id=a.exercise_id AND e.revision=a.exercise_revision
+                    JOIN workspace_attempt wa ON wa.attempt_id=a.id
+                    WHERE a.id=? AND a.user_id=? AND a.release_id=? AND wa.workspace_id=? AND a.status='GRADED'
+                    """,(rs,n)->new AdmittedAttempt(json.tree(rs.getString(1)),rs.getDouble(2),rs.getDouble(3),rs.getInt(4),rs.getString(5)),
+                    row.attempt().toString(),row.owner().toString(),row.release().toString(),row.workspace().toString());
                 if(attempts.isEmpty()) throw DomainException.missing();
-                learner.add(Map.of("kind","OWN_SUBMITTED_ATTEMPT","id",row.attempt(),"submittedAnswer",clip(json.tree(attempts.get(0).get("answer")).toString(),1000),"score",attempts.get(0).get("score")));
+                var attempt=attempts.get(0);
+                var submission=attempt.submission();
+                var details=new java.util.LinkedHashMap<String,Object>();
+                details.put("kind","OWN_SUBMITTED_ATTEMPT");details.put("id",row.attempt());
+                details.put("task",io.typeforge.workspace.LearningContextJournal.compact(attempt.prompt(),1000));
+                details.put("score",attempt.score());details.put("maximum",attempt.maximum());
+                details.put("hintLevel",attempt.hintLevel());
+                boolean code="CODE".equals(submission.path("kind").asText());
+                String submitted=code?submission.path("source").asText():submission.toString();
+                details.put("submittedAnswer",io.typeforge.workspace.LearningContextJournal.compact(submitted,4000));
+                if(code && compiler!=null) addCompileObservation(row,submitted,details);
+                learner.add(details);
             }
             var recent=roleContext!=null?List.<String>of():recentQuestions(row);
             var prompt=new Prompt(row.id(),row.question(),row.hintLevel(),recent,learner,evidence,TutorAnswerProvider.Purpose.valueOf(turn.role()),
@@ -227,6 +258,21 @@ public final class TutorService {
                 ?new String(provider.body(prompt),java.nio.charset.StandardCharsets.UTF_8):null);
             return prompt;
         });
+    }
+    private record AdmittedAttempt(com.fasterxml.jackson.databind.JsonNode submission,double score,double maximum,int hintLevel,String prompt) {}
+
+    private void addCompileObservation(Stored row,String source,Map<String,Object> details) {
+        var ids=jdbc.queryForList("""
+            SELECT j.id FROM compile_job j JOIN workspace_compile w ON w.job_id=j.id
+            WHERE j.attempt_id=? AND j.user_id=? AND w.workspace_id=? AND j.release_id=?
+              AND j.mode='COMPILE_ONLY' AND j.status IN ('SUCCEEDED','COMPILE_ERROR') AND j.source_hash=?
+            """,String.class,row.attempt().toString(),row.owner().toString(),row.workspace().toString(),row.release().toString(),json.sha256(source));
+        if(ids.isEmpty()) return;
+        var result=compiler.findOwnJob(row.owner(),UUID.fromString(ids.get(0)));
+        var diagnostics=result.diagnostics().stream().limit(3).map(d->Map.of("line",d.line(),"column",d.column(),
+            "code",d.code(),"severity",d.severity(),"message",io.typeforge.workspace.LearningContextJournal.compact(d.message(),360))).toList();
+        details.put("compileObservation",Map.of("mode","COMPILE_ONLY","jobId",result.jobId(),"sourceHash",result.sourceHash(),
+            "status",result.status(),"diagnostics",diagnostics,"diagnosticCount",result.diagnostics().size()));
     }
     private record EarlierQuestion(UUID snapshot,String question) {}
     private List<String> recentQuestions(Stored row) {
@@ -273,10 +319,12 @@ public final class TutorService {
         tx.executeWithoutResult(status->{
             Stored row=lockWorker(ticket.ownerId(),ticket.id());
             if(row.dispatched()!=null && ticket.token().equals(row.token()) && answer.usage()!=null) {
-                settle(row,answer.usage());
+                settle(row,answer.usage(),"stop");
                 if(answer.providerModelId()!=null && !answer.providerModelId().isBlank() && answer.providerModelId().length()<=128) jdbc.update("UPDATE tutor_request SET model_id=? WHERE id=?",answer.providerModelId(),row.id().toString());
             }
-            String digest=json.hash(answer);
+            var canonical=json.tree(json.write(answer));
+            if(answer.reviewEdits().isEmpty()) ((com.fasterxml.jackson.databind.node.ObjectNode)canonical).remove("reviewEdits");
+            String digest=json.hash(canonical);
             if(row.status().equals("COMPLETED") && row.epoch()==ticket.epoch() && ticket.token().equals(row.token())) {
                 if(!digest.equals(row.resultHash())) throw DomainException.conflict("A tutor result was already committed with different content");
                 return;
@@ -298,7 +346,7 @@ public final class TutorService {
             var displayedEvidence=row.evidence().stream().filter(card->answer.citedChunkIds().contains(card.chunkId()) || anchors.contains(card.chunkId())).toList();
             String limitation=row.mode()==Mode.MODEL?provider.learnerNote(rules,answer.limitations()):"本地证据整理，未调用语言模型；词项相关性不能代替完整事实核验。 "+answer.limitations();
             UUID message=UUID.randomUUID();
-            jdbc.update("INSERT INTO tutor_message(id,request_id,answer,limitations,suggestions,created_at) VALUES(?,?,?,?,'[]',?)",message.toString(),row.id().toString(),answer.text(),limitation,Timestamp.from(clock.instant()));
+            jdbc.update("INSERT INTO tutor_message(id,request_id,answer,limitations,suggestions,review_edits,created_at) VALUES(?,?,?,?,'[]',?,?)",message.toString(),row.id().toString(),answer.text(),limitation,answer.reviewEdits().isEmpty()?null:json.write(answer.reviewEdits()),Timestamp.from(clock.instant()));
             for(EvidenceView e:cited) jdbc.update("INSERT INTO message_citation(message_id,release_id,chunk_id,chunk_revision,locator) VALUES(?,?,?,?,?)",message.toString(),row.release().toString(),e.chunkId().toString(),e.revision(),clip(e.sourceSection(),255));
             jdbc.update("UPDATE tutor_request SET status='COMPLETED',error_code=NULL WHERE id=?",row.id().toString());
             jdbc.update("UPDATE tutor_request_runtime SET evidence_refs=?,result_hash=?,lease_until=NULL,completed_at=? WHERE request_id=?",json.write(displayedEvidence),digest,Timestamp.from(clock.instant()),row.id().toString());
@@ -309,7 +357,11 @@ public final class TutorService {
         if(code==null || !code.matches("[A-Z][A-Z0-9_]{0,63}")) throw DomainException.invalid("A safe tutor failure code is required");
         tx.executeWithoutResult(status->{
             Stored row=lockWorker(ticket.ownerId(),ticket.id());
-            if(row.dispatched()!=null && ticket.token().equals(row.token()) && usage!=null) { settle(row,usage);row=raw(row.owner(),row.id()); }
+            if(row.dispatched()!=null && ticket.token().equals(row.token()) && usage!=null) { settle(row,usage,switch(code) {
+                case "TUTOR_PROVIDER_TRUNCATED" -> "length";
+                case "TUTOR_PROVIDER_REFUSED" -> "content_filter";
+                default -> null;
+            });row=raw(row.owner(),row.id()); }
             if(!sameExecution(row,ticket) || !ACTIVE.contains(row.status())) return;
             terminal(row,code.equals("INSUFFICIENT_EVIDENCE")?"INSUFFICIENT_EVIDENCE":"FAILED",code);
         });
@@ -331,9 +383,10 @@ public final class TutorService {
         if(((Number)row.get("request_count")).intValue()>=settings.dailyRequestLimit() || tokens>settings.dailyTokenLimit()-committed) throw new DomainException("TUTOR_QUOTA_EXCEEDED",429,"The UTC daily tutor request or token allowance is exhausted");
         jdbc.update("UPDATE tutor_daily_budget SET request_count=request_count+1,reserved_tokens=reserved_tokens+? WHERE user_id=? AND budget_date=?",tokens,owner.toString(),day);
     }
-    private void settle(Stored row,Usage usage) {
-        if(usage.promptTokens()<0 || usage.completionTokens()<0 || usage.totalTokens()<0 || usage.promptTokens()>settings.reservationTokens() || usage.completionTokens()>settings.maxOutputTokens()
-            || usage.totalTokens()>settings.reservationTokens() || usage.promptTokens()+usage.completionTokens()!=usage.totalTokens()) throw new TutorAnswerProvider.Failure("TUTOR_USAGE_INVALID");
+    private void settle(Stored row,Usage usage,String finishReason) {
+        long admitted=row.used()==null?row.reserved():row.used();
+        if(usage.promptTokens()<0 || usage.completionTokens()<0 || usage.totalTokens()<0 || usage.promptTokens()>admitted
+            || usage.completionTokens()>admitted || usage.totalTokens()>admitted || usage.promptTokens()+usage.completionTokens()!=usage.totalTokens()) throw new TutorAnswerProvider.Failure("TUTOR_USAGE_INVALID");
         if(row.used()!=null) {
             if(row.used()!=usage.totalTokens()) throw DomainException.conflict("Provider usage was already settled with a different value");
             return;
@@ -342,7 +395,10 @@ public final class TutorService {
         int changed=jdbc.update("UPDATE tutor_daily_budget SET reserved_tokens=reserved_tokens-?,used_tokens=used_tokens+? WHERE user_id=? AND budget_date=? AND reserved_tokens>=?",row.reserved(),usage.totalTokens(),row.owner().toString(),row.budgetDate(),row.reserved());
         if(changed!=1) throw new IllegalStateException("Tutor token reservation invariant failed");
         jdbc.update("UPDATE tutor_request_runtime SET reserved_tokens=0,used_tokens=?,billing_state='SETTLED' WHERE request_id=?",usage.totalTokens(),row.id().toString());
-        jdbc.update("UPDATE tutor_request SET usage_metrics=? WHERE id=?",json.write(Map.of("promptTokens",usage.promptTokens(),"completionTokens",usage.completionTokens(),"totalTokens",usage.totalTokens(),"source","PROVIDER_REPORTED")),row.id().toString());
+        var metrics=new java.util.LinkedHashMap<String,Object>(Map.of("promptTokens",usage.promptTokens(),
+            "completionTokens",usage.completionTokens(),"totalTokens",usage.totalTokens(),"source","PROVIDER_REPORTED"));
+        if(finishReason!=null) metrics.put("finishReason",finishReason);
+        jdbc.update("UPDATE tutor_request SET usage_metrics=? WHERE id=?",json.write(metrics),row.id().toString());
         events.append(row.workspace(),"TUTOR_USAGE_SETTLED","SERVER",Map.of("requestId",row.id(),"totalTokens",usage.totalTokens()));
     }
     private void terminal(Stored row,String status,String code) {

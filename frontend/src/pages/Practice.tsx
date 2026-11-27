@@ -158,9 +158,13 @@ export function Practice() {
 export function Question({
   exercise,
   onAttempt,
+  feedbackActions,
+  onDiscussHint,
 }: {
   exercise: Exercise;
   onAttempt: (attempt: Attempt) => void;
+  feedbackActions?: (attempt: Attempt) => React.ReactNode;
+  onDiscussHint?: (hint: string) => void;
 }) {
   const { workspace, session, refresh, navigate, can } = useWorkspace();
   const [options, setOptions] = useSessionDraft<string[]>(
@@ -302,6 +306,24 @@ export function Question({
             <p className="notice hint-content" role="status">
               {hint}
             </p>
+          )}
+          {hint && hintLevel > 0 && onDiscussHint && (
+            <button
+              className="text-button"
+              onClick={() =>
+                onDiscussHint(
+                  '这道题是「' +
+                    exercise.prompt +
+                    '」。我已查看第 ' +
+                    hintLevel +
+                    ' 级提示「' +
+                    hint +
+                    '」。请解释提示中的条件，让我自己完成作答。',
+                )
+              }
+            >
+              把这条提示带给导师
+            </button>
           )}
           <ErrorNotice error={hints.error} />
         </section>
@@ -453,6 +475,7 @@ export function Question({
               判分版本：{attempt.graderVersion}
             </p>
           )}
+          {attempt.status === 'GRADED' && feedbackActions?.(attempt)}
           {pending && <Loading label="作答已保存，正在排队核验；离开页面不会取消此任务。" />}
           {attempt.status === 'FAILED' && (
             <p className="notice warning">

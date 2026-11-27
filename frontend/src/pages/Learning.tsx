@@ -23,6 +23,7 @@ import { useMutation, useResource, useSessionDraft } from '../hooks';
 import { Confirmed, Empty, ErrorNotice, EvidenceList, Loading } from '../components/ui';
 import { ConceptMap } from '../components/ConceptMap';
 import { ClassroomExport } from '../components/ClassroomExport';
+import { CoursewareExperiment, type ExperimentLink } from '../components/CoursewareExperiment';
 import { PersonalLesson } from '../components/PersonalLesson';
 import { CourseExamples } from '../components/CourseExamples';
 import { LessonPractice } from '../components/LessonPractice';
@@ -35,8 +36,8 @@ import type { Concept, Evidence } from '../types';
 const LessonPlayer = lazy(() => import('../components/MaicLessonPlayer'));
 const Workshop = lazy(() => import('./Agents').then(({ Agents }) => ({ default: Agents })));
 const scenes = [
-  ['read', '课程阅读', BookOpen],
-  ['practice', '随堂练习', CheckSquare],
+  ['read', '本节学练', BookOpen],
+  ['practice', '本节题库', CheckSquare],
   ['lab', '代码实验', FlaskConical],
   ['review', '本节复盘', RotateCcw],
   ['workshop', '协作创作', Workflow],
@@ -74,6 +75,11 @@ export function Learning() {
     can('LEARNING_PATH') ? `/workspaces/${workspace.id}/learning-path` : null,
     tick,
   );
+  const [experimentLink, setExperimentLink] = useSessionDraft<ExperimentLink | null>(
+    'tf.lesson-experiment.' + scope,
+    null,
+  );
+  const [resumeExperiment, setResumeExperiment] = useState<ExperimentLink | null>(null);
   const [lastConcept, remember] = useSessionDraft('tf.classroom.last.' + scope, '');
   const [helperOpen, setHelper] = useSessionDraft(
     'tf.classroom.tutor.' + scope,
@@ -107,6 +113,7 @@ export function Learning() {
   const mutation = useMutation();
   const archive = useMutation();
   const tutorButton = useRef<HTMLButtonElement>(null);
+  const discussionOrigin = useRef<HTMLElement | null>(null);
   const helperHeading = useRef<HTMLHeadingElement>(null);
   const helperFocused = useRef(false);
   const stage = useRef<HTMLDivElement>(null);
@@ -133,6 +140,9 @@ export function Learning() {
         : 'source';
   const discuss = (text: string, attempt?: string) => {
     if (!chosen) return;
+    discussionOrigin.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (attempt) setAttempt({ conceptId: chosen.id, id: attempt });
     setDiscussion({ lessonId: chosen.id, text, attemptId: attempt, id: crypto.randomUUID() });
     setHelper(true);
   };
@@ -174,7 +184,9 @@ export function Learning() {
   };
   const closeHelper = () => {
     setHelper(false);
-    tutorButton.current?.focus();
+    const origin = discussionOrigin.current;
+    (origin?.isConnected ? origin : tutorButton.current)?.focus();
+    discussionOrigin.current = null;
   };
   const follow = (step: PathStep) =>
     open(
@@ -479,6 +491,19 @@ export function Learning() {
                           concept={chosen}
                           scope={scope}
                           onDiscuss={discuss}
+                          onAttempt={(attempt) =>
+                            setAttempt({ conceptId: chosen.id, id: attempt.id })
+                          }
+                          onExperiment={(planId, sceneKey) => {
+                            setExperimentLink({ conceptId: chosen.id, planId, sceneKey });
+                            setResumeExperiment(null);
+                            open(chosen.id, 'lab');
+                          }}
+                          resumeActivity={
+                            resumeExperiment?.conceptId === chosen.id
+                              ? resumeExperiment.sceneKey
+                              : undefined
+                          }
                           refreshAfterAttempt={
                             refreshAttempt?.conceptId === chosen.id ? refreshAttempt.id : undefined
                           }
@@ -523,9 +548,11 @@ export function Learning() {
                         >
                           {read.includes(chosen.id) ? '已记录阅读' : '记录已读'}
                         </button>
-                        <button className="primary" onClick={() => open(chosen.id, 'practice')}>
-                          练习这一概念 <ArrowRight size={16} />
-                        </button>
+                        {view !== 'personal' && (
+                          <button className="primary" onClick={() => open(chosen.id, 'practice')}>
+                            练习这一概念 <ArrowRight size={16} />
+                          </button>
+                        )}
                       </div>
                       <ErrorNotice error={mutation.error} />
                       {read.includes(chosen.id) && <Confirmed>服务端已记录本次阅读。</Confirmed>}
@@ -563,7 +590,23 @@ export function Learning() {
                       )}
                     </>
                   )}
-                  {scene === 'lab' && <Lab initialConceptCode={chosen.code} />}
+                  {scene === 'lab' &&
+                    (experimentLink?.conceptId === chosen.id ? (
+                      <CoursewareExperiment
+                        link={experimentLink}
+                        workspaceId={workspace.id}
+                        concept={chosen}
+                        onDiscuss={can('TUTOR_EVIDENCE_ONLY') ? discuss : undefined}
+                        onReturn={() => {
+                          setResumeExperiment(experimentLink);
+                          setSurface({ id: chosen.id, view: 'personal' });
+                          open(chosen.id, 'read');
+                        }}
+                        onOpenLab={() => setExperimentLink(null)}
+                      />
+                    ) : (
+                      <Lab initialConceptCode={chosen.code} onDiscuss={discuss} />
+                    ))}
                   {scene === 'review' && <ProgressPage lesson={chosen} />}
                   {scene === 'workshop' && (
                     <Suspense fallback={<Loading />}>

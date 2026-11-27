@@ -388,7 +388,18 @@ export interface TutorRequest {
 }
 
 export type CoursewareApproach = 'AUTO' | 'EXAMPLE_FIRST' | 'GUIDED' | 'CHALLENGE';
+export interface CoursewareBrief {
+  interest: string;
+  requirements: string;
+}
 export interface CoursewareScene {
+  selfCheck?: {
+    options: string[];
+    answerIndex: number;
+    explanation: string;
+    javaSource?: string;
+  } | null;
+  portable?: { title: string; body: string; prompt: string | null } | null;
   key: string;
   kind: 'READ' | 'PREDICT' | 'EXAMPLE' | 'PRACTICE' | 'REFLECT';
   title: string;
@@ -403,6 +414,7 @@ export interface CoursewareScene {
   attemptId: string | null;
 }
 export interface PersonalCourseware {
+  brief?: CoursewareBrief | null;
   id: string;
   workspaceId: string;
   releaseId: string;

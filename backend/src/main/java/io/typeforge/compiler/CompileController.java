@@ -23,6 +23,13 @@ public final class CompileController {
         return compiler.create(owner(principal),UUID.fromString(input.path("workspaceId").asText()),UUID.fromString(input.path("releaseId").asText()),input.path("source").asText(),input.path("mode").asText(),input.path("language").asText("JAVA"),input.path("stdin").asText(""),key);
     }
     @GetMapping("/compile-jobs/{id}") public CompileService.Job get(Principal principal,@PathVariable UUID id){return compiler.get(owner(principal),id);}
+    @GetMapping("/compile-jobs/{id}/debrief")
+    public CompileDebrief.Review debrief(Principal principal, @PathVariable UUID id, @RequestParam(required=false) UUID previousJobId) {
+        UUID user = owner(principal);
+        var current = compiler.get(user, id);
+        var previous = previousJobId == null ? null : compiler.get(user, previousJobId);
+        return CompileDebrief.from(current, previous);
+    }
     @GetMapping("/workspaces/{id}/compile-jobs") public List<CompileService.Job> list(Principal principal,@PathVariable UUID id){return compiler.list(owner(principal),id);}
     @PostMapping("/compile-jobs/{id}/cancel") public CompileService.Job cancel(Principal principal,@PathVariable UUID id,@RequestHeader("Idempotency-Key") String key){return compiler.cancel(owner(principal),id,key);}
 }

@@ -10,13 +10,15 @@
 
 同一章可以为不同学生生成不同的讲义。第一次学习从基本规则和预测开始；先看代码的偏好会把同学的实例提前；有错答时课件带学生回到那次判分并安排变式。可以在课堂里继续生成、翻阅和编辑对应的讲解幻灯片，刷新后恢复这个版本的任务。实现、检查项目与上游对照见[个性化教学清单](docs/26-personal-courseware.md)。
 
+在当前课件点「调整兴趣与要求」可填写兴趣和具体要求。同一节泛型课可以用篮球阵容讲如何安全写入，也可以用天文观测星表研究编译反例；课内自测和正式练习共用一个课堂。代码实验可以比较两次真实运行，再带着观察结果找导师。实现和逐项验收见[兴趣课件与学练一体](docs/27-interest-led-classroom.md)。
+
 从源码构建后，或在通过的 [GitHub Actions](https://github.com/hxjyaohaohaode/java-xuexi/actions/workflows/baseline.yml) 下载并解压 `TypeForge-classroom`，在装有 Java 17、Python 3 和 Docker Engine 的 Linux 或 WSL2 环境，从解压根目录运行以下命令。启动器构建专用运行镜像，核实 Java 17 和 Python 就绪，再同时启动隔离 worker 与演示应用。如何配置证据导师或模型服务见 [后端说明](backend/README.md)。
 
 ```sh
 python3 workers/compiler/start_workbench.py backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar
 ```
 
-[桌面课堂实测截图](docs/images/classroom-desktop.webp) · [手机课件与 Java 代码实测截图](docs/images/classroom-mobile.webp)
+[桌面课堂实测截图](docs/images/classroom-desktop.webp) · [手机个性化讲义与随页练习实测截图](docs/images/classroom-mobile.webp)
 
 ## 同学拉取后先看这里
 
@@ -94,4 +96,4 @@ python scripts/smoke_runtime.py --profile h2
 
 MySQL、浏览器、模型协议和重启检查的实际命令与环境见验收记录。测试脚本使用专用验证数据，不接入个人生产数据库。新增功能先更新真实实现和契约，再刷新索引、字典、消费者及验证；不要只修改能力标签。
 
-已清理旧基线报告、过时研究副本和分版本字段字典，历史可从 Git 取回。**V001–V017 是升级链，必须保留**；删除或修改已应用的迁移会破坏同学现有数据库。AI 协助过程如实记录在 [ai-context.md](evidence/ai-context.md)，两位学生后续的审阅、修改和贡献另行记录。
+已清理旧基线报告、过时研究副本和分版本字段字典，历史可从 Git 取回。**V001–V018 是升级链，必须保留**；删除或修改已应用的迁移会破坏同学现有数据库。AI 协助过程如实记录在 [ai-context.md](evidence/ai-context.md)，两位学生后续的审阅、修改和贡献另行记录。

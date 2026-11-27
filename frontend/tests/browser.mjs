@@ -534,7 +534,7 @@ try {
   await check(
     'two learners receive different teaching scenes, real feedback reshapes the next lesson and private courseware produces recoverable slides',
     async () => {
-      personalCourseware = await verifyPersonalCourseware(browser, base, monitor);
+      personalCourseware = await verifyPersonalCourseware(browser, base, monitor, capturePage);
     },
   );
   await check(
@@ -546,7 +546,7 @@ try {
   await check(
     'wrong answer creates evidence notebook, real hints and an assisted new attempt',
     async () => {
-      await page.getByRole('link', { name: '练习与反馈', exact: true }).click();
+      await page.getByRole('link', { name: '题库与作答记录', exact: true }).click();
       await page
         .locator('.exercise-nav')
         .filter({ hasText: 'Java17中哪种数组创建表达式合法？' })
@@ -643,7 +643,7 @@ try {
       const previous = await (
         await context.request.get(`${base}/api/v1/workspaces/${workspaceA}/attempts`)
       ).json();
-      await page.getByRole('link', { name: '练习与反馈', exact: true }).click();
+      await page.getByRole('link', { name: '题库与作答记录', exact: true }).click();
       await page
         .locator('.exercise-nav')
         .filter({ hasText: '关于@SafeVarargs，下列哪项正确？' })
@@ -802,7 +802,7 @@ try {
     );
     await page.getByRole('heading', { name: '作品不在当前工作空间', exact: true }).waitFor();
     assert.equal(await page.locator('.editor-heading').count(), 0);
-    await page.getByRole('link', { name: '练习与反馈', exact: true }).click();
+    await page.getByRole('link', { name: '题库与作答记录', exact: true }).click();
     await page
       .getByText('尚未收到作答记录。完成一题后，反馈与错题集入口会出现在这里。', { exact: true })
       .waitFor();

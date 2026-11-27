@@ -72,3 +72,158 @@
 .maic-discussion button {
   justify-self: start;
 }
+.maic-sheet {
+  min-width: 0;
+  container: lesson-sheet / inline-size;
+}
+.maic-reading-copy {
+  display: none;
+}
+@container lesson-sheet (max-width: 520px) {
+  .personal-sheet > .maic-canvas {
+    display: none;
+  }
+  .maic-reading-copy {
+    display: block;
+    padding: 1.2rem clamp(0.75rem, 4cqi, 1.4rem);
+    border-block: 1px solid var(--line);
+    overflow-wrap: anywhere;
+  }
+  .maic-reading-copy h3 {
+    margin: 0 0 0.6rem;
+    font-size: 1.2rem;
+    line-height: 1.35;
+  }
+  .maic-reading-copy p,
+  .maic-reading-copy pre {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
+  }
+}
+.lesson-settings-bar,
+.lesson-plan-footer,
+.receipt-followup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+}
+.lesson-settings-bar > div {
+  display: grid;
+  gap: 0.15rem;
+}
+.lesson-settings-bar > div {
+  min-width: 0;
+}
+.brief-summary {
+  overflow-wrap: anywhere;
+  font-size: 0.95rem;
+}
+.lesson-settings-bar strong {
+  font-size: 0.94rem;
+}
+.lesson-brief,
+.scene-check,
+.lesson-inline section {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+  padding-block: 0.85rem;
+}
+.lesson-brief label {
+  display: grid;
+  gap: 0.3rem;
+  font-weight: 600;
+}
+.lesson-brief small {
+  margin-top: -0.4rem;
+}
+.lesson-brief input,
+.lesson-brief textarea,
+.lesson-brief select {
+  width: 100%;
+  min-width: 0;
+  font-weight: normal;
+  font-size: 1rem;
+}
+.lesson-inline,
+.scene-check {
+  border-block-start: 1px solid var(--line);
+  padding-top: 0.75rem;
+}
+.lesson-inline h3 {
+  margin: 0.2rem 0;
+  font-size: 1.08rem;
+}
+.lesson-inline .question-card {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
+.scene-check fieldset {
+  display: grid;
+  gap: 0.25rem;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.scene-check legend {
+  font-weight: 650;
+}
+.scene-check label {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  overflow-wrap: anywhere;
+}
+.scene-check input {
+  width: 1rem;
+  flex: none;
+}
+.scene-check > button {
+  justify-self: start;
+}
+.check-explanation {
+  border-inline-start: 2px solid var(--accent);
+  padding-inline-start: 0.8rem;
+}
+.lesson-settings button,
+.lesson-inline button,
+.lesson-plan-footer summary,
+.personal-export summary,
+.scene-check button,
+.maic-lesson button,
+.maic-controls select {
+  min-height: 44px;
+}
+.lesson-plan-footer summary,
+.personal-export summary {
+  align-content: center;
+}
+.maic-counter {
+  min-width: 3em;
+  text-align: center;
+}
+.receipt-followup {
+  justify-content: flex-start;
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-reduced-motion='true'])
+    :is(.lesson-brief, .check-explanation, .lesson-inline section) {
+    animation: lesson-reveal 160ms ease-out;
+  }
+}
+@keyframes lesson-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

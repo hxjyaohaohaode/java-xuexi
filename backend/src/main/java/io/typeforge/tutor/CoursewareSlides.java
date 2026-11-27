@@ -27,9 +27,12 @@ final class CoursewareSlides {
             }
         }
         int supplement=0;
+        boolean reviewedActivity=mode==TutorService.Mode.MODEL && ReviewedApplication.from(edition).isPresent();
         for (var expert:expertSlides.path("slides")) {
             var page=(com.fasterxml.jackson.databind.node.ObjectNode)expert.deepCopy();
-            page.put("title",(mode==TutorService.Mode.MODEL?"模型补充讲解 · 待核对 ":"课程证据讲解 ")+(++supplement));
+            supplement++;
+            if(reviewedActivity) page.put("title","教学活动 · "+expert.path("title").asText());
+            else page.put("title",(mode==TutorService.Mode.MODEL?"模型补充讲解 · 待核对 ":"课程证据讲解 ")+supplement);
             pages.add(page);
         }
         if (pages.size()>80) throw new DomainException("STUDY_SLIDE_LIMIT",422,"This lesson exceeds the editable slide limit");

@@ -15,5 +15,6 @@
   "V014__batch_ingestion.sql": "6205d51a25f15fa41d60fb9e77069f0f4f9f3d8215940c438653aa31e32f8efe",
   "V015__learning_context_checkpoints.sql": "3614a625e2aa3dde2d4f66fe8a05e687cd85a2ca77efdd9cb7bd48e372bfa6a0",
   "V016__personal_courseware.sql": "88c65a3d3e7510f3d5508b6920d66f10e460691eb1c2ea06a56f04f2d55d9dfd",
-  "V017__courseware_study_runs.sql": "7a9c7fd7efd284a7d49ed1a3f5bc38f97e99a497068e20112f6dde76d49b1288"
+  "V017__courseware_study_runs.sql": "7a9c7fd7efd284a7d49ed1a3f5bc38f97e99a497068e20112f6dde76d49b1288",
+  "V018__teaching_review_edits.sql": "7f1288e163fc78869ae389a4daa8dea538e0d943f0dc4f512d565646d9852421"
 }

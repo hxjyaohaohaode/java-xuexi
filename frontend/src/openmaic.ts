@@ -254,7 +254,19 @@ export function buildMaicArchive(
   now = Date.now(),
   personal?: PersonalCourseware,
 ) {
-  const { stage, scenes, sources, examples } = buildMaicLesson(concept, now, personal);
+  // A private interest or instruction may appear in any part of an application scene, including its discussion.
+  const shareable = personal && {
+    ...personal,
+    brief: undefined,
+    title: concept.title,
+    scenes: personal.scenes.map((scene) => {
+      if (scene.portable) return { ...scene, ...scene.portable, selfCheck: undefined, portable: undefined };
+      if (scene.key.startsWith('application') || scene.selfCheck)
+        throw Error('这页缺少可分享的讲义，无法导出。请更新课件后重试。');
+      return scene;
+    }),
+  };
+  const { stage, scenes, sources, examples } = buildMaicLesson(concept, now, shareable);
   const manifest = {
     formatVersion: 1,
     exportedAt: new Date(now).toISOString(),

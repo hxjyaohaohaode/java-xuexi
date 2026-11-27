@@ -433,7 +433,7 @@ it('connects the rendered workspace learning, notebook, artifact, tutor and inva
     await screen.findByText('服务端已记录本次阅读。', {}, { timeout: 25000 });
   });
   await step('wrong attempt -> notebook source -> real hints and assisted reattempt', async () => {
-    await user.click(screen.getByRole('link', { name: '练习与反馈' }));
+    await user.click(screen.getByRole('link', { name: '题库与作答记录' }));
     await user.click(await find('button', /Java17中哪种数组创建表达式合法/));
     await user.click(await screen.findByLabelText(/new List<String>\[2\]/));
     expect(document.querySelectorAll('.question-card input:checked')).toHaveLength(1);
@@ -491,7 +491,7 @@ it('connects the rendered workspace learning, notebook, artifact, tutor and inva
       const previous: Attempt[] = await (
         await fetch(`/api/v1/workspaces/${workspaceA}/attempts`)
       ).json();
-      await user.click(screen.getByRole('link', { name: '练习与反馈' }));
+      await user.click(screen.getByRole('link', { name: '题库与作答记录' }));
       await user.click(await find('button', /关于@SafeVarargs，下列哪项正确/));
       const receivedHints: Record<string, unknown>[] = [];
       for (const level of [1, 2, 3]) {
@@ -807,7 +807,7 @@ it('connects the rendered workspace learning, notebook, artifact, tutor and inva
         ),
       { timeout: 25000 },
     );
-    await user.click(screen.getByRole('link', { name: '练习与反馈' }));
+    await user.click(screen.getByRole('link', { name: '题库与作答记录' }));
     await screen.findByText('尚未收到作答记录。完成一题后，反馈与错题集入口会出现在这里。');
     expect(document.querySelector('.history-row')).toBeNull();
     await user.selectOptions(screen.getByLabelText('当前工作空间'), workspaceA);

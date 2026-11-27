@@ -194,7 +194,9 @@ def main():
     personal = observations.get('personalCourseware', {})
     require(personal.get('ordinary') == 'FOUNDATION' and personal.get('preference') == 'EXAMPLE_FIRST'
             and personal.get('feedback') == 'REPAIR' and personal.get('studyOutput') == 'SLIDES'
-            and all(personal.get(key) is True for key in ('readableFeedback','publicExportIsolated','privateExportAuthorized')),
+            and personal.get('personalizedProfiles') == 2
+            and all(personal.get(key) is True for key in ('readableFeedback','publicExportIsolated','privateExportAuthorized',
+                                                         'inPlaceGradingAndTutor','interestCheckAndWithdrawal')),
             'Graphical browser did not demonstrate differentiated lessons, private export and linked slide production')
     frontend['personalCourseware'] = personal
     frontend['graphicalBrowser'] = {'localStatus': 'PASS', 'results': browser_cases,
@@ -312,7 +314,7 @@ python scripts/record_verification.py --check-snapshot
 
 真实供应商模型的教学效果、费用账单、通用任意工具调度、隔离编译服务的生产部署、生成式图像/音频/视频、全课程人工审核、生产负载与备份恢复、正式答辩和个人贡献均不在本轮PASS范围内。Docker 上的 Java/Python 运行和浏览器提交结果由 GitHub Actions 独立记录。逐模块剩余事项及代码入口见 [接手指南](../docs/02-modules.md)。最终40项课程验收保持独立，不因自动测试通过而自动升级。
 
-旧基线报告和重复字段字典已清理；历史保留在Git。V001–V017为合法升级链，由 `database/migrations.lock.json`锁定，不能为清理旧版本而删除。
+旧基线报告和重复字段字典已清理；历史保留在Git。V001–V018为合法升级链，由 `database/migrations.lock.json`锁定，不能为清理旧版本而删除。
 '''
     (ROOT/REVIEW).write_text(review,encoding='utf-8')
     print(json.dumps({'result':'PASS','javaTests':totals['tests'],'frontendTests':unit['numTotalTests'],'sourceFiles':current['fileCount'],'sourceDigest':current['digest']},indent=2))

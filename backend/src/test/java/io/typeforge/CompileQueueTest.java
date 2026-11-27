@@ -176,6 +176,35 @@ class CompileQueueTest {
         assertEquals(503,assertThrows(DomainException.class,()->learning.submit(owner,workspace,RELEASE,exercise,1,tree(Map.of("kind","CODE","source",SOURCE)),key())).status());
         assertTrue(learning.list(owner,workspace).isEmpty());assertTrue(compiler.list(owner,workspace).isEmpty());
     }
+    @Test void debriefPinsAPublicFinishedReceiptAndComparesOnlyWithinItsWorkspace() throws Exception {
+        String username = jdbc.queryForObject("SELECT username FROM app_user WHERE id=?",String.class,owner.toString());
+        var session = HttpSessionFixture.login(mvc,json,username,"fixture-strong-password-123");
+        var first = submit(SOURCE,key());
+        String firstUrl = "/api/v1/compile-jobs/" + first.id() + "/debrief";
+        assertEquals(409,mvc.perform(get(firstUrl).session(session)).andReturn().getResponse().getStatus());
+        var ticket = compiler.claimNext();
+        compiler.accept(ticket,result(ticket,List.of()));
+        var second = submit(SOURCE + "\n// revised",key());
+        ticket = compiler.claimNext();
+        compiler.accept(ticket,result(ticket,List.of()));
+        String url = "/api/v1/compile-jobs/" + second.id() + "/debrief";
+        var response = mvc.perform(get(url).param("previousJobId",first.id().toString()).session(session)).andReturn().getResponse();
+        assertEquals(200,response.getStatus());
+        var review = json.tree(response.getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+        schemas.validate("CompileDebrief",review);
+        assertEquals(second.sourceHash(),review.path("sourceHash").asText());
+        assertEquals("COMPILE",review.path("phase").asText());
+        assertFalse(review.path("comparison").path("sameSource").asBoolean());
+        assertFalse(review.toString().contains(SOURCE));
+        var otherWorkspace = workspaces.create(owner,RELEASE,"Another classroom","ON_DEMAND",key()).id();
+        var other = compiler.create(owner,otherWorkspace,RELEASE,SOURCE,"COMPILE_ONLY",key());
+        assertEquals(404,mvc.perform(get(url).param("previousJobId",other.id().toString()).session(session)).andReturn().getResponse().getStatus());
+        compiler.cancel(owner,other.id(),key());
+        UUID foreign = account();
+        String foreignName = jdbc.queryForObject("SELECT username FROM app_user WHERE id=?",String.class,foreign.toString());
+        var stranger = HttpSessionFixture.login(mvc,json,foreignName,"fixture-strong-password-123");
+        assertEquals(404,mvc.perform(get(url).session(stranger)).andReturn().getResponse().getStatus());
+    }
     @Test void actualAuthenticatedHttpRejectsCsrfForgeryAndPrivateAttemptLinkage() throws Exception {
         String username=jdbc.queryForObject("SELECT username FROM app_user WHERE id=?",String.class,owner.toString());
         var session=HttpSessionFixture.login(mvc,json,username,"fixture-strong-password-123");

@@ -164,6 +164,10 @@ class StudyModelWorkflowTest {
             // Also reproduces the observed failure: a normal tutor explanation returned to a planner.
             payload=(ObjectNode)json.tree(json.write(Map.of("answer",answer,"limitations","Loopback protocol fixture.")));
         }
+        if(request.at("/messages/0/content").asText().contains("REVIEW_EDITS_V2")) {
+            var revisions=payload.putObject("revisions");
+            for(var handoff:user(request).path("handoffs")) revisions.put(handoff.path("step").asText(),"");
+        }
         payload.putArray("citedChunkIds").add(citation);
         String content=json.write(payload);
         var body=new LinkedHashMap<String,Object>();
@@ -175,6 +179,55 @@ class StudyModelWorkflowTest {
         var run=runtime.get(owner,workspace,runId);assertEquals(used,run.spentTokens());assertEquals(reserved,run.reservedTokens());
         var daily=jdbc.queryForMap("SELECT used_tokens,reserved_tokens FROM tutor_daily_budget WHERE user_id=?",owner.toString());
         assertEquals(used,((Number)daily.get("used_tokens")).longValue());assertEquals(reserved,((Number)daily.get("reserved_tokens")).longValue());
+    }
+
+    @Test void reviewerReadsFullDraftAndFinalArtifactsApplyItsVersionedCorrection() {
+        String wrong="WRONG_TYPE_RULE_".repeat(90)+"END_OF_ORIGINAL_DRAFT";
+        String correction="审阅修订：List<Integer> 与 List<Number> 不存在子类型关系。";
+        reply.set(request->{
+            if(question(request).contains("教学分工：CONCEPT")) return wire(request,wrong,true);
+            var response=(ObjectNode)json.tree(validResponse(request));
+            if(question(request).contains("独立于初稿")) {
+                var documents=user(request).path("handoffs");
+                var handoff=java.util.stream.StreamSupport.stream(documents.spliterator(),false)
+                    .filter(item->item.path("excerpt").asText().equals(wrong)).findFirst().orElseThrow();
+                var message=(ObjectNode)response.at("/choices/0/message");
+                var answer=(ObjectNode)json.tree(message.path("content").asText());
+                ((ObjectNode)answer.path("revisions")).put(handoff.path("step").asText(),correction);
+                message.put("content",json.write(answer));
+            }
+            return json.write(response);
+        });
+        var run=drain(start().id());
+        assertEquals("COMPLETED",run.status(),json.write(run));
+        for(var step:run.steps()) {
+            if(step.key().startsWith("output-")) {
+                var ref=step.outputRefs().get(0);
+                var revision=artifacts.validateCurrentInputs(owner,ref.id(),ref.revision());
+                assertTrue(revision.content().toString().contains(correction));
+                assertFalse(revision.content().toString().contains("WRONG_TYPE_RULE"));
+                assertEquals(3,revision.inputRefs().stream().filter(r->r.kind().equals("ARTIFACT")).count());
+            }
+        }
+        assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM tutor_message WHERE answer=?",Integer.class,wrong));
+        assertEquals(4,calls.get());assertLedger(4*USED_TOKENS,0,run.id());
+    }
+
+    @Test void foreignReviewTargetIsRejectedWithKnownBillingAndNoComposedFile() {
+        reply.set(request->{
+            var response=(ObjectNode)json.tree(validResponse(request));
+            if(question(request).contains("独立于初稿")) {
+                var message=(ObjectNode)response.at("/choices/0/message");
+                var answer=(ObjectNode)json.tree(message.path("content").asText());
+                ((ObjectNode)answer.path("revisions")).put("foreign-expert","替换越权");
+                message.put("content",json.write(answer));
+            }
+            return json.write(response);
+        });
+        var run=drain(start().id());
+        assertFalse(run.status().equals("COMPLETED"));assertEquals(4,calls.get());assertLedger(4*USED_TOKENS,0,run.id());
+        assertTrue(run.steps().stream().filter(s->s.key().startsWith("output-")).allMatch(s->s.outputRefs().isEmpty()));
+        assertTrue(runtime.events(owner,workspace,run.id(),0,100).stream().anyMatch(e->json.write(e).contains("STUDY_REVIEW_EDITS_INVALID")));
     }
 
     @Test void realModelProtocolTraversesPlannerSpecialistsReviewAndEditableOutputs() {
@@ -189,7 +242,7 @@ class StudyModelWorkflowTest {
         assertFalse(planningInput.has("recentUserQuestions"));
         assertFalse(planningInput.path("learnerContext").toString().contains("GOAL"));
         for(var card:planningInput.path("publishedEvidence")) {
-            assertEquals(3,card.size());assertTrue(card.path("excerpt").asText().length()<=110);
+            assertEquals(3,card.size());assertTrue(card.path("excerpt").asText().length()<=600);
             assertTrue(card.has("chunkId") && card.has("title"));
             assertFalse(card.has("releaseId") || card.has("contentHash"));
         }

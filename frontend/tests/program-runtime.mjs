@@ -71,7 +71,10 @@ try {
   const capabilities = await page.request.get(base + '/api/v1/capabilities');
   assert.equal(capabilities.status(), 200);
   assert.ok((await capabilities.json()).enabled.includes('UNTRUSTED_CODE_EXECUTION'));
-  await page.locator('.classroom-stage').getByRole('button', { name: '代码实验', exact: true }).click();
+  await page
+    .locator('.classroom-stage')
+    .getByRole('button', { name: '代码实验', exact: true })
+    .click();
   assert.match(page.url(), /scene=lab/);
   const pane = page.getByRole('region', { name: '代码工作台' });
   const mode = pane.getByLabel('语言和任务');
@@ -91,6 +94,7 @@ try {
     ['RUN_JAVA', 'Main.java', raw.code, '', raw.stdout + '\n', raw.warning],
     ['RUN_PYTHON', 'main.py', 'print(input().upper())', 'a学习', 'A学习\n'],
   ];
+  let firstJavaJob;
   for (const [language, label, source, stdin, expected, warning] of cases) {
     await mode.selectOption(language);
     await pane.getByLabel(label).fill(source);
@@ -114,10 +118,26 @@ try {
       );
       await pane.locator('.diagnostic-list').getByText(warning, { exact: true }).first().waitFor();
     }
+    await pane.getByText('复盘这次代码运行', { exact: true }).click();
+    const review = pane.locator('.run-debrief');
+    await review.getByText('下一次实验', { exact: true }).waitFor();
+    const phase = (
+      await (await page.request.get(base + '/api/v1/compile-jobs/' + id + '/debrief')).json()
+    ).phase;
+    assert.equal(phase, warning ? 'TYPE_WARNING' : 'RUN');
+    if (warning) {
+      await review.getByLabel('对照另一次运行').selectOption(firstJavaJob);
+      await review.getByText(/源码已改变/).waitFor();
+      report.comparedRealJavaRuns = true;
+    }
+    const tutorLink = review.getByRole('button', { name: '带着这次结果问导师' });
+    await tutorLink.waitFor();
+    if (language === 'RUN_JAVA' && !warning) firstJavaJob = id;
     report.cases.push({
       language: saved.language,
       mode: saved.mode,
       toolchain: saved.runtimeVersion,
+      debriefPhase: phase,
       status: saved.status,
     });
   }
@@ -125,6 +145,12 @@ try {
   await pane.locator('pre.compiler-output').filter({ hasText: 'A学习' }).waitFor();
   assert.equal(await pane.getByLabel('main.py').inputValue(), 'print(input().upper())');
   report.restoredDraftAndOutput = true;
+  await pane.getByText('复盘这次代码运行', { exact: true }).click();
+  await pane.getByRole('button', { name: '带着这次结果问导师' }).click();
+  const question = await page.getByLabel('输入你的问题').inputValue();
+  assert.match(question, /Python 实验（源码摘要 [0-9a-f]{12}）/);
+  assert.match(question, /验证步骤/);
+  report.openedTutorDraftFromReceipt = true;
   report.result = 'PASS';
 } finally {
   if (browser) await browser.close();

@@ -3,7 +3,7 @@
 本轮课堂改造、两份发布与上游互通详见[逐项需求与验收清单](25-integrated-classroom.md)。新增的本人学习路径、课堂现场、OpenMAIC 站内播放与可移植场景、Harness 插件、Java/Python 隔离运行和课内样例分别覆盖 M02/M04/M05/M06/M09/M13/M14/M15。本页的 v0.6 基线用于追溯。
 
 
-个人课件与 Agent 的具体改动及相应验收见[个性化教学清单](26-personal-courseware.md)。本文件是继续开发的主入口。**当前为 v0.6 联动学习工作台：134 个公开操作都有实际路由实现，当前没有仅占位的 planned 操作。** 具体请求、响应和操作状态由[契约索引](../contracts/README.md)生成；最后一次真实运行结果见[验收记录](../evidence/runtime-review.md)。接口实现数量不等于完整产品完成率，运行时仍明确 `businessReady=false`。
+个人课件与 Agent 的具体改动及相应验收见[个性化教学清单](26-personal-courseware.md)。本文件是继续开发的主入口。**当前为 v0.6 联动学习工作台：135 个公开操作都有实际路由实现，当前没有仅占位的 planned 操作。** 具体请求、响应和操作状态由[契约索引](../contracts/README.md)生成；最后一次真实运行结果见[验收记录](../evidence/runtime-review.md)。接口实现数量不等于完整产品完成率，运行时仍明确 `businessReady=false`。
 
 `contracts/modules.json` 的 `partial` 表示模块已有实际子能力、产品范围仍有剩余。M11 已有真实私有检索评测工作台；其标签来自套件所有者，仍不代表独立教学实验或真人贡献认定。A/B 是待两位真实成员认领的职责标签，不能当作已发生的个人贡献。外部模型和编译 worker 必须按部署能力启用，不能用协议夹具冒充真实服务验收。
 
@@ -22,7 +22,7 @@
 | M09 教学专家 | 持久会话/请求、EVIDENCE_ONLY 整理、显式配置 HTTP 模型；快照/租约/取消/配额/未知用量；回答转 DRAFT；教学工作流复用独立专家与审阅请求；模型提示与回答保留同概念的课程审订依据，供学生对照；原始回答与固定课证分别显示 | 真实外部模型教学质量、供应商兼容性与账单验收；任意工具调用和独立人工事实核验 | `tutor/TutorService`、`TutorWorker`、`StudyWorkflowService`、`TutorDocumentService` |
 | M10 编辑审核与发布 | 图形内容工作台贯通来源、知识/题目草稿、编译题 rubric、独立审核、固定 hash、发布 CAS、历史激活与审计；知识/练习私有规则修订对比 | 批量审阅、完整人工课程覆盖、发布前自动教学评测集 | `publishing/ContentDraftService`、`ReleaseWorkbenchService`、前端 `Content` |
 | M11 协作评测与答辩 | 私有评测套件与不可变修订、持久队列/取消/租约；真实 BM25 Recall/MRR/Precision/空结果指标、逐项证据及 JSON 报告；文件型运行证据与 AI 协作说明 | 多人协作评测、独立人工 gold set、真实教学对照、两位成员可核验贡献和最终答辩材料 | Java `evidence/EvaluationService`、`EvaluationWorker`；前端 `Evaluation` |
-| M12 运行与安全 | V001–V017 升级链、错误与跟踪号边界、真实 health/capabilities、顺序 outbox、认证限流；管理员聚合队列与当前进程延时直方图；独立 MySQL 和 HTTP 重启验证入口 | 生产负载/SLO、告警、备份与恢复演练、完整隐私保留/擦除与运营流程 | `operations/`、`scripts/`、GitHub Actions |
+| M12 运行与安全 | V001–V018 升级链、错误与跟踪号边界、真实 health/capabilities、顺序 outbox、认证限流；管理员聚合队列与当前进程延时直方图；独立 MySQL 和 HTTP 重启验证入口 | 生产负载/SLO、告警、备份与恢复演练、完整隐私保留/擦除与运营流程 | `operations/`、`scripts/`、GitHub Actions |
 | M13 专家编排与运行 | 持久 DAG、24 节点/3 并行、epoch/lease、预算和暂停/恢复/取消；EVIDENCE_ONLY 或已配置 MODEL 的受限 planner → 1–3 项 expert → review → DRAFT 链；按目标及已准入的作答选择专家，接收方与交接依赖同时记录；Harness 插件在官方工具服务中注册两个课内只读能力 | 任意工具的通用自治、动态权限与跨媒介调度、独立多专家质量对照、外部计费对账 | `orchestration/DurableAgentRuntime`、`PlanValidator`、`tutor/StudyWorkflowService` |
 | M14 多模态作品工坊 | DSL 版本和传递来源；文档编辑、幻灯片画布/尺寸/键盘与预览；真实 MD/HTML/SVG/DOCX/PPTX/PDF；PNG/JPEG 内嵌；私有 PNG/JPEG/WAV/MP3/MP4 上传、预览、范围下载、配额和撤回；使用官方 OpenMAIC 播放器展示本节课文、代码、来源，讨论可进入导师；同一组场景通过官方 DSL 导出课堂包 | 对象存储和 AV 扫描部署、生成式图像/TTS/视频、完整时间线渲染、局部智能重做与跨设备版式验收 | `artifacts/ArtifactService`、`ArtifactFileRenderer`、`ArtifactExportService`、`AssetService` |
 | M15 工作空间与上下文 | 固定 release、目标编辑/归档、记忆撤回、顺序事件和跨页同步；显式选取较早的 1–8 个本人作答加入固定上下文；课堂场景与本节上下文共用工作空间，学生可主动导出当前课及三项建议交给 Harness | 自动上下文策略、可检索长期记忆、多人协作、SSE/推送与大规模同步 | `workspace/WorkspaceService`、前端工作空间状态 |
@@ -106,4 +106,4 @@ API JVM 从不编译或运行用户输入。独立 broker 每个检查启动新�
 
 先核对本模块写入责任及[数据规则](03-data.md)，再改实现；接口变更同步 OpenAPI、领域端口、前端 DTO、工具协议和消费者。只有具备真实行为及失败路径证据后，才更新状态与 capabilities。
 
-执行 `python scripts/sync_contract_index.py` 刷新索引、模块标签、累计字段字典和操作追踪，然后完成静态、前后端、数据库及受影响端到端检查。V001–V017 是当前升级链；已经应用的迁移不回写，后续变更继续追加。计划、测试存在、测试通过、部署验收和最终教师验收须分别陈述。
+执行 `python scripts/sync_contract_index.py` 刷新索引、模块标签、累计字段字典和操作追踪，然后完成静态、前后端、数据库及受影响端到端检查。V001–V018 是当前升级链；已经应用的迁移不回写，后续变更继续追加。计划、测试存在、测试通过、部署验收和最终教师验收须分别陈述。

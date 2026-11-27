@@ -203,3 +203,56 @@ jobs:
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
+  live-model-classroom:
+    name: Personalized classroom with a real local model
+    needs: java-semantics-and-http
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/download-artifact@v4
+        with:
+          name: TypeForge-classroom
+          path: ${{ runner.temp }}/typeforge-package
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/typeforge-model-cache
+          key: typeforge-qwen3-0.6b-q8-23749fef-llamacpp-b12503-linux64-v1
+      - name: Verify pinned CPU model and inference engine
+        run: |
+          set -euo pipefail
+          cache_dir="$RUNNER_TEMP/typeforge-model-cache"
+          mkdir -p "$cache_dir" "$RUNNER_TEMP/typeforge-inference"
+          cd "$cache_dir"
+          fetch() {
+            if ! echo "$2  $1" | sha256sum --check --status; then
+              curl --fail --location --retry 3 --retry-all-errors "$3" -o "$1"
+            fi
+            echo "$2  $1" | sha256sum --check
+          }
+          fetch qwen.gguf 9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031 https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/resolve/23749fefcc72300e3a2ad315e1317431b06b590a/Qwen3-0.6B-Q8_0.gguf
+          fetch llama.tar.gz 0d585f8a78ffdfdc4f6303a089aaa1379c15323b33483b6548c85c774a376a9d https://github.com/ggml-org/llama.cpp/releases/download/b12503/llama-b12503-bin-ubuntu-x64.tar.gz
+          tar -xzf llama.tar.gz -C "$RUNNER_TEMP/typeforge-inference"
+      - name: Generate and review two interest-led lessons from the verified application
+        run: |
+          python scripts/verify_live_classroom.py \
+            --jar "$RUNNER_TEMP/typeforge-package/backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar" \
+            --model "$RUNNER_TEMP/typeforge-model-cache/qwen.gguf" \
+            --server "$(find "$RUNNER_TEMP/typeforge-inference" -type f -name llama-server -print -quit)" \
+            --report .work/live-personal-classroom.json
+      - name: Upload synthetic student receipts and measured provider use
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-model-personal-classroom
+          path: .work/live-personal-classroom.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14

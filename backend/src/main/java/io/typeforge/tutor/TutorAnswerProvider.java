@@ -13,8 +13,11 @@ public interface TutorAnswerProvider {
         public Prompt { recentQuestions=List.copyOf(recentQuestions);learnerContext=List.copyOf(learnerContext);evidence=List.copyOf(evidence);handoffs=List.copyOf(handoffs); }
     }
     record Usage(long promptTokens,long completionTokens,long totalTokens) {}
-    record Answer(String text,List<UUID> citedChunkIds,String limitations,Usage usage,String providerModelId) {
-        public Answer { citedChunkIds=List.copyOf(citedChunkIds); }
+    record Answer(String text,List<UUID> citedChunkIds,String limitations,Usage usage,String providerModelId,Map<String,String> reviewEdits) {
+        public Answer(String text,List<UUID> citedChunkIds,String limitations,Usage usage,String providerModelId) {
+            this(text,citedChunkIds,limitations,usage,providerModelId,Map.of());
+        }
+        public Answer { citedChunkIds=List.copyOf(citedChunkIds);reviewEdits=Map.copyOf(reviewEdits); }
         public Answer(String text,List<UUID> citedChunkIds,String limitations,Usage usage) { this(text,citedChunkIds,limitations,usage,null); }
     }
     final class Failure extends RuntimeException {
