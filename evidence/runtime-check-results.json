@@ -2,8 +2,8 @@
   "schemaVersion": "1.2",
   "result": "PASS",
   "scope": "Integrated classroom verification including the packaged browser journey; isolated code execution is separately verified in CI",
-  "recordedAt": "2026-11-27T10:17:19.775537+00:00",
-  "baselineCommit": "c7e3d3d46d081cf539dda6fd18e9c04142e1ea44",
+  "recordedAt": "2026-11-27T10:39:11.784226+00:00",
+  "baselineCommit": "933faecea3bc0cd9d349fccdc74cfc912f00e691",
   "environment": {
     "os": "Linux",
     "maven": "Apache Maven 3.9.11 (3e54c93a704957b63ee3494413a2b544fd3d825b)",
@@ -17,8 +17,8 @@
   },
   "sourceSnapshot": {
     "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-    "digest": "ceea4f670851f799708527fb23aba37d1d41c4b73c0d39b4ee3cb5a910f35cc9",
-    "fileCount": 457,
+    "digest": "eb185120b052d8b55908b6c926a3a5755a0728805dbc789aa1064228b1705f61",
+    "fileCount": 460,
     "files": {
       ".gitattributes": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c",
       ".github/workflows/baseline.yml": "7ca3484cbec0ba8ef41ac6f5a6e56b33a5b5271b108183dfb41996952e73c7ac",
@@ -67,6 +67,7 @@
       "backend/src/main/java/io/typeforge/curriculum/CourseCompanions.java": "53a8c459ec5d1882c92f2453af883f6be585686d3331202c159d5dce58c28392",
       "backend/src/main/java/io/typeforge/curriculum/CurriculumService.java": "a1b5be6c5541852aa0b0203775e5bf1f3597ede83c935d48393e4de1b2624005",
       "backend/src/main/java/io/typeforge/curriculum/KnowledgeController.java": "26547ce579c32d316c554618eff6da72dc7b26436ec5699c7f5cd36694a09569",
+      "backend/src/main/java/io/typeforge/curriculum/LessonActivityRequests.java": "8e14b1a2b501166517e3754074f8624e41d08de8817fb767e7ad227193573fb7",
       "backend/src/main/java/io/typeforge/curriculum/package-info.java": "37c47c7ecdee2808d50fc01e31a2ec1afd06a3403fc718c17422f644366bc405",
       "backend/src/main/java/io/typeforge/evidence/EvaluationAccountClosureParticipant.java": "35957e8496a0436a9044292e12f68fbdb816b3789f833a6f49eaa8dd4f31670a",
       "backend/src/main/java/io/typeforge/evidence/EvaluationController.java": "2eeaddcb40b8f1a884544ce98d0b2a65c97a9198aea64f420484781565e6e871",
@@ -113,7 +114,7 @@
       "backend/src/main/java/io/typeforge/learning/CoursewareController.java": "e0c6c2540687c8aba664fec2f5d97d997511981113a439743d623298e8830525",
       "backend/src/main/java/io/typeforge/learning/CoursewareStudyController.java": "5adbb89d250fc24a73faa56379213732dc5ee9a1f271b1ef157519dddb975b8e",
       "backend/src/main/java/io/typeforge/learning/CoursewareStudyService.java": "738fb4837eb4dbbcc603768adc5d102d0dd4ab9955df123823f1425053addec0",
-      "backend/src/main/java/io/typeforge/learning/InterestApplications.java": "44d960286669ee5faeb54b85ee2af5e9ca8f1cc0b108729737fd52d12aef2e0d",
+      "backend/src/main/java/io/typeforge/learning/InterestApplications.java": "ce31ff4ed46670b07fc006ec8f35b95d30fa791c46032b51e123529a637df95f",
       "backend/src/main/java/io/typeforge/learning/LearningEvidenceProjection.java": "e0d76a9357a48fdcd41d8b0aaa4b76508ba5d1f5eac7e77f201d5004f7dade30",
       "backend/src/main/java/io/typeforge/learning/LearningProjection.java": "62ac5e2703f35129dd704a44210e936ce767f1b465f0008158769777b536a40d",
       "backend/src/main/java/io/typeforge/learning/LessonBriefStore.java": "8ed688984ea98400f5d79554e6ef899c3ea447214ada2211d83681338754dbbc",
@@ -191,17 +192,17 @@
       "backend/src/main/java/io/typeforge/shared/SchemaCatalog.java": "958ac34741e71312a7e61fb59e84cea4d71281b1a3edb9b2113b5f6d2294601b",
       "backend/src/main/java/io/typeforge/shared/Transfers.java": "9005ca6a67ed3d26515c737af416179140401f479f64e0ba0d08ae378df2cdb2",
       "backend/src/main/java/io/typeforge/tutor/CoursewareSlideSource.java": "e6432a02e727b62d4cddd249c204af7efe0d6b764ed3b71d52bb52e35584f271",
-      "backend/src/main/java/io/typeforge/tutor/CoursewareSlides.java": "f26f2d323d2594a99f3fc8f590359409d87209099663c773dd3663c978c69b8a",
+      "backend/src/main/java/io/typeforge/tutor/CoursewareSlides.java": "d45ac598bef98945b4f8241bf6b3de1405784df5f072ae00b2fc376b84980fb5",
       "backend/src/main/java/io/typeforge/tutor/EvidenceWorkflow.java": "85e27c6a7e8319b643545da1a13ac65955736f458420efc790051ab8f1aff175",
-      "backend/src/main/java/io/typeforge/tutor/HttpTutorModelProvider.java": "03d6ca84aea4980377b4be6e45853ef0016279098c4a69ac203563b6e6367bf1",
+      "backend/src/main/java/io/typeforge/tutor/HttpTutorModelProvider.java": "5d918e7e93d680961cd5f687a263d3e2380e37a02a83f2d903b925eda2a17b04",
       "backend/src/main/java/io/typeforge/tutor/LocalContextTool.java": "26dbf5e53a9a8d2a4f28e5353c05ed807ea40710f26b0a0ce2a94e8d92799ae8",
       "backend/src/main/java/io/typeforge/tutor/LocalSearchTool.java": "f5f8f9c2655938731fd94b4a944a52b27e3241e3b42c0a2f9d3c21c31009a881",
-      "backend/src/main/java/io/typeforge/tutor/ReviewedApplication.java": "4402b4d56e7a2d740c15a822fe280499aec147b2b44c1e0aae2daf1654d88b65",
+      "backend/src/main/java/io/typeforge/tutor/ReviewedApplication.java": "0c9f62b3ecbc1d3430db7c5cbe4cc523468900560ede6c9cfd6e72ea30cb35f7",
       "backend/src/main/java/io/typeforge/tutor/RunController.java": "841b1f8edc2d6d9ef5e6542aafe6c4703c5c9a00b90a80553407802f235b1359",
       "backend/src/main/java/io/typeforge/tutor/StudyContextJournal.java": "4fe8b0807e61aacf95408c272671917f5c00d246edf785213ffe237ac72b0bce",
       "backend/src/main/java/io/typeforge/tutor/StudyHandoffs.java": "0d0060e14b18f4ef6038acd4747a99ac62f696420f7367c9621a43ec8bf5822d",
       "backend/src/main/java/io/typeforge/tutor/StudyWorkflowController.java": "a7351e7e16cd2915c820a84bc3e72399bf4ac1448207d1a54004fcd5251d0d72",
-      "backend/src/main/java/io/typeforge/tutor/StudyWorkflowService.java": "3dfc3daef2f7ad015f0c3407997a5fb0388caad210a80da41cca61e2efc71610",
+      "backend/src/main/java/io/typeforge/tutor/StudyWorkflowService.java": "4a2175b50fdff7cf51c510ccd2cc5ed3380608e6a168f2a203e9c24aaba2dffb",
       "backend/src/main/java/io/typeforge/tutor/TeachingTurn.java": "e0851d2fe1f4c2cc3ef970a507670ab9d3198a63d52b14bbc313779f988b3f94",
       "backend/src/main/java/io/typeforge/tutor/TutorAccountClosureParticipant.java": "b4dede40dab73f4cd71e11ca08cf53719b16440bf678f76bba39f1d4b6249a2d",
       "backend/src/main/java/io/typeforge/tutor/TutorAnswerProvider.java": "2fc409ac7ba712259d8cd285227f89fdc674daa36f2575393448f142fdb40a87",
@@ -257,7 +258,7 @@
       "backend/src/test/java/io/typeforge/TextLearningIntegrationTest.java": "ba25112c4f66671000f4c9d5aa1153795d23f28c29bae59d7553ef3848d6e2f6",
       "backend/src/test/java/io/typeforge/TransactionIsolationTest.java": "b0b4385f5032b645138d9d27c88aa2555edf204db792682e26b8a5cb60f1f003",
       "backend/src/test/java/io/typeforge/TutorHttpBoundaryTest.java": "9874a27842181456f20750f272e89ee241cd7b325dc2a132bbc56eb0b9bc62ab",
-      "backend/src/test/java/io/typeforge/TutorHttpProviderTest.java": "2bc1b637af300b95a22dbaa1f2dd0bca63e97c2f4df1d8e8feda9fccd08ba26e",
+      "backend/src/test/java/io/typeforge/TutorHttpProviderTest.java": "35a10784ef85f3dad293535c37f34a6043ca370a611e1b3934be2203a09eae83",
       "backend/src/test/java/io/typeforge/TutorRuntimeTest.java": "9e84be81e3b30f0b9cfe67764eea7d06a1ffed828ad48ce9d5ba0212da81b4f8",
       "backend/src/test/java/io/typeforge/WorkspaceArtifactReferenceTest.java": "8f88075f588fccc7cb95a4cce89765316919596c397a36b801900522170c66c1",
       "backend/src/test/java/io/typeforge/WorkspaceContextSelectionTest.java": "cfc3eff792eaf3240a29fb364c7395a13523c29ef23cb4d9fad5e01885e4b86c",
@@ -265,6 +266,7 @@
       "backend/src/test/java/io/typeforge/ingestion/BoundedDocumentTextTest.java": "4dc92b659285bf3e97b05b9ca610546fe801d8c1596b67a34eea659e2ce7a15f",
       "backend/src/test/java/io/typeforge/learning/InterestApplicationTest.java": "462d4d93c9fd48749830d5bc769de7e2a71ec818124e21ef1a307c6b1ab0e988",
       "backend/src/test/java/io/typeforge/publishing/ContentWorkbenchIntegrationTest.java": "a602c7ca924bab0d1f57afbb52e3f4d33ce7a36ac1a76e70141b67736120cf9a",
+      "backend/src/test/java/io/typeforge/tutor/LessonActivityCoverageTest.java": "4be0e752a8260c8d2eb350e56593369a166ad4ef4ce387815f14017b82228803",
       "backend/src/test/resources/course/peer-search-20261118.json": "07f2123e92ee51fff1bcaf887becbe3a02ba18b9996e2a6070e7dd0d11c32479",
       "backend/src/test/resources/media/README.md": "94de1d18b9fd6c0cc44fb7b66db27d855def01d4d36d78d9cde9290198dc7f5e",
       "backend/src/test/resources/media/clip.mp4": "65775ccadb76fb8a20ee01adeefe1678dc94a671c6a461e5f4311087ee5079f9",
@@ -305,7 +307,7 @@
       "docs/07-frontend.md": "d79c7a2ef909d43ae7349c1c925462b4bedca7c6d0cbad4219c0b32be4d95f83",
       "docs/08-quality.md": "568e77cce056510459f454ac2bc3dfe76a06049c9a5fd06c1d5c6f08a1104dcf",
       "docs/09-team-plan.md": "ee323f42b34135a9da1fd60b29807024476d52d4be2cb4b53fb8161b92db1072",
-      "docs/10-agent-cluster.md": "debe00732315e6dc3a43a32388b0cdec62c55d91994e25372d678176db015b32",
+      "docs/10-agent-cluster.md": "f5d8f58bdc518654de97781081792b15e2a219c5e715b52b3f3c167be1a66698",
       "docs/11-learning-artifacts.md": "a2091f1054e7854c95b10f9acf19d18bfb4dd6051a62e32cffaba37e13502877",
       "docs/13-architecture-upgrade.md": "d289e8ad0e47dc9973f44f62dc9ad6d67be956a9125aa07b95b6af516ef059cb",
       "docs/14-research-decisions.md": "d1f7c4f9ad09486543ba726173cd07ebaa4ad684ee6110abbd0da93cb61ce3e8",
@@ -316,7 +318,7 @@
       "docs/24-evaluation-import-and-notebook.md": "86f36281573e2607342284013667013c97e0d3f988000af88630b7618dff1a7e",
       "docs/25-integrated-classroom.md": "3547fe70b95c5dbfa1a4f48c972afa5d63f2706f778eb09fb2878a647fde6e9b",
       "docs/26-personal-courseware.md": "5d788a09ac18392e493f7b8265bc56a7d0881513e684f2141e342ba9f293b4f0",
-      "docs/27-interest-led-classroom.md": "7ef4f94bf64c4246692b0ca71f138f05109cc13cc116d5485c786c355deddd30",
+      "docs/27-interest-led-classroom.md": "c667a49afc9350a58639716218fa05d9654df9b961d1311768eb669cb1e075ec",
       "docs/images/classroom-desktop.webp": "406c1e771bfa4b7131f5d3b2d0c7e4765040c2ce789f2a7f9c94e959eb9740a4",
       "docs/images/classroom-mobile.webp": "16811a2dc35808887ee83a984e96a0fad89b0f438c31d6ffd63622a525498e98",
       "evidence/ai-context.md": "f8db40d2525eb5fec63be71b17920af379f07f2c24c79abd02847b85bb4a58a1",
@@ -327,6 +329,7 @@
       "evidence/development-review-v06.md": "29555cfda0a5382be1ec2d246dafe670cee3d71a4e9df5925cb5e0188b7c4fc2",
       "evidence/h2-shutdown-regression.json": "2f955f91dc74ee48911f358f81c37eb88acb36ec6dd0f2c0832db73537851462",
       "evidence/inputs.md": "20c063334e5fc20674442a7f3ecd3193e6b36e4058c0c471c36d13cdec62ac0b",
+      "evidence/interest-led-classroom-model.json": "8e78c1662eb2b71f050a3bf4231b7aee365ae18d4980ff6abb59ac4f1a89e808",
       "evidence/personal-courseware-model.json": "95bee5e82e289123d5634fb78d4814468c7ac8ec760ebb6fabe9445fdf7c2e15",
       "evidence/personal-courseware-model.md": "b3be3348050ade02d3ee5601a4af38757a4be64501dc3b3d9136490226b501e5",
       "evidence/traceability.csv": "57b2a279c59c6a3e99c536dfdffab1c3828241f9d4730c5fdbb5b8b1571eb5df",
@@ -464,7 +467,7 @@
       "scripts/verify_course_examples.py": "75cfcb15187c987430ae6dd0c4de46cb2988a38bcf6ec603801ae54f18fb20f1",
       "scripts/verify_frontend.py": "b3e1a9040448ae7604ead859dd9fd557726f1eee52a68a2fc3a48ad388541c82",
       "scripts/verify_java.py": "316f94e7ca946e11d278078751476d33ad89bdfcc4ae3861d3bbae57e302a26a",
-      "scripts/verify_live_classroom.py": "a922daa7cba6a7593901bf035c4acf1e5ef7655b0c5402a6c81263795d724fe8",
+      "scripts/verify_live_classroom.py": "ffe5bd2b8a4eb54a8aad02e5726c27843620d23f06850a0ccf5c87d83e55910e",
       "scripts/verify_mysql.py": "bf509eb747ed3a160fab1f1347e51284f48b321a471f9b1f0410f2cd937831ef",
       "scripts/verify_private_modules_mysql.py": "9a50f487d8506e2d5e9540cbf62c9849e1ba856cd2f5f2903b848f3a80d0b81c",
       "scripts/verify_transaction_isolation.py": "affec0f21bb9c0af3bd1a10108cb701cb78951a88ab83b2ea20bb30b296bace4",
@@ -485,22 +488,22 @@
   },
   "java": {
     "result": "PASS",
-    "generatedAt": "2026-11-27T10:08:56.729660+00:00",
+    "generatedAt": "2026-11-27T10:30:17.122989+00:00",
     "command": "mvn -B -ntp -f backend/pom.xml clean verify",
     "scope": "Actual complete clean build; current JUnit source methods and every finite parameter invocation required",
     "verificationInputs": {
       "schemaVersion": 1,
       "scope": "backend",
       "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-      "digest": "b7fb65363b71f525cd833af991aca6a90b646ae5b3faa2949d01b179407c52ac",
-      "fileCount": 265,
+      "digest": "1db8b41260a20f875d37878bf3391684a875f3da436605e19a52b14b39221a72",
+      "fileCount": 267,
       "extraFiles": [
         "scripts/verify_java.py"
       ]
     },
     "mavenExitCode": 0,
     "inputsUnchanged": true,
-    "tests": 496,
+    "tests": 500,
     "failures": 0,
     "errors": 0,
     "skipped": 0,
@@ -1866,6 +1869,10 @@
           "kind": "Test",
           "invocations": 1
         },
+        "reviewerCannotIgnoreAnExplicitRequestedActivityEvenWithOnlyJsonObjectSupport": {
+          "kind": "Test",
+          "invocations": 1
+        },
         "contextWindowShrinksOptionalExcerptsAndRetainsRequiredLearnerQuestion": {
           "kind": "Test",
           "invocations": 1
@@ -2172,6 +2179,20 @@
           "kind": "Test",
           "invocations": 1
         }
+      },
+      "io.typeforge.tutor.LessonActivityCoverageTest": {
+        "orderedRequestsRemainDistinctFromDepthAndFromNegativeOrUnrelatedClauses": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "openBriefKeepsChoiceWithOneExpertAndOffersDifferentMovesAcrossSeveralExperts": {
+          "kind": "Test",
+          "invocations": 1
+        },
+        "shortExpertPlanCompletesEveryRequestedActivityUsingFrozenCodeAndLocalEditionAlsoHonorsIt": {
+          "kind": "Test",
+          "invocations": 1
+        }
       }
     },
     "suites": [
@@ -2181,7 +2202,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 15.758,
+        "seconds": 14.646,
         "testCases": [
           "accountClosureIsAtomicOnWrongConfirmationAndDoesNotEraseConcurrentPasswordChange",
           "sessionsArePrivateRevocableAndNeverExposeCookieOrAddress",
@@ -2205,7 +2226,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.017,
+        "seconds": 0.024,
         "testCases": [
           "rejectsDuplicateDependency",
           "writerWaitsForActiveReader",
@@ -2240,7 +2261,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 3.808,
+        "seconds": 2.482,
         "testCases": [
           "identicalExportsReuseBytesAndObsoleteCacheIsReclaimed",
           "docxRoundTripKeepsEditableChineseTextAndSourceMetadata",
@@ -2260,7 +2281,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 8.215,
+        "seconds": 8.244,
         "testCases": [
           "realMultipartSessionRequiresCsrfAndEditorialRoleThenConfirmsSeparately",
           "sameFilesAcrossBatchesReuseVerifiedCaptureWithoutDuplicatingProvenance",
@@ -2286,7 +2307,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 3.672,
+        "seconds": 4.025,
         "testCases": [
           "everyPublishedCodeLabExampleHasVerifiedPositiveAndNegativeFixedSource",
           "emptyCompilableAndRawUnsafeProgramsDoNotPassTheTypeContract",
@@ -2300,7 +2321,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.834,
+        "seconds": 1.642,
         "testCases": [
           "mismatchedHashLeaseAndIsolationPolicyFailClosed",
           "oversizedResponseIsStoppedAtTheTransportBoundary",
@@ -2319,7 +2340,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 9.852,
+        "seconds": 9.586,
         "testCases": [
           "cancellingAnActiveJobRejectsLateLeaseAndDoesNotInventAnAttempt",
           "expiredLeaseAndQueueDeadlineArePersistedAsInfrastructureFailures",
@@ -2345,7 +2366,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 3.973,
+        "seconds": 3.857,
         "testCases": [
           "comparesImmutableFieldsWithStablePathsAndRetainsHashHeaders",
           "realHttpSessionCanReadDiffAndLearnerCannotProbeIt",
@@ -2362,7 +2383,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 4.173,
+        "seconds": 4.624,
         "testCases": [
           "aForeignAccountAndAnotherOwnedWorkspaceCannotReadOrProduceThePlan",
           "actualRoleDagPreservesOrderedPageBodiesPromptsScopedEvidenceAndTheOriginalPrivateSnapshot",
@@ -2376,7 +2397,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.448,
+        "seconds": 1.031,
         "testCases": [
           "stableExecutionKeysAndSettlementPreventDuplicateCharges",
           "unknownExternalEffectRetainsReservationAcrossCrashAndCannotBeBlindlyRetried",
@@ -2412,7 +2433,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 4.912,
+        "seconds": 15.489,
         "testCases": [
           "cursorPagesNeverDuplicateAndBadBoundsDoNotScanHistory",
           "caseBoundsAmbiguityForeignMembershipAndConceptMismatchRejectAtomically",
@@ -2449,7 +2470,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.835,
+        "seconds": 0.405,
         "testCases": [
           "aReconstructedWorkerResumesAnExpiredClaimWithoutRepeatingCommittedSteps",
           "aFullBatchOfRevokedSnapshotsCannotPermanentlyStarveAHealthyWorkspace"
@@ -2461,7 +2482,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 3.611,
+        "seconds": 3.146,
         "testCases": [
           "advertisedHintsStillEnforceOwnershipVersionAndLevel",
           "threeLevelHintsAndNotebookActionsRemainAvailableAndAssistedWithoutAWorker",
@@ -2474,7 +2495,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 5.39,
+        "seconds": 6.239,
         "testCases": [
           "assignmentSubsetAgreesWithRealJavac(String, String)[1]",
           "assignmentSubsetAgreesWithRealJavac(String, String)[2]",
@@ -2526,7 +2547,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.522,
+        "seconds": 0.635,
         "testCases": [
           "healthActuallyQueriesDatabaseWithoutClaimingProviderReadiness",
           "noBusinessOrAdminRouteIsAccidentallyPublic",
@@ -2539,7 +2560,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 6.018,
+        "seconds": 5.923,
         "testCases": [
           "jsonSizeAndIntegerBoundsApplyBeforeNarrowingOrObjectMaterialization",
           "pauseResumeCancelUseEpochFencingAndSteeringRequiresAnActualPlanner",
@@ -2558,7 +2579,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 3.34,
+        "seconds": 2.959,
         "testCases": [
           "anInterfaceCanBeTheLeftmostErasureBound",
           "arraysAreCovariantButValidateTheirActualComponentTypeAtRuntime",
@@ -2592,7 +2613,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 3.656,
+        "seconds": 3.466,
         "testCases": [
           "validatesWithRealJavac(String, String, boolean, boolean)[1]",
           "validatesWithRealJavac(String, String, boolean, boolean)[2]",
@@ -2636,7 +2657,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 10.087,
+        "seconds": 8.426,
         "testCases": [
           "readingReceiptIsServerTimedAndNotMasteryEvidence",
           "oldRendererAndTamperedSourceFailWithoutRenderingUnderFalseIdentity",
@@ -2661,7 +2682,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.062,
+        "seconds": 0.594,
         "testCases": [
           "tamperedPublishedBodyFailsIntegrityInsteadOfReturningStaleHashEvidence",
           "reinitializationDoesNotDuplicateOrOverwritePublishedFixtures",
@@ -2685,7 +2706,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.53,
+        "seconds": 0.542,
         "testCases": [
           "workflowPersistsHashesOfTheRealSchemaInputsForBothTypedTools",
           "contextToolReturnsTheExistingValidatedSnapshotWithoutCreatingState",
@@ -2703,7 +2724,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 7.653,
+        "seconds": 7.894,
         "testCases": [
           "reviewNavigationUsesAdmittedOwnerSourcesAndRejectsRevokedOrChangedVersions",
           "typeFlowUsesRealLabResultsAndDurableCasWithoutMasteryInflation",
@@ -2728,7 +2749,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 4.311,
+        "seconds": 4.499,
         "testCases": [
           "everyPublishedConceptHasItsOwnCitedActivityAndRetainsOfficialPractice",
           "frozenReadingBoundaryAndAdmittedRealGradeChangeQuestionAndScaffoldingWithoutLeakingAnswers",
@@ -2746,7 +2767,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 4.386,
+        "seconds": 4.245,
         "testCases": [
           "quotaUsesStoredBytesAndRevocationFreesActualPayload",
           "assetRevocationInvalidatesDirectAndTransitiveSourceRevisions",
@@ -2764,7 +2785,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 26.584,
+        "seconds": 27.879,
         "testCases": [
           "embeddedArtifactAndReviewLinksCannotBypassTheTypedInputManifest",
           "timestampTiesAndReverseUuidOrderCannotStarveTheWorkspaceHead",
@@ -2798,7 +2819,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 3.532,
+        "seconds": 3.728,
         "testCases": [
           "unknownModelUsageCommitsItsHoldAndNeverAutomaticallyRetries",
           "foreignReviewTargetIsRejectedWithKnownBillingAndNoComposedFile",
@@ -2820,7 +2841,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 2.952,
+        "seconds": 2.187,
         "testCases": [
           "modelModeDoesNotPretendToWorkWithoutConfiguredProvider",
           "namedGoalSkipsUnrelatedMistakeInRecentContext",
@@ -2844,7 +2865,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 4.851,
+        "seconds": 5.062,
         "testCases": [
           "idempotencyRejectsChangedTextAndPrivateAttemptCannotCrossAccounts",
           "threeHintsMarkFirstAnswerAssistedAndSurviveCrossWorkspaceSameFamily",
@@ -2864,7 +2885,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.731,
+        "seconds": 0.373,
         "testCases": [
           "transactionTemplateUsesReadCommittedJdbcConnection",
           "readAfterOwnerLockSeesCommittedWorkspaceChange"
@@ -2876,7 +2897,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 3.569,
+        "seconds": 3.494,
         "testCases": [
           "completeHttpJourneyIncludesConversationRequestEvidenceAndDraftDocument",
           "cancelUsesExpectedEpochAndForeignRequestIdsRemainPrivate",
@@ -2885,12 +2906,13 @@
       },
       {
         "name": "io.typeforge.TutorHttpProviderTest",
-        "tests": 30,
+        "tests": 31,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 3.125,
+        "seconds": 1.84,
         "testCases": [
+          "reviewerCannotIgnoreAnExplicitRequestedActivityEvenWithOnlyJsonObjectSupport",
           "selectedProgrammingAttemptContributesOnlyItsMatchingPublicCompilerObservation",
           "timeoutKeepsUnknownReservationAndDoesNotBlindlyReplay",
           "personalizedReviewSelectsAnActivityWhoseClaimsComeFromTheFrozenCase",
@@ -2929,7 +2951,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 1.449,
+        "seconds": 1.035,
         "testCases": [
           "expiredUndispatchedLeaseCanRecoverButOriginalEpochCannotOverwrite",
           "expiredDeadlineAndLeaseAreDistinguishedFromChangedContext",
@@ -2955,7 +2977,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.728,
+        "seconds": 1.314,
         "testCases": [
           "oldArtifactOnlyContextCannotBypassNaturallyExpiredTransitiveMemory"
         ]
@@ -2966,7 +2988,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 3.217,
+        "seconds": 3.158,
         "testCases": [
           "explicitSelectionIncludesOlderGradedAttemptsInExactCallerOrder",
           "privateWrongWorkspaceUnfinishedAndInvalidSelectionsNeverPersistASnapshot",
@@ -2980,7 +3002,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.021,
+        "seconds": 0.015,
         "testCases": [
           "acceptedTextIsLiteralAndNotRegexOrExecutableInstructions",
           "caseSensitiveJavaNamesRemainDifferent",
@@ -2997,7 +3019,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 0.1,
+        "seconds": 0.092,
         "testCases": [
           "embeddedProgramsAndArchiveTraversalAreRejected",
           "trackedMovesAndUnresolvedEditsCannotSilentlyDuplicateOrReinterpretTheSource",
@@ -3021,7 +3043,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 5.16,
+        "seconds": 5.206,
         "testCases": [
           "java17ChecksTheActualLabUnitForBothAnswersAndRunsEveryReviewedPositiveCase"
         ]
@@ -3032,7 +3054,7 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "seconds": 16.547,
+        "seconds": 16.441,
         "testCases": [
           "editingPublishedKnowledgeAppendsAndDoesNotChangeAnExistingCourse",
           "reviewPinsTitleAndPrivateAnswerInsteadOfOnlyTheKnowledgeBody",
@@ -3050,10 +3072,23 @@
           "buildingRequiresApprovedContentAndCompletePrerequisiteKnowledge",
           "publicationCasHistoryAndRetryPreserveExistingPersonalReleasePins"
         ]
+      },
+      {
+        "name": "io.typeforge.tutor.LessonActivityCoverageTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.007,
+        "testCases": [
+          "shortExpertPlanCompletesEveryRequestedActivityUsingFrozenCodeAndLocalEditionAlsoHonorsIt",
+          "orderedRequestsRemainDistinctFromDepthAndFromNegativeOrUnrelatedClauses",
+          "openBriefKeepsChoiceWithOneExpertAndOffersDifferentMovesAcrossSeveralExperts"
+        ]
       }
     ],
     "jar": "backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar",
-    "jarSha256": "89df1ebc2058893e70d72eb89c1be936a233c865c9834eede15e101480bdf0f3",
+    "jarSha256": "149c014e1a43ee95d4644e2c7c0dbc07ecc2b289ef6d38fe9c7ab8ab477e1194",
     "frontendDist": {
       "schemaVersion": 1,
       "scope": "frontend-dist",
@@ -3062,7 +3097,7 @@
       "fileCount": 328
     },
     "frontendInputDigest": "c65a2ed201349595a3907dbbcd24af38b4e1bf283452d2699f64992cc04f8e41",
-    "durationSeconds": 196.37
+    "durationSeconds": 202.163
   },
   "frontend": {
     "numTotalTestSuites": 28,
@@ -3558,7 +3593,7 @@
     "integration": {
       "driver": "jsdom with real HTTP; not a graphical browser",
       "status": "PASS",
-      "jarSha256": "89df1ebc2058893e70d72eb89c1be936a233c865c9834eede15e101480bdf0f3",
+      "jarSha256": "149c014e1a43ee95d4644e2c7c0dbc07ecc2b289ef6d38fe9c7ab8ab477e1194",
       "steps": [
         {
           "name": "register/login/CSRF and workspace creation",
@@ -3665,8 +3700,8 @@
       "runtime": {
         "driver": "dom",
         "jar": "typeforge-backend-0.6.0-SNAPSHOT.jar",
-        "jarSha256": "89df1ebc2058893e70d72eb89c1be936a233c865c9834eede15e101480bdf0f3",
-        "baseUrl": "http://127.0.0.1:40597",
+        "jarSha256": "149c014e1a43ee95d4644e2c7c0dbc07ecc2b289ef6d38fe9c7ab8ab477e1194",
+        "baseUrl": "http://127.0.0.1:34785",
         "status": "PASS",
         "log": "dom-server.log",
         "verificationInputs": {
@@ -3682,7 +3717,7 @@
         "editorialFixture": "Two random editors and one separate administrator, real registration/session/startup authorization, disposable database; no production review or student contribution claim",
         "editorialFixtureRegistered": 2,
         "administratorFixtureRegistered": 1,
-        "driverReportSha256": "cc4de37f75987cc7645bb4c571345c99d20e1203ef41960cb71a1f6f3ef07be9",
+        "driverReportSha256": "da94d945f95fe8e9cd04d27c1eab8815f2c58b5ae0031e51c532f877e3c3da74",
         "jarUnchanged": true,
         "inputsUnchanged": true,
         "exitCode": 0
@@ -3809,8 +3844,8 @@
       "runtime": {
         "driver": "browser",
         "jar": "typeforge-backend-0.6.0-SNAPSHOT.jar",
-        "jarSha256": "89df1ebc2058893e70d72eb89c1be936a233c865c9834eede15e101480bdf0f3",
-        "baseUrl": "http://127.0.0.1:47393",
+        "jarSha256": "149c014e1a43ee95d4644e2c7c0dbc07ecc2b289ef6d38fe9c7ab8ab477e1194",
+        "baseUrl": "http://127.0.0.1:50071",
         "status": "PASS",
         "log": "browser-server.log",
         "verificationInputs": {
@@ -3826,7 +3861,7 @@
         "editorialFixture": "Two random editors and one separate administrator, real registration/session/startup authorization, disposable database; no production review or student contribution claim",
         "editorialFixtureRegistered": 2,
         "administratorFixtureRegistered": 1,
-        "driverReportSha256": "0f36d21d80d19861d13dc5dd29fd7a134318184fe3ab91b66347c7f641b594b7",
+        "driverReportSha256": "d14d36dfd8dff1d8091d3511d2a71758ca72905795a8b8b59df3ced7c910bc97",
         "jarUnchanged": true,
         "inputsUnchanged": true,
         "exitCode": 0
@@ -3839,12 +3874,12 @@
       "schemaVersion": 1,
       "scope": "static",
       "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-      "digest": "ceea4f670851f799708527fb23aba37d1d41c4b73c0d39b4ee3cb5a910f35cc9",
-      "fileCount": 457,
+      "digest": "eb185120b052d8b55908b6c926a3a5755a0728805dbc789aa1064228b1705f61",
+      "fileCount": 460,
       "extraFiles": []
     },
     "inputsUnchanged": true,
-    "checksPassed": 834,
+    "checksPassed": 835,
     "errors": [],
     "operations": 135,
     "implementedOperations": 135,
@@ -4742,8 +4777,8 @@
       "schemaVersion": 1,
       "scope": "backend",
       "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-      "digest": "b9f2c7b26f0c99b505daa13d384fa12365e76d61606b754b93965c35a6234f0d",
-      "fileCount": 265,
+      "digest": "07fac6da0f9265503b57124556817b98babefcefa73e48febc89c5afced8335b",
+      "fileCount": 267,
       "extraFiles": [
         "scripts/verify_transaction_isolation.py"
       ]
@@ -4760,7 +4795,7 @@
       "writerCommitted": true
     },
     "inputsUnchanged": true,
-    "durationSeconds": 19.474
+    "durationSeconds": 19.171
   },
   "mysqlEditorial": {
     "result": "PASS",
@@ -4772,8 +4807,8 @@
       "schemaVersion": 1,
       "scope": "backend",
       "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-      "digest": "debb02098e13cf611f0d4c57f950b510ae3f0754c24609b366ab9b9cf54ecfd4",
-      "fileCount": 266,
+      "digest": "a3e334cc2024968aa9e55fc6f7f4fb08af98b47fe68103f400033775bcfac7b1",
+      "fileCount": 268,
       "extraFiles": [
         "scripts/verify_content_mysql.py",
         "scripts/verify_transaction_isolation.py"
@@ -4802,18 +4837,18 @@
     ],
     "engineVersion": "8.4.13",
     "inputsUnchanged": true,
-    "durationSeconds": 39.368
+    "durationSeconds": 37.639
   },
   "mysqlAccountsAndAssets": {
     "result": "PASS",
-    "generatedAt": "2026-11-27T10:13:58.774106+00:00",
+    "generatedAt": "2026-11-27T10:35:30.147649+00:00",
     "scope": "Explicit real-MySQL account lifecycle and private asset HTTP/SQL regression; no external media or model provider claim",
     "verificationInputs": {
       "schemaVersion": 1,
       "scope": "backend",
       "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-      "digest": "0bfad937e73af44ed557098e323c7267ab98f7a8f453545a5bd39fc1765ce69b",
-      "fileCount": 266,
+      "digest": "614dfaa560a14472a7c6b74e706350183cc7e45afc40cfbfc66df08fdd665b1d",
+      "fileCount": 268,
       "extraFiles": [
         "scripts/verify_private_modules_mysql.py",
         "scripts/verify_transaction_isolation.py"
@@ -4883,14 +4918,14 @@
   },
   "mysqlV06Modules": {
     "result": "PASS",
-    "generatedAt": "2026-11-27T10:14:39.537104+00:00",
+    "generatedAt": "2026-11-27T10:36:09.841307+00:00",
     "scope": "Actual MySQL 8.4 service, SQL and authenticated HTTP regression for bounded imports, revision diffs, private evaluations, TEXT grading, six Notebook blocks, personal courseware-to-slide production and admin aggregates; compiler replies in this gate are protocol fixtures, not Docker execution evidence",
     "verificationInputs": {
       "schemaVersion": 1,
       "scope": "backend",
       "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-      "digest": "ecd5e4b7c5f584e8c8de60b41d6a81aa2904fd50321961cfd8ae41371657e1f6",
-      "fileCount": 266,
+      "digest": "43ee2f5dc8bb6851b930cabaa6a48863ecb2728300edb5dd21042d7dde0c6c5c",
+      "fileCount": 268,
       "extraFiles": [
         "scripts/verify_transaction_isolation.py",
         "scripts/verify_v06_modules_mysql.py"
@@ -5082,7 +5117,7 @@
         ]
       }
     ],
-    "durationSeconds": 64.564
+    "durationSeconds": 66.154
   },
   "compilerPython": {
     "result": "PASS",
@@ -5114,8 +5149,8 @@
       "schemaVersion": 1,
       "scope": "static",
       "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-      "digest": "ceea4f670851f799708527fb23aba37d1d41c4b73c0d39b4ee3cb5a910f35cc9",
-      "fileCount": 457,
+      "digest": "eb185120b052d8b55908b6c926a3a5755a0728805dbc789aa1064228b1705f61",
+      "fileCount": 460,
       "extraFiles": [
         "scripts/record_verification.py"
       ]
@@ -5938,24 +5973,24 @@
           "result": "PASS"
         }
       ],
-      "startedAt": "2026-11-27T10:12:13.194037+00:00",
+      "startedAt": "2026-11-27T10:33:39.363622+00:00",
       "verificationInputs": {
         "schemaVersion": 1,
         "scope": "backend",
         "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-        "digest": "f9b91537e9a3d0bc6e09540113d12f6421bfc50e94a10f326845b7a44ef90945",
-        "fileCount": 265,
+        "digest": "4c893324bb078fe44d844e729379e399c720f345c4e8c189236ba353be9b9d63",
+        "fileCount": 267,
         "extraFiles": [
           "scripts/smoke_runtime.py"
         ]
       },
-      "jarSha256": "89df1ebc2058893e70d72eb89c1be936a233c865c9834eede15e101480bdf0f3",
+      "jarSha256": "149c014e1a43ee95d4644e2c7c0dbc07ecc2b289ef6d38fe9c7ab8ab477e1194",
       "engine": "H2 persistent file (not MySQL)",
       "unexpectedLogErrors": [],
       "inputsUnchanged": true,
-      "finishedAt": "2026-11-27T10:12:49.769246+00:00",
+      "finishedAt": "2026-11-27T10:34:22.450663+00:00",
       "scope": "Real HTTP authentication, learning/artifact/evidence linkage and process-restart persistence; no model/media/compiler adapters are simulated",
-      "httpRequests": 262,
+      "httpRequests": 259,
       "shutdown": "graceful process termination and restart against the same database"
     },
     "mysql": {
@@ -6848,24 +6883,24 @@
           "result": "PASS"
         }
       ],
-      "startedAt": "2026-11-27T10:12:14.260186+00:00",
+      "startedAt": "2026-11-27T10:33:40.660542+00:00",
       "verificationInputs": {
         "schemaVersion": 1,
         "scope": "backend",
         "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-        "digest": "f9b91537e9a3d0bc6e09540113d12f6421bfc50e94a10f326845b7a44ef90945",
-        "fileCount": 265,
+        "digest": "4c893324bb078fe44d844e729379e399c720f345c4e8c189236ba353be9b9d63",
+        "fileCount": 267,
         "extraFiles": [
           "scripts/smoke_runtime.py"
         ]
       },
-      "jarSha256": "89df1ebc2058893e70d72eb89c1be936a233c865c9834eede15e101480bdf0f3",
+      "jarSha256": "149c014e1a43ee95d4644e2c7c0dbc07ecc2b289ef6d38fe9c7ab8ab477e1194",
       "engine": "MySQL 8.4.13",
       "unexpectedLogErrors": [],
       "inputsUnchanged": true,
-      "finishedAt": "2026-11-27T10:12:59.522613+00:00",
+      "finishedAt": "2026-11-27T10:34:33.022882+00:00",
       "scope": "Real HTTP authentication, learning/artifact/evidence linkage and process-restart persistence; no model/media/compiler adapters are simulated",
-      "httpRequests": 255,
+      "httpRequests": 262,
       "shutdown": "graceful process termination and restart against the same database"
     }
   },

@@ -1,0 +1,348 @@
+{
+  "result": "PASS",
+  "model": "Qwen3-0.6B-Q8_0",
+  "weightSHA256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
+  "contextWindowTokens": 12288,
+  "jarSHA256": "392de5021bcf9c185cd99f8f72017159312abc535a625617d9688cb159408c2a",
+  "sourceCommit": "933faecea3bc0cd9d349fccdc74cfc912f00e691",
+  "engine": "llama.cpp b12503, CPU",
+  "dateUTC": "2026-11-27",
+  "verifiedBuildJarSHA256": "149c014e1a43ee95d4644e2c7c0dbc07ecc2b289ef6d38fe9c7ab8ab477e1194",
+  "identicalApplicationClassAndResourceEntries": 792,
+  "scope": "两个合成学生，同一发布的 G06。每个角色通过真实 HTTP 调用模型。只记录与检验有关的非敏感字段。每项必做活动依据学生原意，审阅者可以在其余允许范围内选择。",
+  "students": [
+    {
+      "student": "basketball",
+      "brief": {
+        "interest": "篮球比赛统计",
+        "requirements": "用通俗例子说明一次传参和一次写入，再让我预测。"
+      },
+      "lesson": "G06",
+      "lessonSHA256": "da84b47fcc48f7ee695ef455279be30a230d414d6c6a4ffbf91703da39f0c654",
+      "releaseId": "29f405da-3e5f-318f-a9ac-790603cfa1bb",
+      "exercise": "教练要在后卫训练名单上登记队员，并阻止把中锋误写入这份名单。\n本例中 Guard 和 Center 都继承 Player，两者互不继承。Player 声明 String label()。\nList<Guard> records = new ArrayList<>();\n\n待判断的一行\nList<Player> view = records;",
+      "answer": "编译器会拒绝这行代码",
+      "explanation": "List<Guard> 与 List<Player> 的实参不同。若允许赋值，就能通过后者写入 Center，破坏原列表的保证；编译器在赋值处拒绝。\n换成下面这一行，结论会改变：\nList<? extends Player> view = records;\n通配符把“恰好是 Player”放宽为“某个 Player 的子类型”。读取结果可视作 Player；无法据此向 view 安全追加任意 Player。",
+      "sceneCount": 8,
+      "slides": 13,
+      "slidesSHA256": "26155b1da7a0e1f6d7174db5517d08a0aec34329ece1d9b8e52d614f4937d93b",
+      "studyStatus": "COMPLETED",
+      "accountedTokens": 6204,
+      "roles": {
+        "planner": "conductor",
+        "expert-0": "generics-expert",
+        "expert-1": "learning-designer",
+        "review": "fact-checker",
+        "output-slides": "slide-designer"
+      },
+      "freeDraftsWithTopicTerm": 2,
+      "freeDraftCount": 2,
+      "studentRequestedActivities": [
+        {
+          "activity": "CHECK_COMPILE",
+          "origin": "student instruction enforced in reviewer schema",
+          "assignedSteps": [
+            "expert-0"
+          ],
+          "supplementPageIds": [],
+          "evidence": {
+            "judgedLine": "List<Player> view = records;",
+            "comparisonLine": "List<? extends Player> view = records;",
+            "answer": "编译器会拒绝这行代码",
+            "groundedInJavaUnit": true
+          }
+        }
+      ],
+      "reviewedActivities": [
+        {
+          "expert": "expert-0",
+          "returnedActivity": "CHECK_COMPILE",
+          "allowedActivities": [
+            "CHECK_COMPILE"
+          ],
+          "selectionOrigin": "student instruction enforced in reviewer schema",
+          "freeDraftTopicTerms": [
+            "后卫",
+            "中锋",
+            "Player",
+            "Guard",
+            "Center"
+          ],
+          "reviewReceivedExactDraft": true,
+          "sourceBoundActivityInSlides": true,
+          "sample": "篮球队训练名单 · 类型建模 · 编译预测\n教练要在后卫训练名单上登记队员，并阻止把中锋误写入这份名单。\n本例中 Guard 和 Center 都继承 Player，两者互不继承。Player 声明 String label()。\nList<Guard> records = new ArrayList<>();\n\n待判断的一行\nList<Player> view = records;\n\n先在编辑器中单独检验待判断的一行，再逐项核对。\n编译器会拒绝这行代码。\nList<Guard> 与 List<Player> 的实参不同。若允许赋值，就能通过后者写入 Center，破坏原列表的保证；编译器在赋值处拒绝。\n换成下面这一行，结论会改变：\nList<? extends Player> view = records;\n通配符把“恰好是 Player”放宽为“某个 Player 的子类型”。读取结果可视作 Player；无法据此向 view 安全追加任意 Player。"
+        },
+        {
+          "expert": "expert-1",
+          "returnedActivity": "TRACE_TYPES",
+          "allowedActivities": [
+            "TRACE_TYPES",
+            "COUNTEREXAMPLE",
+            "TRANSFER"
+          ],
+          "selectionOrigin": "model choice among allowed activities",
+          "freeDraftTopicTerms": [
+            "后卫",
+            "中锋",
+            "Player",
+            "Guard",
+            "Center"
+          ],
+          "reviewReceivedExactDraft": true,
+          "sourceBoundActivityInSlides": true,
+          "sample": "篮球队训练名单 · 类型建模 · 类型推导\n教练要在后卫训练名单上登记队员，并阻止把中锋误写入这份名单。\n本例中 Guard 和 Center 都继承 Player，两者互不继承。Player 声明 String label()。\n\n一张专用清单交给另一段代码时，原来的元素限制仍然有效。观察清单与维护清单需要的权限不同。\n\n本例声明\nList<Guard> records = new ArrayList<>();\n\n你可以画三张记录卡：在最上方写 Player，下方并排写 Guard 和 Center。在代码中逐个圈出对应的类型名，再用箭头标明哪一类记录交给哪个位置。\n\n在本例每个变量旁标出声明类型，再画出同一对象经过哪些变量被访问。\n编译器会拒绝这行代码。\nList<Guard> 与 List<Player> 的实参不同。若允许赋值，就能通过后者写入 Center，破坏原列表的保证；编译器在赋值处拒绝。\n换成下面这一行，结论会改变：\nList<? extends Player> view = records;\n通配符把“恰好是 Player”放宽为“某个 Player 的子类型”。读取结果可视作 Player；无法据此向 view 安全追加任意 Player。"
+        }
+      ],
+      "calls": [
+        {
+          "step": "planner",
+          "role": "conductor",
+          "maxOutputTokens": 1536,
+          "finishReason": "stop",
+          "usage": {
+            "completion_tokens": 130,
+            "prompt_tokens": 1127,
+            "total_tokens": 1257,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            }
+          },
+          "responseSha256": "8918e6ec714948dda6d5427ae9ac0dbb65244c3bd891013a961c0bff18d3cc8c",
+          "interestInPrompt": true,
+          "requirementsInPrompt": true,
+          "otherInterestInPrompt": false,
+          "elapsedSeconds": 18.92
+        },
+        {
+          "step": "expert-0",
+          "role": "generics-expert",
+          "maxOutputTokens": 6144,
+          "finishReason": "stop",
+          "usage": {
+            "completion_tokens": 266,
+            "prompt_tokens": 1223,
+            "total_tokens": 1489,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            }
+          },
+          "responseSha256": "7ee8f6691ffee97e027296d16d4cbb8c5ceec76decf25ed354580984b3408428",
+          "interestInPrompt": true,
+          "requirementsInPrompt": true,
+          "otherInterestInPrompt": false,
+          "elapsedSeconds": 28.46
+        },
+        {
+          "step": "expert-1",
+          "role": "learning-designer",
+          "maxOutputTokens": 6144,
+          "finishReason": "stop",
+          "usage": {
+            "completion_tokens": 262,
+            "prompt_tokens": 1231,
+            "total_tokens": 1493,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            }
+          },
+          "responseSha256": "39fac046c7cb6432afe9d8df92173a37969058191a10c23f8123b771eac40c22",
+          "interestInPrompt": true,
+          "requirementsInPrompt": true,
+          "otherInterestInPrompt": false,
+          "elapsedSeconds": 31.27
+        },
+        {
+          "step": "review",
+          "role": "fact-checker",
+          "maxOutputTokens": 3072,
+          "finishReason": "stop",
+          "usage": {
+            "completion_tokens": 241,
+            "prompt_tokens": 1724,
+            "total_tokens": 1965,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            }
+          },
+          "responseSha256": "3807f6683be11cd72ff6c07465cbc164707e54a9bc6d174f35e858c02fd09758",
+          "interestInPrompt": true,
+          "requirementsInPrompt": true,
+          "otherInterestInPrompt": false,
+          "elapsedSeconds": 41.28
+        }
+      ]
+    },
+    {
+      "student": "astronomy",
+      "brief": {
+        "interest": "天文观测星表",
+        "requirements": "深入解释编译期拒绝的反例，给我一个可以迁移的变式。"
+      },
+      "lesson": "G06",
+      "lessonSHA256": "62b98062d2b7b8f85db63bad799b2b6153568c1c93b673d9ee0274b727a6282f",
+      "releaseId": "29f405da-3e5f-318f-a9ac-790603cfa1bb",
+      "exercise": "观测员要从凌日记录提取名称，并把结果交给能处理多类观测记录的工具。\n本例中 Transit 和 Eclipse 都继承 Observation，两者互不继承。Observation 声明 String label()。\nList<Transit> records = new ArrayList<>();\n\n待判断的一行\nList<Observation> view = records;",
+      "answer": "编译器会拒绝这行代码",
+      "explanation": "List<Transit> 与 List<Observation> 的实参不同。若允许赋值，就能通过后者写入 Eclipse，破坏原列表的保证；编译器在赋值处拒绝。\n换成下面这一行，结论会改变：\nList<? extends Observation> view = records;\n通配符把“恰好是 Observation”放宽为“某个 Observation 的子类型”。读取结果可视作 Observation；无法据此向 view 安全追加任意 Observation。",
+      "sceneCount": 7,
+      "slides": 12,
+      "slidesSHA256": "5b77e9f41b63d8d3ccb93b3940cccf38ec2537e909b7c149e4691d4a2286a7c0",
+      "studyStatus": "COMPLETED",
+      "accountedTokens": 6203,
+      "roles": {
+        "planner": "conductor",
+        "expert-0": "generics-expert",
+        "expert-1": "learning-designer",
+        "review": "fact-checker",
+        "output-slides": "slide-designer"
+      },
+      "freeDraftsWithTopicTerm": 2,
+      "freeDraftCount": 2,
+      "studentRequestedActivities": [
+        {
+          "activity": "COUNTEREXAMPLE",
+          "origin": "student instruction enforced in reviewer schema",
+          "assignedSteps": [
+            "expert-0"
+          ],
+          "supplementPageIds": [],
+          "evidence": {
+            "judgedLine": "List<Observation> view = records;",
+            "comparisonLine": "List<? extends Observation> view = records;",
+            "answer": "编译器会拒绝这行代码",
+            "groundedInJavaUnit": true
+          }
+        },
+        {
+          "activity": "TRANSFER",
+          "origin": "student instruction enforced in reviewer schema",
+          "assignedSteps": [
+            "expert-1"
+          ],
+          "supplementPageIds": [],
+          "evidence": {
+            "changedConstraint": "List<? super Transit>",
+            "transferTask": "若另一个调用者只负责写入 Transit，比较 List<? super Transit> 与只读场景中使用的上界通配符。",
+            "originalCaseRationaleIncluded": true
+          }
+        }
+      ],
+      "reviewedActivities": [
+        {
+          "expert": "expert-0",
+          "returnedActivity": "COUNTEREXAMPLE",
+          "allowedActivities": [
+            "COUNTEREXAMPLE"
+          ],
+          "selectionOrigin": "student instruction enforced in reviewer schema",
+          "freeDraftTopicTerms": [
+            "观测",
+            "凌日",
+            "Observation",
+            "Transit",
+            "Eclipse"
+          ],
+          "reviewReceivedExactDraft": true,
+          "sourceBoundActivityInSlides": true,
+          "sample": "天文观测档案 · 类型建模 · 对照反例\n观测员要从凌日记录提取名称，并把结果交给能处理多类观测记录的工具。\n本例中 Transit 和 Eclipse 都继承 Observation，两者互不继承。Observation 声明 String label()。\nList<Transit> records = new ArrayList<>();\n\n待判断的一行\nList<Observation> view = records;\n\n编译器会拒绝这行代码。\nList<Transit> 与 List<Observation> 的实参不同。若允许赋值，就能通过后者写入 Eclipse，破坏原列表的保证；编译器在赋值处拒绝。\n换成下面这一行，结论会改变：\nList<? extends Observation> view = records;\n通配符把“恰好是 Observation”放宽为“某个 Observation 的子类型”。读取结果可视作 Observation；无法据此向 view 安全追加任意 Observation。\n\n比较两行中发生变化的类型标记。保留原始赋值，解释为什么同一结论不能同时适用于两行。"
+        },
+        {
+          "expert": "expert-1",
+          "returnedActivity": "TRANSFER",
+          "allowedActivities": [
+            "TRANSFER"
+          ],
+          "selectionOrigin": "student instruction enforced in reviewer schema",
+          "freeDraftTopicTerms": [
+            "观测",
+            "凌日",
+            "Observation",
+            "Transit",
+            "Eclipse"
+          ],
+          "reviewReceivedExactDraft": true,
+          "sourceBoundActivityInSlides": true,
+          "sample": "天文观测档案 · 类型建模 · 迁移练习\n若另一个调用者只负责写入 Transit，比较 List<? super Transit> 与只读场景中使用的上界通配符。\n\n结合你写下的本节要求「深入解释编译期拒绝的反例，给我一个可以迁移的变式。」，选定一个具体改动，把旧声明、新声明和预期的编译结果并排解释。\n\n把新情境中的对象与原例的一一对应。用下面的已审判断检验你采用的规则，然后预测改变一个条件后的结果。\n编译器会拒绝这行代码。\nList<Transit> 与 List<Observation> 的实参不同。若允许赋值，就能通过后者写入 Eclipse，破坏原列表的保证；编译器在赋值处拒绝。\n换成下面这一行，结论会改变：\nList<? extends Observation> view = records;\n通配符把“恰好是 Observation”放宽为“某个 Observation 的子类型”。读取结果可视作 Observation；无法据此向 view 安全追加任意 Observation。"
+        }
+      ],
+      "calls": [
+        {
+          "step": "planner",
+          "role": "conductor",
+          "maxOutputTokens": 1536,
+          "finishReason": "stop",
+          "usage": {
+            "completion_tokens": 132,
+            "prompt_tokens": 1155,
+            "total_tokens": 1287,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            }
+          },
+          "responseSha256": "007667e5488aa78d77dab4a6f1a2902e9e89073613b175bcbbf5070442e9a0b8",
+          "interestInPrompt": true,
+          "requirementsInPrompt": true,
+          "otherInterestInPrompt": false,
+          "elapsedSeconds": 19.02
+        },
+        {
+          "step": "expert-0",
+          "role": "generics-expert",
+          "maxOutputTokens": 6115,
+          "finishReason": "stop",
+          "usage": {
+            "completion_tokens": 256,
+            "prompt_tokens": 1246,
+            "total_tokens": 1502,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            }
+          },
+          "responseSha256": "0a9777bece577404f5ab6fb332debec3b41d81d44c036f491f3fc1c828d086f2",
+          "interestInPrompt": true,
+          "requirementsInPrompt": true,
+          "otherInterestInPrompt": false,
+          "elapsedSeconds": 28.81
+        },
+        {
+          "step": "expert-1",
+          "role": "learning-designer",
+          "maxOutputTokens": 6088,
+          "finishReason": "stop",
+          "usage": {
+            "completion_tokens": 209,
+            "prompt_tokens": 1257,
+            "total_tokens": 1466,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            }
+          },
+          "responseSha256": "bc841154d644f6f04457db3e552acaafb8e2898925dbcfe421ba39f911649f6a",
+          "interestInPrompt": true,
+          "requirementsInPrompt": true,
+          "otherInterestInPrompt": false,
+          "elapsedSeconds": 44.47
+        },
+        {
+          "step": "review",
+          "role": "fact-checker",
+          "maxOutputTokens": 3072,
+          "finishReason": "stop",
+          "usage": {
+            "completion_tokens": 273,
+            "prompt_tokens": 1675,
+            "total_tokens": 1948,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            }
+          },
+          "responseSha256": "6d6bd4c78b72f5c521aa2ae2aaae197ef886a2763942a29deb7ed96e21d181ac",
+          "interestInPrompt": true,
+          "requirementsInPrompt": true,
+          "otherInterestInPrompt": false,
+          "elapsedSeconds": 55.39
+        }
+      ]
+    }
+  ]
+}
