@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import { ApiError, api } from '../api';
 import { WorkspaceContext, type WorkspaceState } from '../context';
-import type { Artifact, ArtifactVersion, Concept, Reference } from '../types';
+import type { Artifact, ArtifactVersion, Concept, ExportJob, Reference } from '../types';
 import { Studio } from './Studio';
 
 function deferred<T>() {
@@ -362,4 +362,71 @@ it('locks conflict resolution during a save and requires explicit rebasing after
   await act(async () => rebasedSave.resolve({ ...original, ...sent, revision: 3 }));
   expect(title).toHaveValue('保留本地修改');
   expect(screen.getByText('基线版本 3')).toBeInTheDocument();
+});
+
+it('keeps the accepted export and cancellation when older status reads finish', async () => {
+  const docx: ExportJob = {
+    id: 'word-export',
+    artifactId: artifact.id,
+    artifactRevision: 1,
+    status: 'SUCCEEDED',
+    format: 'DOCX',
+    outputAssetId: null,
+    limitations: [],
+    downloadPath: '/api/v1/export-jobs/word-export/download',
+    contentHash: 'd'.repeat(64),
+    sourceState: 'CURRENT',
+    errorCode: null,
+  };
+  const pdf = { ...docx, id: 'pdf-export', format: 'PDF', status: 'QUEUED', downloadPath: null };
+  const oldDocxRead = deferred<ExportJob>();
+  const acceptedPdf = deferred<ExportJob>();
+  const oldPdfRead = deferred<ExportJob>();
+  const reads = vi.spyOn(api, 'get').mockImplementation((path) => {
+    if (path === `/workspaces/${artifact.workspaceId}/artifacts`)
+      return Promise.resolve([artifact]);
+    if (path === `/artifacts/${artifact.id}/revisions?revision=1`) return Promise.resolve(original);
+    if (path === '/export-jobs/word-export') return oldDocxRead.promise;
+    if (path === '/export-jobs/pdf-export') return oldPdfRead.promise;
+    throw new Error(`Unexpected read: ${path}`);
+  });
+  const commands = vi.spyOn(api, 'request').mockImplementation((path, method, body) => {
+    if (path === `/artifacts/${artifact.id}/exports` && method === 'POST') {
+      return (body as { format: string }).format === 'DOCX'
+        ? Promise.resolve(docx)
+        : acceptedPdf.promise;
+    }
+    if (path === '/export-jobs/pdf-export/cancel' && method === 'POST')
+      return Promise.resolve({ ...pdf, status: 'CANCELLED' });
+    throw new Error(`Unexpected command: ${path}`);
+  });
+  render(view({ ...context(), can: () => true }));
+  const user = userEvent.setup();
+  const format = await screen.findByLabelText('导出格式');
+  const submit = () => screen.getByRole('button', { name: '生成导出文件' });
+  await user.selectOptions(format, 'DOCX');
+  await user.click(submit());
+  await screen.findByRole('link', { name: '下载 DOCX' });
+  await user.selectOptions(format, 'PDF');
+  expect(format).toHaveValue('PDF');
+  await user.click(submit());
+  expect(commands).toHaveBeenLastCalledWith(
+    `/artifacts/${artifact.id}/exports`,
+    'POST',
+    { artifactRevision: 1, format: 'PDF' },
+    { idempotent: true },
+  );
+  await act(async () => {
+    oldDocxRead.resolve({ ...docx });
+    acceptedPdf.resolve(pdf);
+  });
+  const cancel = await screen.findByRole('button', { name: '取消导出' });
+  expect(screen.queryByRole('link', { name: '下载 DOCX' })).toBeNull();
+  expect(reads).toHaveBeenCalledWith('/export-jobs/pdf-export', expect.any(AbortSignal));
+  await user.click(cancel);
+  await screen.findByText('已取消');
+  await act(async () => oldPdfRead.resolve({ ...pdf, status: 'RUNNING' }));
+  expect(screen.getByText('已取消')).toBeVisible();
+  expect(screen.queryByRole('button', { name: '取消导出' })).toBeNull();
+  expect(submit()).toBeEnabled();
 });

@@ -834,20 +834,13 @@ function ExportPanel({
     job ? `/export-jobs/${job.id}` : null,
     poll + tick + revision,
   );
-  useEffect(() => {
-    if (current.data) setJob(current.data);
-  }, [current.data]);
-  usePolling(
-    !!job && ['QUEUED', 'RUNNING'].includes(job.status),
-    () => setPoll((value) => value + 1),
-    current.loading,
-    !!current.error,
-    1200,
-  );
-  const download = current.data || job;
+  // Only a submit or cancel receipt selects a job. Polls refresh that selection in place.
+  const observed = current.data && current.data.id === job?.id ? current.data : null;
+  const download = job?.status === 'CANCELLED' ? job : observed || job;
+  const pending = !!download && ['QUEUED', 'RUNNING'].includes(download.status);
+  usePolling(pending, () => setPoll((value) => value + 1), current.loading, !!current.error, 1200);
   const path = download?.downloadPath;
   const safePath = path === `/api/v1/export-jobs/${download?.id}/download` ? path : null;
-  const pending = !!download && ['QUEUED', 'RUNNING'].includes(download.status);
   return (
     <section className="export-panel">
       <div>
