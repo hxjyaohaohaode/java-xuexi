@@ -196,6 +196,26 @@ class TutorHttpProviderTest {
         }
     }
 
+    @Test void conversationHistorySurvivesACompatibleNewSnapshotAndExcludesRevokedContext() {
+        try(var harness=harness(5000,1_000_000)) {
+            var memory=workspaces.stateMemory(owner,workspace,"本次学习偏好",key());
+            var first=workspaces.createContext(owner,workspace);
+            String prior="Earlier Question Marker: Java PECS 通配符？";
+            harness.service().submit(owner,new TutorService.TutorInput(conversation,first.id(),TutorService.Mode.MODEL,prior,1,null),key());
+            assertTrue(harness.worker().runOne());
+            var next=workspaces.createContext(owner,workspace);
+            harness.service().submit(owner,new TutorService.TutorInput(conversation,next.id(),TutorService.Mode.MODEL,"Java PECS 示例？",1,null),key());
+            assertTrue(harness.worker().runOne());
+            assertTrue(userContent(captured.get()).path("recentUserQuestions").toString().contains("Earlier Question Marker"));
+            workspaces.revokeMemory(owner,workspace,memory.id(),memory.revision());
+            var after=workspaces.createContext(owner,workspace);
+            harness.service().submit(owner,new TutorService.TutorInput(conversation,after.id(),TutorService.Mode.MODEL,"Java PECS 重试？",1,null),key());
+            assertTrue(harness.worker().runOne());
+            assertTrue(userContent(captured.get()).path("recentUserQuestions").isEmpty());
+            assertFalse(userContent(captured.get()).toString().contains("本次学习偏好"));
+        }
+    }
+
     @Test void learnerTextCannotSelectThePlannerProtocol() {
         try(var harness=harness(5000,1_000_000)) {
             var queued=harness.service().submit(owner,new TutorService.TutorInput(conversation,snapshot.id(),TutorService.Mode.MODEL,

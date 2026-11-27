@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { verifyPublishedClassrooms } from './classroom-archives.mjs';
+import { verifyPersonalCourseware } from './personal-courseware.mjs';
 import { verifyClassroom } from './classroom-journey.mjs';
 import { runWorkbenchJourney } from './workbench-journey.mjs';
 
@@ -47,6 +48,7 @@ const consoleErrors = [];
 const results = [];
 const visualChecks = [];
 let classroomArchives = [];
+let personalCourseware;
 let failurePages = [];
 const expectedConflict = { url: '', active: false, responses: 0, consoleMessages: 0 };
 function monitor(p) {
@@ -530,6 +532,12 @@ try {
     async () => verifyClassroom(page, capturePage),
   );
   await check(
+    'two learners receive different teaching scenes, real feedback reshapes the next lesson and private courseware produces recoverable slides',
+    async () => {
+      personalCourseware = await verifyPersonalCourseware(browser, base, monitor);
+    },
+  );
+  await check(
     'all 16 published lessons export exact Java sources and official OpenMAIC schemas at 320px; the embedded player renders and presents discussion',
     async () => {
       classroomArchives = await verifyPublishedClassrooms(page, workspaceA);
@@ -900,6 +908,8 @@ try {
         const link = page.locator(`.sidebar a[href="#${route}"]`);
         if (!(await link.count())) continue;
         await link.click();
+        if (route === 'learn')
+          await page.getByRole('button', { name: '阅读原文', exact: true }).click();
         await page.locator(ready).first().waitFor();
         for (const width of [1440, 390, 320]) {
           await page.setViewportSize({ width, height: width === 1440 ? 1000 : 844 });
@@ -1035,6 +1045,7 @@ try {
     consoleErrors,
     visualChecks,
     classroomArchives,
+    personalCourseware,
     expectedConflict: {
       url: expectedConflict.url,
       responses: expectedConflict.responses,

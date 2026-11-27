@@ -73,7 +73,13 @@ export interface CourseExample {
 export interface CourseCompanion {
   version: string;
   examples: CourseExample[];
-  reviews: { id: string; conceptId: string; question: string; criterion: string; correction: string | null }[];
+  reviews: {
+    id: string;
+    conceptId: string;
+    question: string;
+    criterion: string;
+    correction: string | null;
+  }[];
 }
 export interface Concept {
   companion?: CourseCompanion | null;
@@ -379,4 +385,40 @@ export interface TutorRequest {
   usage: { reservedTokens: number; usedTokens: number | null; billingState?: string };
   createdAt: string;
   completedAt: string | null;
+}
+
+export type CoursewareApproach = 'AUTO' | 'EXAMPLE_FIRST' | 'GUIDED' | 'CHALLENGE';
+export interface CoursewareScene {
+  key: string;
+  kind: 'READ' | 'PREDICT' | 'EXAMPLE' | 'PRACTICE' | 'REFLECT';
+  title: string;
+  body: string;
+  prompt: string | null;
+  chunkId: string | null;
+  chunkRevision: number | null;
+  exampleId: string | null;
+  exampleSha256: string | null;
+  exerciseId: string | null;
+  exerciseRevision: number | null;
+  attemptId: string | null;
+}
+export interface PersonalCourseware {
+  id: string;
+  workspaceId: string;
+  releaseId: string;
+  conceptId: string;
+  conceptCode: string;
+  title: string;
+  revision: number;
+  createdAt: string;
+  snapshotId: string;
+  contextSequence: number;
+  checkpointId: string;
+  checkpointDigest: string;
+  contentHash: string;
+  requestedApproach: CoursewareApproach;
+  strategy: 'FOUNDATION' | 'EXAMPLE_FIRST' | 'REPAIR' | 'TRANSFER';
+  pace: 'GUIDED' | 'STANDARD' | 'COMPACT';
+  reasons: string[];
+  scenes: CoursewareScene[];
 }

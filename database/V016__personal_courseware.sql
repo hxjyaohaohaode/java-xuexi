@@ -1,0 +1,22 @@
+CREATE TABLE personal_courseware (
+  id CHAR(36) NOT NULL COMMENT '不可变个人课件标识',
+  workspace_id CHAR(36) NOT NULL COMMENT '所属学习空间',
+  release_id CHAR(36) NOT NULL COMMENT '固定课程发布',
+  concept_id CHAR(36) NOT NULL COMMENT '本节概念',
+  revision INT NOT NULL COMMENT '同一空间与概念的课件版本',
+  snapshot_id CHAR(36) NOT NULL COMMENT '冻结学习依据',
+  checkpoint_id CHAR(36) NOT NULL COMMENT '授权上下文压缩收据',
+  auto_snapshot BOOLEAN NOT NULL COMMENT '服务端选取本概念最近作答',
+  generation_hash CHAR(64) NOT NULL COMMENT '课程版本、偏好及学习依据的比较摘要',
+  content_hash CHAR(64) NOT NULL COMMENT '固定课件及其归属摘要',
+  plan_json JSON NOT NULL COMMENT '完整学生可见分镜和绑定来源',
+  sources_json JSON NOT NULL COMMENT '知识修订及哈希、公开题目修订内容摘要',
+  PRIMARY KEY (id),
+  UNIQUE (workspace_id,id),
+  UNIQUE (workspace_id,concept_id,revision),
+  FOREIGN KEY (workspace_id) REFERENCES learning_workspace(id),
+  FOREIGN KEY (release_id,concept_id) REFERENCES release_concept(release_id,concept_id),
+  FOREIGN KEY (snapshot_id) REFERENCES context_snapshot(id),
+  FOREIGN KEY (checkpoint_id) REFERENCES learning_context_checkpoint(id),
+  CHECK (revision > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='基于快照冻结的个人课堂分镜';

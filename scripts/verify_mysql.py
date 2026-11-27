@@ -154,6 +154,22 @@ def verify(harness):
     sql(f"UPDATE agent_run SET reserved_tokens=800,spent_tokens=300 WHERE id='{r1}';",False,'concurrent token oversubscription constrained')
     sql(f"UPDATE agent_run SET status='MADE_UP' WHERE id='{r1}';",False,'unknown run state rejected')
     sql(run_sql(r2,w2,g2,c2),label='second workspace run fixture')
+    checkpoint,lesson=uid('learner-checkpoint'),uid('personal-lesson')
+    def checkpoint_sql(snapshot):
+        return f"INSERT INTO learning_context_checkpoint(id,workspace_id,snapshot_id,concept_id,source_hash,digest,payload) VALUES ('{checkpoint}','{w1}','{snapshot}','{concept}',REPEAT('a',64),REPEAT('b',64),JSON_OBJECT());"
+    sql(checkpoint_sql(c2),False,'role memory cannot use another workspace snapshot')
+    sql(checkpoint_sql(c1),label='same workspace and snapshot accepted for courseware checkpoint')
+    def lesson_sql(snapshot):
+        return f"INSERT INTO personal_courseware(id,workspace_id,release_id,concept_id,revision,auto_snapshot,snapshot_id,checkpoint_id,generation_hash,content_hash,plan_json,sources_json) VALUES ('{lesson}','{w1}','{rel}','{concept}',1,TRUE,'{snapshot}','{checkpoint}',REPEAT('c',64),REPEAT('d',64),JSON_OBJECT(),JSON_OBJECT());"
+    sql(lesson_sql(c2),False,'courseware checkpoint must identify exactly the workspace snapshot')
+    sql(lesson_sql(c1),label='courseware edition pins an existing checkpoint and release')
+    def lesson_run(workspace,run,mode):
+        return f"INSERT INTO courseware_study_run VALUES ('{workspace}','{lesson}','{run}','{mode}',UTC_TIMESTAMP(3));"
+    sql(lesson_run(w1,r2,'MODEL'),False,'courseware cannot attach a foreign run')
+    sql(lesson_run(w2,r2,'MODEL'),False,'learner run cannot read courseware from another workspace')
+    sql(lesson_run(w1,r1,'SIMULATED'),False,'unregistered courseware execution mode denied')
+    sql(lesson_run(w1,r1,'EVIDENCE_ONLY'),label='same workspace edition links to a durable run')
+    sql(f"UPDATE learning_goal SET origin_kind='FABRICATED' WHERE id='{g1}';",False,'invalid learning goal provenance denied')
     s1,s2,s3,s4=[uid('step-'+str(i)) for i in range(1,5)]
     for s,r,revision in [(s1,r1,1),(s2,r1,1),(s3,r2,1),(s4,r1,2)]:
         sql(f"INSERT INTO agent_step(id,run_id,plan_revision,step_key,role_key,status,input_refs,output_refs,read_scopes,write_scopes,required_output) VALUES ('{s}','{r}',{revision},'{s}','generics-expert','PENDING',JSON_ARRAY(),JSON_ARRAY(),JSON_ARRAY(),JSON_ARRAY(),TRUE);",label='task step fixture '+s[-4:])

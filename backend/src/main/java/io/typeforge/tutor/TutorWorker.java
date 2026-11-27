@@ -45,14 +45,20 @@ public final class TutorWorker {
         if(ticket==null) return false;
         try {
             TeachingTurn turn=service.teachingTurn(ticket);
-            var evidence=search.search(ticket.releaseId(),turn.searchText(),null,4).items();
-            var prompt=service.prepare(ticket,evidence,turn);
-            if(evidence.isEmpty()) { service.fail(ticket,"INSUFFICIENT_EVIDENCE",null);return true; }
+            var saved=turn.runId()==null?null:service.recovered(ticket);
+            TutorAnswerProvider.Prompt prompt;
+            if(saved!=null) prompt=saved.prompt();
+            else {
+                var evidence=search.search(ticket.releaseId(),turn.searchText(),service.teachingConcept(turn),4).items();
+                prompt=service.prepare(ticket,evidence,turn);
+                if(turn.runId()!=null) saved=service.recovered(ticket);
+            }
+            if(prompt.evidence().isEmpty()) { service.fail(ticket,"INSUFFICIENT_EVIDENCE",null);return true; }
             Answer answer;
             if(ticket.mode()==TutorService.Mode.EVIDENCE_ONLY) {
                 answer=service.localAnswer(turn,prompt);
             } else {
-                byte[] body=provider.body(prompt);
+                byte[] body=saved!=null && saved.body()!=null?saved.body().getBytes(java.nio.charset.StandardCharsets.UTF_8):provider.body(prompt);
                 service.markDispatched(ticket);
                 answer=provider.send(prompt,body);
             }

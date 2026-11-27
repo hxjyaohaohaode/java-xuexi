@@ -57,10 +57,15 @@ public final class TutorService {
     private final Clock clock;
     private final TutorSettings settings;
     private final HttpTutorModelProvider provider;
+    private final io.typeforge.workspace.LearningContextJournal learningJournal;
+    private final StudyContextJournal journal;
     public TutorService(JdbcTemplate jdbc,TransactionTemplate tx,WorkspaceService workspaces,EventJournal events,JsonCodec json,Clock clock,TutorSettings settings,HttpTutorModelProvider provider) {
         this.jdbc=jdbc;this.tx=tx;this.workspaces=workspaces;this.events=events;this.json=json;this.clock=clock;this.settings=settings;this.provider=provider;
+        this.learningJournal=new io.typeforge.workspace.LearningContextJournal(jdbc,tx,workspaces,json);
+        this.journal=new StudyContextJournal(jdbc,workspaces,learningJournal,json);
     }
 
+    UUID teachingConcept(TeachingTurn turn) { return turn.runId()==null?null:StudyContextJournal.courseConcept(jdbc,turn.runId()); }
     TeachingTurn teachingTurn(Ticket ticket) { return TeachingTurn.resolve(jdbc,json,ticket); }
     TutorAnswerProvider.Answer localAnswer(TeachingTurn turn,Prompt prompt) { return turn.localAnswer(jdbc,json,prompt); }
 
@@ -198,22 +203,59 @@ public final class TutorService {
             Stored row=lockWorker(ticket.ownerId(),ticket.id());requireLease(row,ticket);checkSources(row);
             validateEvidence(row,evidence);
             jdbc.update("UPDATE tutor_request_runtime SET evidence_refs=? WHERE request_id=?",json.write(evidence),row.id().toString());
-            var context=workspaces.readContext(row.owner(),row.workspace(),row.snapshot());
-            var learner=new ArrayList<Map<String,Object>>();int goals=0,memories=0;
-            for(Reference ref:context.references()) {
-                if(ref.kind().equals("GOAL") && goals++<2) learner.add(Map.of("kind","GOAL","id",ref.id(),"text",clip(workspaces.goal(row.owner(),row.workspace(),ref.id()).text(),500)));
-                if(ref.kind().equals("MEMORY") && memories++<2) {
-                    String memory=jdbc.queryForObject("SELECT content_json FROM learner_memory WHERE id=? AND workspace_id=? AND status='ACTIVE'",String.class,ref.id().toString(),row.workspace().toString());
-                    learner.add(Map.of("kind","USER_STATED_MEMORY","id",ref.id(),"text",clip(json.tree(memory).path("summary").asText(),500)));
-                }
+            var roleContext=journal.forRequest(row.owner(),row.workspace(),row.id());
+            var checkpoint=roleContext==null?learningJournal.capture(row.owner(),row.workspace(),row.snapshot(),null)
+                :learningJournal.read(row.owner(),row.workspace(),roleContext.learningContextId());
+            var learner=new ArrayList<Map<String,Object>>();
+            for(var fact:checkpoint.facts()) {
+                if(fact.kind().equals("GOAL") && roleContext==null) learner.add(Map.of("kind","GOAL","id",fact.sourceId(),"text",fact.text()));
+                if(fact.kind().equals("MEMORY")) learner.add(Map.of("kind","USER_STATED_MEMORY","id",fact.sourceId(),"text",fact.text()));
             }
             if(row.attempt()!=null) {
+                // Explicit selection can rehydrate an older, compacted-away attempt from this manifest.
+                learningJournal.recall(row.owner(),row.workspace(),checkpoint.id(),"ATTEMPT",row.attempt());
                 var attempts=jdbc.queryForList("SELECT a.answer,a.score FROM exercise_attempt a JOIN workspace_attempt wa ON wa.attempt_id=a.id WHERE a.id=? AND a.user_id=? AND wa.workspace_id=? AND a.status='GRADED'",row.attempt().toString(),row.owner().toString(),row.workspace().toString());
                 if(attempts.isEmpty()) throw DomainException.missing();
                 learner.add(Map.of("kind","OWN_SUBMITTED_ATTEMPT","id",row.attempt(),"submittedAnswer",clip(json.tree(attempts.get(0).get("answer")).toString(),1000),"score",attempts.get(0).get("score")));
             }
-            var recent=jdbc.queryForList("SELECT question FROM tutor_request WHERE conversation_id=? AND id<>? ORDER BY created_at DESC,id DESC LIMIT 4",String.class,row.conversation().toString(),row.id().toString()).stream().map(value->clip(value,500)).toList();
-            return new Prompt(row.id(),row.question(),row.hintLevel(),recent,learner,evidence,TutorAnswerProvider.Purpose.valueOf(turn.role()));
+            var recent=roleContext!=null?List.<String>of():recentQuestions(row);
+            var prompt=new Prompt(row.id(),row.question(),row.hintLevel(),recent,learner,evidence,TutorAnswerProvider.Purpose.valueOf(turn.role()),
+                roleContext==null?List.of():roleContext.incoming());
+            if(roleContext!=null) journal.commitPrepared(row.id(),prompt,row.mode()==Mode.MODEL && !evidence.isEmpty()
+                ?new String(provider.body(prompt),java.nio.charset.StandardCharsets.UTF_8):null);
+            return prompt;
+        });
+    }
+    private record EarlierQuestion(UUID snapshot,String question) {}
+    private List<String> recentQuestions(Stored row) {
+        var current=workspaces.readContext(row.owner(),row.workspace(),row.snapshot());
+        var allowed=new HashSet<>(current.references());
+        var candidates=jdbc.query("""
+            SELECT r.question,rt.snapshot_id FROM tutor_request r JOIN tutor_request_runtime rt ON rt.request_id=r.id
+            WHERE r.conversation_id=? AND r.id<>? AND r.status='COMPLETED' AND NOT EXISTS
+            (SELECT 1 FROM study_step_execution s WHERE s.request_id=r.id)
+            ORDER BY r.created_at DESC,r.id DESC LIMIT 12
+            """,(rs,n)->new EarlierQuestion(UUID.fromString(rs.getString(2)),rs.getString(1)),row.conversation().toString(),row.id().toString());
+        var recent=new ArrayList<String>();
+        for(var previous:candidates) {
+            if(!previous.snapshot().equals(row.snapshot())) {
+                try {
+                    var origin=workspaces.readContext(row.owner(),row.workspace(),previous.snapshot());
+                    if(!allowed.containsAll(origin.references())) continue;
+                } catch(DomainException invalid) {
+                    if(!invalidSource(invalid)) throw invalid;
+                    continue;
+                }
+            }
+            recent.add(clip(previous.question(),500));
+            if(recent.size()==4) break;
+        }
+        return List.copyOf(recent);
+    }
+    StudyContextJournal.Prepared recovered(Ticket ticket) {
+        return tx.execute(status->{
+            var row=lockWorker(ticket.ownerId(),ticket.id());requireLease(row,ticket);checkSources(row);
+            return journal.readPrepared(row.owner(),row.workspace(),row.id());
         });
     }
     public void markDispatched(Ticket ticket) {
@@ -321,6 +363,7 @@ public final class TutorService {
     private static boolean sameExecution(Stored row,Ticket ticket) { return row.id().equals(ticket.id()) && row.owner().equals(ticket.ownerId()) && row.workspace().equals(ticket.workspaceId()) && row.epoch()==ticket.epoch() && ticket.token().equals(row.token()); }
     private void checkSources(Stored row) {
         var context=workspaces.readContext(row.owner(),row.workspace(),row.snapshot());
+        journal.forRequest(row.owner(),row.workspace(),row.id());
         if(!row.contextHash().equals(context.contentHash())) throw DomainException.conflict("Tutor snapshot changed");
         requirePublished(row.release());validateEvidence(row,row.evidence());
     }

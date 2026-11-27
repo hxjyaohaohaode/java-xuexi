@@ -138,7 +138,8 @@ public final class HttpTutorModelProvider implements TutorAnswerProvider,Runtime
                 if(rule.correction()!=null) entry.put("correction",rule.correction());
                 guidance.add(entry);
             }
-            user=Map.of("question",prompt.question(),"learnerContext",learner,"publishedEvidence",evidence,"courseReviewGuidance",guidance);
+            var handoffs=prompt.handoffs().stream().map(h->Map.of("step",h.stepKey(),"excerpt",h.excerpt())).toList();
+            user=Map.of("question",prompt.question(),"learnerContext",learner,"publishedEvidence",evidence,"courseReviewGuidance",guidance,"handoffs",handoffs);
         }
         byte[] bytes=json.write(Map.of("model",settings.model(),"messages",List.of(Map.of("role","system","content",systemInstruction(prompt.purpose())),Map.of("role","user","content",json.write(user))),
             "response_format",responseFormat(prompt),"max_tokens",settings.maxOutputTokens(),"stream",false)).getBytes(StandardCharsets.UTF_8);

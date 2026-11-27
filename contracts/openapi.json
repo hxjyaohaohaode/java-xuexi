@@ -16115,6 +16115,641 @@
           }
         }
       }
+    },
+    "/workspaces/{id}/courseware/{conceptId}": {
+      "get": {
+        "operationId": "getPersonalCourseware",
+        "summary": "恢复本人当前课节或指定修订的分镜",
+        "tags": [
+          "M06"
+        ],
+        "x-status": "implemented",
+        "description": "恢复本人当前课节或指定修订的分镜",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "conceptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "planId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "optional",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已执行的真实结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalCoursewarePlan"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "当前学生选择的课节或课件尚无记录"
+          },
+          "400": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "generatePersonalCourseware",
+        "summary": "以已授权学习快照生成或复用个人课件修订",
+        "tags": [
+          "M06"
+        ],
+        "x-status": "implemented",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "conceptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:-]{8,64}$"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Actual persisted result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalCoursewarePlan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonalCoursewareInput"
+              }
+            }
+          }
+        },
+        "description": "以已授权学习快照生成或复用个人课件修订"
+      }
+    },
+    "/workspaces/{id}/courseware/{conceptId}/study": {
+      "get": {
+        "operationId": "resumeCoursewareStudy",
+        "summary": "按本人课件修订和生成模式恢复教学任务",
+        "tags": [
+          "M13"
+        ],
+        "x-status": "implemented",
+        "description": "按本人课件修订和生成模式恢复教学任务",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "conceptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "planId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "MODEL",
+                "EVIDENCE_ONLY"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已执行的真实结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRun"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "当前学生选择的课节或课件尚无记录"
+          },
+          "400": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "startCoursewareStudy",
+        "summary": "按所选个人分镜调度教学 Agent 制作可编辑幻灯片",
+        "tags": [
+          "M13"
+        ],
+        "x-status": "implemented",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "conceptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:-]{8,64}$"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Actual persisted result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败；不返回假成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoursewareStudyInput"
+              }
+            }
+          }
+        },
+        "description": "按所选个人分镜调度教学 Agent 制作可编辑幻灯片"
+      }
     }
   },
   "components": {
@@ -23975,6 +24610,12 @@
               ],
               "additionalProperties": false
             }
+          },
+          "contextCheckpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudyContextCheckpoint"
+            }
           }
         },
         "required": [
@@ -23985,7 +24626,8 @@
           "tutorRequestIds",
           "artifactIds",
           "limitations",
-          "handoffs"
+          "handoffs",
+          "contextCheckpoints"
         ]
       },
       "RunOutputReference": {
@@ -26654,6 +27296,312 @@
           "examples",
           "reviews"
         ]
+      },
+      "PersonalCoursewareInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "snapshotId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "approach": {
+            "type": "string",
+            "enum": [
+              "AUTO",
+              "GUIDED",
+              "EXAMPLE_FIRST",
+              "CHALLENGE"
+            ]
+          }
+        }
+      },
+      "CoursewareStudyInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "planId",
+          "mode"
+        ],
+        "properties": {
+          "planId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "MODEL",
+              "EVIDENCE_ONLY"
+            ]
+          }
+        }
+      },
+      "CoursewareScene": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "kind",
+          "title",
+          "body",
+          "prompt",
+          "chunkId",
+          "chunkRevision",
+          "exampleId",
+          "exampleSha256",
+          "exerciseId",
+          "exerciseRevision",
+          "attemptId"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "READ",
+              "PREDICT",
+              "EXAMPLE",
+              "PRACTICE",
+              "REFLECT"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "chunkId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "chunkRevision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "exampleId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "exampleSha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "exerciseId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "exerciseRevision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "attemptId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "PersonalCoursewarePlan": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "workspaceId",
+          "releaseId",
+          "conceptId",
+          "conceptCode",
+          "title",
+          "revision",
+          "createdAt",
+          "snapshotId",
+          "contextSequence",
+          "checkpointId",
+          "checkpointDigest",
+          "contentHash",
+          "requestedApproach",
+          "strategy",
+          "pace",
+          "reasons",
+          "scenes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "releaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "conceptId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "conceptCode": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "snapshotId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contextSequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "checkpointId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "checkpointDigest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "contentHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "requestedApproach": {
+            "type": "string",
+            "enum": [
+              "AUTO",
+              "GUIDED",
+              "EXAMPLE_FIRST",
+              "CHALLENGE"
+            ]
+          },
+          "strategy": {
+            "type": "string",
+            "enum": [
+              "FOUNDATION",
+              "EXAMPLE_FIRST",
+              "REPAIR",
+              "TRANSFER"
+            ]
+          },
+          "pace": {
+            "type": "string",
+            "enum": [
+              "GUIDED",
+              "STANDARD",
+              "COMPACT"
+            ]
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "scenes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoursewareScene"
+            }
+          }
+        }
+      },
+      "StudyContextCheckpoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "stepKey",
+          "role",
+          "planRevision",
+          "runEpoch",
+          "parentCheckpointIds",
+          "sourceCount",
+          "originalChars",
+          "retainedChars",
+          "omittedCount"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stepKey": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "planRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "runEpoch": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "parentCheckpointIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "sourceCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "originalChars": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "retainedChars": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "omittedCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
       }
     }
   }

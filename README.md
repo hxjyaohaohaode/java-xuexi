@@ -8,6 +8,8 @@
 
 同学 11 月 18 日课程包中的 16 份 Java 源码已按概念接入编辑器。阅读页还可查看 5 个模型问答的语义判据与两条订正。学生可在课内用 OpenMAIC 官方播放器翻阅本节讲义与代码，把自己的判断带入导师讨论，也可下载同一组场景的课程包。DeepSeek Harness 插件能读取学生主动选中的课程上下文。学习路径、教学任务、作品与判分共享当前课程、空间及版本。**完整功能、实现入口和验收要求见 [课堂清单](docs/25-integrated-classroom.md)**。
 
+同一章可以为不同学生生成不同的讲义。第一次学习从基本规则和预测开始；先看代码的偏好会把同学的实例提前；有错答时课件带学生回到那次判分并安排变式。可以在课堂里继续生成、翻阅和编辑对应的讲解幻灯片，刷新后恢复这个版本的任务。实现、检查项目与上游对照见[个性化教学清单](docs/26-personal-courseware.md)。
+
 从源码构建后，或在通过的 [GitHub Actions](https://github.com/hxjyaohaohaode/java-xuexi/actions/workflows/baseline.yml) 下载并解压 `TypeForge-classroom`，在装有 Java 17、Python 3 和 Docker Engine 的 Linux 或 WSL2 环境，从解压根目录运行以下命令。启动器构建专用运行镜像，核实 Java 17 和 Python 就绪，再同时启动隔离 worker 与演示应用。如何配置证据导师或模型服务见 [后端说明](backend/README.md)。
 
 ```sh
@@ -92,4 +94,4 @@ python scripts/smoke_runtime.py --profile h2
 
 MySQL、浏览器、模型协议和重启检查的实际命令与环境见验收记录。测试脚本使用专用验证数据，不接入个人生产数据库。新增功能先更新真实实现和契约，再刷新索引、字典、消费者及验证；不要只修改能力标签。
 
-已清理旧基线报告、过时研究副本和分版本字段字典，历史可从 Git 取回。**V001–V014 是升级链，必须保留**；删除或修改已应用的迁移会破坏同学现有数据库。AI 协助过程如实记录在 [ai-context.md](evidence/ai-context.md)，两位学生后续的审阅、修改和贡献另行记录。
+已清理旧基线报告、过时研究副本和分版本字段字典，历史可从 Git 取回。**V001–V017 是升级链，必须保留**；删除或修改已应用的迁移会破坏同学现有数据库。AI 协助过程如实记录在 [ai-context.md](evidence/ai-context.md)，两位学生后续的审阅、修改和贡献另行记录。

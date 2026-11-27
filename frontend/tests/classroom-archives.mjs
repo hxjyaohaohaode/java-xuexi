@@ -37,6 +37,7 @@ export async function verifyPublishedClassrooms(page, workspaceId) {
         .getByRole('heading', { name: topic.title, exact: true, level: 2 })
         .first()
         .waitFor();
+      await stage.getByRole('button', { name: '阅读原文', exact: true }).click();
       const lesson = await stage.locator('.classroom-lesson h2').innerText();
       assert.equal(lesson, topic.title);
       if (topic.code === 'G06') {

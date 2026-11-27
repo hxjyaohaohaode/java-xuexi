@@ -83,6 +83,7 @@ class StudyModelWorkflowTest {
     private UUID owner,workspace,goal,snapshot;
     private final AtomicInteger calls=new AtomicInteger();
     private final AtomicReference<ReplyFactory> reply=new AtomicReference<>();
+    private final List<String> rawBodies=new CopyOnWriteArrayList<>();
     private final List<JsonNode> captured=new CopyOnWriteArrayList<>();
     private final List<String> credentials=new CopyOnWriteArrayList<>();
     private final List<Throwable> fixtureFailures=new CopyOnWriteArrayList<>();
@@ -104,7 +105,8 @@ class StudyModelWorkflowTest {
         server.createContext("/chat/completions",exchange->{
             calls.incrementAndGet();credentials.add(exchange.getRequestHeaders().getFirst("Authorization"));
             try {
-                JsonNode request=json.tree(new String(exchange.getRequestBody().readAllBytes(),StandardCharsets.UTF_8));
+                var raw=new String(exchange.getRequestBody().readAllBytes(),StandardCharsets.UTF_8);rawBodies.add(raw);
+                JsonNode request=json.tree(raw);
                 captured.add(request);byte[] bytes=reply.get().response(request).getBytes(StandardCharsets.UTF_8);
                 exchange.getResponseHeaders().set("Content-Type","application/json");
                 exchange.sendResponseHeaders(200,bytes.length);exchange.getResponseBody().write(bytes);
@@ -205,7 +207,16 @@ class StudyModelWorkflowTest {
             .filter(id->tutors.get(owner,id).question().contains("制定教学计划")).findFirst().orElseThrow());
         assertTrue(json.tree(savedPlan.answer()).isObject());
         schemas.validate("StudyTeachingPlan",json.tree(savedPlan.answer()));
-        String review=captured.stream().map(this::question).filter(q->q.contains("独立于初稿")).findFirst().orElseThrow();
+        var critique=captured.stream().filter(req->question(req).contains("独立于初稿")).findFirst().orElseThrow();
+        String review=user(critique).path("handoffs").toString();
+        assertEquals(2,user(critique).path("handoffs").size());
+        assertFalse(question(critique).contains("EXPERT_CONCEPT_BODY"));
+        var checkpoints=studies.details(owner,run.id()).contextCheckpoints();
+        assertEquals(6,checkpoints.size());
+        var reviewer=checkpoints.stream().filter(c->c.stepKey().equals("review")).findFirst().orElseThrow();
+        assertEquals(2,reviewer.parentCheckpointIds().size());
+        for(var predecessor:reviewer.parentCheckpointIds())
+            assertTrue(checkpoints.stream().anyMatch(c->c.id().equals(predecessor) && c.stepKey().startsWith("expert-")));
         assertTrue(review.contains("EXPERT_CONCEPT_BODY"));assertTrue(review.contains("EXPERT_REPAIR_BODY"));
         assertFalse(review.contains("导师请求 "),"Review must receive expert prose, not spend its excerpt budget on metadata");
         for(UUID id:studies.details(owner,run.id()).artifactIds()) {
@@ -218,6 +229,42 @@ class StudyModelWorkflowTest {
         assertTrue(credentials.stream().allMatch(value->value.equals("Bearer "+TOKEN)));
         assertTrue(captured.stream().noneMatch(request->request.toString().contains(TOKEN) || request.has("tools")));
     }
+    @Test void restartedWorkerReplaysPreparedInputByteForByteBeforeTheOnlyProviderDispatch() {
+        var run=start();studies.advance(owner,workspace,run.id());
+        var ticket=tutors.claimNext();assertNotNull(ticket);
+        var evidence=search.search(ticket.releaseId(),"PECS",null,1).items();
+        tutors.prepare(ticket,evidence);
+        String wire=jdbc.queryForObject("SELECT wire_body FROM study_context_checkpoint WHERE request_id=?",String.class,ticket.id().toString());
+        assertFalse(wire.contains(TOKEN));assertEquals(0,calls.get());
+        // A real prepared but undispatched lease is recoverable. Reopening uses independent service/worker instances.
+        jdbc.update("UPDATE tutor_request_runtime SET lease_until=? WHERE request_id=?",java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(1)),ticket.id().toString());
+        var provider=new HttpTutorModelProvider(settings,json,course,schemas);
+        var restored=new TutorService(jdbc,tx,workspaces,events,json,clock,settings,provider);
+        var restarted=new TutorWorker(restored,search,provider,settings);
+        try { assertTrue(restarted.runOne()); } finally { restarted.close(); }
+        assertEquals("COMPLETED",restored.get(owner,ticket.id()).status());
+        assertEquals(wire,rawBodies.get(0));assertEquals(1,calls.get());
+        assertEquals(1,user(captured.get(0)).path("publishedEvidence").size(),"Recovery must retain the original one-card retrieval");
+    }
+
+    @Test void revokedMemoryAfterCheckpointStopsRecoveryBeforeAnyOutboundBytes() {
+        var memory=workspaces.stateMemory(owner,workspace,"REVOKED_PRIVATE_MARKER",key());
+        snapshot=workspaces.createContext(owner,workspace).id();
+        var run=start();studies.advance(owner,workspace,run.id());
+        var ticket=tutors.claimNext();
+        tutors.prepare(ticket,search.search(ticket.releaseId(),"PECS",null,1).items());
+        assertTrue(jdbc.queryForObject("SELECT wire_body FROM study_context_checkpoint WHERE request_id=?",String.class,ticket.id().toString()).contains("REVOKED_PRIVATE_MARKER"));
+        workspaces.revokeMemory(owner,workspace,memory.id(),memory.revision());
+        jdbc.update("UPDATE tutor_request_runtime SET lease_until=? WHERE request_id=?",java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(1)),ticket.id().toString());
+        var provider=new HttpTutorModelProvider(settings,json,course,schemas);
+        var service=new TutorService(jdbc,tx,workspaces,events,json,clock,settings,provider);
+        var restarted=new TutorWorker(service,search,provider,settings);
+        try { assertFalse(restarted.runOne()); } finally { restarted.close(); }
+        var failed=service.get(owner,ticket.id());
+        assertEquals("FAILED",failed.status());assertEquals("TUTOR_CONTEXT_CHANGED",failed.errorCode());
+        assertEquals("RELEASED",failed.usage().billingState());assertEquals(0,calls.get());
+    }
+
     @ParameterizedTest @ValueSource(strings={"not-json","unadmitted-role","extra-property"})
     void invalidTeachingPlanSettlesKnownProviderUsageWithoutCreatingExperts(String invalid) {
         String answer=switch(invalid) {
