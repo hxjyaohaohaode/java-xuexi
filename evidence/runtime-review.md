@@ -1,35 +1,31 @@
-# v0.6 当前运行验收记录
+# 联动课堂运行验收记录
 
-这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-16T03:49:55.852407+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
+这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-27T07:18:34.684867+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
 
-## 2026 年 11 月 18 日课程交付
+## 课程组交付的来源
 
-「泛型与类型安全」课程提交包包含八类必交材料、完整源码、可运行的 JAR、9 页答辩 PPT 和网页实操视频。解压后先看 `README.md`，Windows 可从 `05_系统源代码/运行包` 启动。 [课程提交包与发布说明](https://github.com/wioo111/java-xuexi/releases/tag/typeforge-course-20261118)
-
-- 源码固定为 [`4a725a4`](https://github.com/hxjyaohaode/java-xuexi/tree/4a725a475aa598c909a9e6c9d5cb635589731001)。本机重新通过 455 项 Java、65 项前端、108 项 MySQL 业务与重启检查。16 组原创 Java 示例按 Java 17 编译目标核验。 [同一源码的 GitHub Actions 记录](https://github.com/hxjyaohaode/java-xuexi/actions/runs/43800639195)
-- 12 条目标检索均首位命中，另有 1 条无匹配对照。5 次本地 Qwen 问答均返回课程引用，其中 2 个回答含实质性类型错误。提交包保留原始回执、订正与复现说明。
-- ZIP SHA-256 为 `b81a5fe3de1f983047b1d27e80e0d2a2ad893f75769f70566c50a406d2f5e60b`。
+同学的 11 月 18 日课程包对应 4a725a4，收录八类材料、可运行 JAR、答辩 PPT、实操视频、16 份原始 Java 样例及 5 道导师问答的历史复核。新课堂将原始代码和订正接入概念阅读与实验。[原始提交](https://github.com/hxjyaohaohaode/java-xuexi/pull/1) · [课程发布包与原始回执](https://github.com/wioo111/java-xuexi/releases/tag/typeforge-course-20261118) · [课堂需求与验收清单](../docs/25-integrated-classroom.md)
 
 ## 实际结果
 
 | 门禁 | 已观察的结果 | 证明边界 |
 |---|---|---|
-| Java/Maven | 455 项，失败/错误/跳过均为 0 | 固定语言语义、账户/会话、SQL/HTTP、编译协议、学习任务/模型协议夹具、发布、素材与原生文件导出回归 |
-| 契约与架构 | 755 项通过；129 个 implemented / 0 个 planned 操作 | 真实路由、schema、模块依赖、索引和文档对应；数量不是产品完成率 |
+| Java/Maven | 471 项，失败/错误/跳过均为 0 | 固定语言语义、账户/会话、SQL/HTTP、编译协议、学习任务/模型协议夹具、发布、素材与原生文件导出回归 |
+| 契约与架构 | 786 项通过；130 个 implemented / 0 个 planned 操作 | 真实路由、schema、模块依赖、索引和文档对应；数量不是产品完成率 |
 | MySQL 8.4 | 194 项；88 张业务表；14 条迁移 | 真实 MySQL 建表、复合外键、唯一性、CHECK、JSON及评测/导入/审核/状态约束 |
 | MySQL 隔离 | 2 项 | 实际 READ COMMITTED、锁后可见已提交写入，并有 REPEATABLE READ 对照 |
 | MySQL 内容服务 | 15 项 | 实际 JDBC 引擎证明；人工录入、审核hash、发布/激活及并发服务在真实 MySQL 上复跑 |
 | MySQL 账户与素材 | 22 项 | 实际 JDBC 引擎证明；账户关闭/会话/并发身份、UTC统计、上传/撤回/配额及下载隔离 |
 | MySQL v0.6 业务链 | 75 项 | 实际 JDBC 引擎证明；批量导入/原子回滚、修订对比、私有评测/容量/取消、TEXT独立审核判分、六类错题块与管理统计 |
-| 编译 broker Python | 13 项 | 离线协议/边界/清理归属；真实容器隔离在远端 CI 独立执行 |
+| 编译 broker Python | 17 项 | 离线协议/边界/清理归属；真实容器隔离在远端 CI 独立执行 |
 | 验收脚本回归 | 20 项 | 临时 Git/进程夹具验证旧 PASS 复用、缺失测试、源码/JAR变化与驱动失败；不是实际 Maven、浏览器或数据库执行 |
-| H2 实际 HTTP/重启 | 93 项；168 次请求 | 单独进程、真实会话/CSRF、业务链、真实下载、重启保留与撤回后失效 |
-| MySQL 实际 HTTP/重启 | 108 项；170 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
-| 前端类型/构建/单元 | 65 项单元通过；TypeScript 与 Vite 构建成功 | 编译与组件/状态逻辑；不等于真实浏览器布局验收 |
+| H2 实际 HTTP/重启 | 93 项；171 次请求 | 单独进程、真实会话/CSRF、业务链、真实下载、重启保留与撤回后失效 |
+| MySQL 实际 HTTP/重启 | 108 项；171 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
+| 前端类型/构建/单元 | 72 项单元通过；TypeScript 与 Vite 构建成功 | 编译与组件/状态逻辑；不等于真实浏览器布局验收 |
 | 前端 DOM + 真实 HTTP | 24 条链通过 | 无服务端响应 mock；jsdom 驱动真实后端；不验证浏览器布局/原生下载 |
-| Chromium 浏览器 | 本地被环境阻止；精确提交由 GitHub Actions 运行 | 本地 AF_UNIX 创建受限，不记成通过；远端 Playwright失败会阻断CI |
+| Chromium 浏览器 | 23 个检查段通过 | 真实浏览器操作同一份 JAR；CI 另行验证推送的提交 |
 
-Java 各测试类的实际汇总：
+Java 测试类汇总
 
 | 测试类 | 测试数 | 失败 / 错误 / 跳过 |
 |---|---:|---|
@@ -38,8 +34,8 @@ Java 各测试类的实际汇总：
 | `ArtifactFileExportTest` | 10 | 0 / 0 / 0 |
 | `BatchImportIntegrationTest` | 16 | 0 / 0 / 0 |
 | `CodeRubricSemanticsTest` | 4 | 0 / 0 / 0 |
-| `CompileHttpProtocolTest` | 8 | 0 / 0 / 0 |
-| `CompileQueueTest` | 14 | 0 / 0 / 0 |
+| `CompileHttpProtocolTest` | 9 | 0 / 0 / 0 |
+| `CompileQueueTest` | 15 | 0 / 0 / 0 |
 | `ContentComparisonIntegrationTest` | 7 | 0 / 0 / 0 |
 | `DurableAgentRuntimeTest` | 26 | 0 / 0 / 0 |
 | `EvaluationWorkbenchIntegrationTest` | 27 | 0 / 0 / 0 |
@@ -50,18 +46,18 @@ Java 各测试类的实际汇总：
 | `FullLearningLoopIntegrationTest` | 9 | 0 / 0 / 0 |
 | `GenericEdgeCasesTest` | 24 | 0 / 0 / 0 |
 | `GenericSemanticsTest` | 34 | 0 / 0 / 0 |
-| `InteractiveLearningTest` | 14 | 0 / 0 / 0 |
-| `KnowledgeRuntimeTest` | 11 | 0 / 0 / 0 |
+| `InteractiveLearningTest` | 15 | 0 / 0 / 0 |
+| `KnowledgeRuntimeTest` | 14 | 0 / 0 / 0 |
 | `LocalLearningToolsTest` | 8 | 0 / 0 / 0 |
 | `NotebookInteractionIntegrationTest` | 15 | 0 / 0 / 0 |
 | `PrivateAssetsIntegrationTest` | 8 | 0 / 0 / 0 |
 | `RootArchitectureInvariantsTest` | 24 | 0 / 0 / 0 |
 | `StudyModelWorkflowTest` | 8 | 0 / 0 / 0 |
-| `StudyWorkflowIntegrationTest` | 11 | 0 / 0 / 0 |
+| `StudyWorkflowIntegrationTest` | 14 | 0 / 0 / 0 |
 | `TextLearningIntegrationTest` | 10 | 0 / 0 / 0 |
 | `TransactionIsolationTest` | 2 | 0 / 0 / 0 |
 | `TutorHttpBoundaryTest` | 3 | 0 / 0 / 0 |
-| `TutorHttpProviderTest` | 17 | 0 / 0 / 0 |
+| `TutorHttpProviderTest` | 24 | 0 / 0 / 0 |
 | `TutorRuntimeTest` | 16 | 0 / 0 / 0 |
 | `WorkspaceArtifactReferenceTest` | 1 | 0 / 0 / 0 |
 | `WorkspaceContextSelectionTest` | 3 | 0 / 0 / 0 |
@@ -75,7 +71,7 @@ Java 各测试类的实际汇总：
 
 真实作答经 outbox 和幂等 receipt 进入独立题目家族证据与复习；错题块调用同一判分服务。阅读/预测/作品生成只记活动，不给虚假的掌握分。
 
-导师会话绑定本人空间和固定课程；请求固定上下文、租约、epoch 与额度。MODEL协议使用本地真实 HTTP 服务夹具测试响应、超时、异常与引用，EVIDENCE_ONLY真实检索。夹具不是付费供应商教学质量证明。取消、账号禁用、归档、deadline、自然过期、来源撤回及未知计量均有独立边界。
+导师会话绑定本人空间和固定课程；请求固定上下文、租约、epoch 与额度。MODEL协议使用本地真实 HTTP 服务夹具测试响应、超时、异常与引用，EVIDENCE_ONLY真实检索。本地真实权重的逐题核对、错误实例及教学创作验收另见[模型实测](classroom-model-review.md)。取消、账号禁用、归档、deadline、自然过期、来源撤回及未知计量均有独立边界。
 
 回答转文档保存完整来源；作品保存、上下文读取、错题动作、导出与下载复核有界祖先图、实际内容hash和叶子来源。自然到期不依赖提前产生撤回事件。导出固定 renderer 与源 revision，真实字节与终态同事务；HTML/SVG转义、非法XML字符、失效来源和越权均不会变成可用下载。
 
@@ -113,13 +109,13 @@ python scripts/record_verification.py --check-snapshot
 
 ## 当前包与源码
 
-- JAR SHA-256：`2d80e5428be5ab9a1e155279372ea94e5b3e9f5176b87b88897c96eb8713e0d6`。
-- 源码文件数：375；SHA-256 摘要：`0282d0c0df3ac840a5a3968a02b003800e8ea6cfc317e0a48857b5a26648c351`。
+- JAR SHA-256：`21eaca58e392a98deddd9d146331c1456b965e03581f0cfb041784a965c03507`。
+- 源码文件数：417；SHA-256 摘要：`5447b480f104bcca8c535797ba95219f7cb3efb6cbd493223915c995832e1c46`。
 - 只有本记录与机器报告自身从源码摘要排除，避免循环hash；迁移、代码、契约、页面、锁文件、文档及CI均包含。
 - 发布提交的远端结果在 [GitHub Actions](https://github.com/hxjyaohaohaode/java-xuexi/actions)核对，不能把本地环境结果当成Java17/Ubuntu/Chromium结果。
 
 ## 仍未完成和未验证
 
-真实供应商模型的教学效果、费用账单、通用任意工具调度、隔离编译服务的生产部署、生成式图像/音频/视频、全课程人工审核、生产负载与备份恢复、正式答辩和个人贡献均不在本轮PASS范围内。真实 Docker 编译检查由远端 CI 独立证明，不等于生产部署。逐模块剩余事项及代码入口见 [接手指南](../docs/02-modules.md)。最终40项课程验收保持独立，不因自动测试通过而自动升级。
+真实供应商模型的教学效果、费用账单、通用任意工具调度、隔离编译服务的生产部署、生成式图像/音频/视频、全课程人工审核、生产负载与备份恢复、正式答辩和个人贡献均不在本轮PASS范围内。Docker 上的 Java/Python 运行和浏览器提交结果由 GitHub Actions 独立记录。逐模块剩余事项及代码入口见 [接手指南](../docs/02-modules.md)。最终40项课程验收保持独立，不因自动测试通过而自动升级。
 
 旧基线报告和重复字段字典已清理；历史保留在Git。V001–V014为合法升级链，由 `database/migrations.lock.json`锁定，不能为清理旧版本而删除。
