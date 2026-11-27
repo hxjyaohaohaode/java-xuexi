@@ -190,6 +190,9 @@ public final class TutorService {
     }
     /** Reads authorized selected context; never reads exercise.answer_spec, tests, solutions or keys. */
     public Prompt prepare(Ticket ticket,List<EvidenceView> evidence) {
+        return prepare(ticket,evidence,teachingTurn(ticket));
+    }
+    Prompt prepare(Ticket ticket,List<EvidenceView> evidence,TeachingTurn turn) {
         if(evidence==null || evidence.size()>4) throw DomainException.invalid("At most four tutor evidence cards are allowed");
         return tx.execute(status->{
             Stored row=lockWorker(ticket.ownerId(),ticket.id());requireLease(row,ticket);checkSources(row);
@@ -210,7 +213,7 @@ public final class TutorService {
                 learner.add(Map.of("kind","OWN_SUBMITTED_ATTEMPT","id",row.attempt(),"submittedAnswer",clip(json.tree(attempts.get(0).get("answer")).toString(),1000),"score",attempts.get(0).get("score")));
             }
             var recent=jdbc.queryForList("SELECT question FROM tutor_request WHERE conversation_id=? AND id<>? ORDER BY created_at DESC,id DESC LIMIT 4",String.class,row.conversation().toString(),row.id().toString()).stream().map(value->clip(value,500)).toList();
-            return new Prompt(row.id(),row.question(),row.hintLevel(),recent,learner,evidence);
+            return new Prompt(row.id(),row.question(),row.hintLevel(),recent,learner,evidence,TutorAnswerProvider.Purpose.valueOf(turn.role()));
         });
     }
     public void markDispatched(Ticket ticket) {
@@ -246,12 +249,15 @@ public final class TutorService {
             validateAnswer(row,answer);
             if(row.mode()==Mode.MODEL && row.dispatched()==null) throw DomainException.conflict("A model answer requires an admitted provider dispatch");
             List<EvidenceView> cited=row.evidence().stream().filter(e->answer.citedChunkIds().contains(e.chunkId())).toList();
-            String limitation=row.mode()==Mode.MODEL?"模型讲解仅通过引用归属与版本校验，尚未经独立事实或编译核验。 "+answer.limitations():"本地证据整理，未调用语言模型；词项相关性不能代替完整事实核验。 "+answer.limitations();
+            var rules=row.mode()==Mode.MODEL?provider.courseRules(row.evidence()):List.<HttpTutorModelProvider.CourseRule>of();
+            var anchors=rules.stream().map(HttpTutorModelProvider.CourseRule::chunkId).collect(java.util.stream.Collectors.toSet());
+            var displayedEvidence=row.evidence().stream().filter(card->answer.citedChunkIds().contains(card.chunkId()) || anchors.contains(card.chunkId())).toList();
+            String limitation=row.mode()==Mode.MODEL?provider.learnerNote(rules,answer.limitations()):"本地证据整理，未调用语言模型；词项相关性不能代替完整事实核验。 "+answer.limitations();
             UUID message=UUID.randomUUID();
             jdbc.update("INSERT INTO tutor_message(id,request_id,answer,limitations,suggestions,created_at) VALUES(?,?,?,?,'[]',?)",message.toString(),row.id().toString(),answer.text(),limitation,Timestamp.from(clock.instant()));
             for(EvidenceView e:cited) jdbc.update("INSERT INTO message_citation(message_id,release_id,chunk_id,chunk_revision,locator) VALUES(?,?,?,?,?)",message.toString(),row.release().toString(),e.chunkId().toString(),e.revision(),clip(e.sourceSection(),255));
             jdbc.update("UPDATE tutor_request SET status='COMPLETED',error_code=NULL WHERE id=?",row.id().toString());
-            jdbc.update("UPDATE tutor_request_runtime SET evidence_refs=?,result_hash=?,lease_until=NULL,completed_at=? WHERE request_id=?",json.write(cited),digest,Timestamp.from(clock.instant()),row.id().toString());
+            jdbc.update("UPDATE tutor_request_runtime SET evidence_refs=?,result_hash=?,lease_until=NULL,completed_at=? WHERE request_id=?",json.write(displayedEvidence),digest,Timestamp.from(clock.instant()),row.id().toString());
             events.append(row.workspace(),"TUTOR_REQUEST_COMPLETED","SERVER",Map.of("requestId",row.id(),"epoch",row.epoch(),"mode",row.mode().name(),"citationCount",cited.size()));
         });
     }

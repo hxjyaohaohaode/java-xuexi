@@ -9,6 +9,7 @@ import {
 import { useEffect, useRef, type ReactNode } from 'react';
 import { ApiError, message, safeSourceUrl } from '../api';
 import type { Evidence } from '../types';
+import { lessonText } from '../lessonText';
 
 export function ErrorNotice({ error, retry }: { error: unknown; retry?: () => void }) {
   if (!error) return null;
@@ -120,41 +121,50 @@ export function Confirmed({ children }: { children: ReactNode }) {
 export function EvidenceList({ items, compact = false }: { items: Evidence[]; compact?: boolean }) {
   return (
     <div className={`evidence-list ${compact ? 'compact' : ''}`}>
-      {items.map((e) => (
-        <article className="evidence-card" key={`${e.chunkId}:${e.revision}`}>
-          <div className="row spread">
-            <h3>{e.title}</h3>
-            <Badge>知识版本 {e.revision}</Badge>
-          </div>
-          <p className="preserve-text">{e.excerpt}</p>
-          <div className="source-line">
-            {safeSourceUrl(e.source.url) ? (
-              <a href={safeSourceUrl(e.source.url)} target="_blank" rel="noreferrer">
-                {e.source.title}
-                <ArrowUpRight size={14} />
-              </a>
-            ) : (
-              <span>{e.source.title}</span>
-            )}
-            <span>{e.sourceSection}</span>
-          </div>
-          <details>
-            <summary>
-              查看来源与校验信息 <ChevronRight size={14} />
-            </summary>
-            <dl className="metadata">
-              <dt>资料版本</dt>
-              <dd>{e.source.edition}</dd>
-              <dt>内容摘要</dt>
-              <dd>
-                <code>{e.contentHash}</code>
-              </dd>
-              <dt>使用说明</dt>
-              <dd>{e.source.usageNote}</dd>
-            </dl>
-          </details>
-        </article>
-      ))}
+      {items.map((e) => {
+        const { body, sourceStatus } = lessonText(e);
+        return (
+          <article className="evidence-card" key={`${e.chunkId}:${e.revision}`}>
+            <div className="row spread">
+              <h3>{e.title}</h3>
+              <Badge>知识版本 {e.revision}</Badge>
+            </div>
+            <p className="preserve-text">{body}</p>
+            <div className="source-line">
+              {safeSourceUrl(e.source.url) ? (
+                <a href={safeSourceUrl(e.source.url)} target="_blank" rel="noreferrer">
+                  {e.source.title}
+                  <ArrowUpRight size={14} />
+                </a>
+              ) : (
+                <span>{e.source.title}</span>
+              )}
+              <span>{e.sourceSection}</span>
+            </div>
+            <details>
+              <summary>
+                查看来源与校验信息 <ChevronRight size={14} />
+              </summary>
+              <dl className="metadata">
+                {sourceStatus && (
+                  <>
+                    <dt>课程来源</dt>
+                    <dd>{sourceStatus}</dd>
+                  </>
+                )}
+                <dt>资料版本</dt>
+                <dd>{e.source.edition}</dd>
+                <dt>内容摘要</dt>
+                <dd>
+                  <code>{e.contentHash}</code>
+                </dd>
+                <dt>使用说明</dt>
+                <dd>{e.source.usageNote}</dd>
+              </dl>
+            </details>
+          </article>
+        );
+      })}
     </div>
   );
 }

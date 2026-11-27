@@ -78,7 +78,10 @@ export async function verifyPublishedClassrooms(page, workspaceId) {
           section,
         })),
       );
-      for (const evidence of topic.evidence) {
+      const prefix =
+        '演示预置学习内容；origin=demo-authored-code-reviewed；未执行双人正式发布审核。目标Java版本17。\n\n';
+      const cards = stage.locator('.scene-read .evidence-card');
+      for (const [index, evidence] of topic.evidence.entries()) {
         const fragments = manifest.scenes
           .filter((scene) =>
             scene.content.canvas.script?.split('\n').includes(evidence.contentHash),
@@ -101,7 +104,22 @@ export async function verifyPublishedClassrooms(page, workspaceId) {
               .join(''),
           fragments,
         );
-        assert.equal(actual, evidence.excerpt, topic.code + ' published evidence text');
+        const source = provenance.sources.find((entry) => entry.chunkId === evidence.chunkId);
+        assert.equal(source.excerpt, evidence.excerpt, topic.code + ' original evidence');
+        assert.ok(source.excerpt.startsWith(prefix), topic.code + ' authenticated demo source');
+        const body = source.excerpt.slice(prefix.length);
+        assert.equal(actual, body, topic.code + ' complete teaching text on slides');
+        const card = cards.nth(index);
+        const paragraph = card.locator('p.preserve-text');
+        assert.equal(await paragraph.textContent(), body, topic.code + ' original reading');
+        assert.ok(
+          await paragraph.evaluate((el) => parseFloat(getComputedStyle(el).fontSize) >= 16),
+          topic.code + ' legible reading at 320px',
+        );
+        assert.match(
+          await card.locator('details').textContent(),
+          /尚未经过双人发布审核。适用 Java 17/,
+        );
       }
       const elements = manifest.scenes.flatMap((scene) => scene.content.canvas.elements);
       const code = elements.filter((element) => element.type === 'code');

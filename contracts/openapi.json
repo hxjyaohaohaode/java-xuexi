@@ -16475,6 +16475,11 @@
             "minLength": 0,
             "maxLength": 3000
           },
+          "fullText": {
+            "type": "string",
+            "maxLength": 16000,
+            "description": "Complete verified published text when the selected concept detail exceeds the excerpt limit. Its original contentHash covers the whole text."
+          },
           "source": {
             "$ref": "#/components/schemas/Source"
           },

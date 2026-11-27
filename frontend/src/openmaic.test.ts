@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { unzipSync, strFromU8 } from 'fflate';
 import { validateScene, validateStage } from '@openmaic/dsl';
-import { buildMaicArchive } from './openmaic';
+import { buildMaicArchive, buildMaicLesson } from './openmaic';
 import { testConcept } from './test/workspace';
 
 it('exports a portable OpenMAIC v1 manifest with complete typed code, source hashes and a remappable discussion roster', () => {
@@ -69,4 +69,30 @@ it('exports a portable OpenMAIC v1 manifest with complete typed code, source has
     'student',
   ]);
   expect(manifest.mediaIndex).toEqual({});
+});
+
+it('keeps author text verbatim and separates only the seeded edition’s exact import header', () => {
+  const header =
+    '演示预置学习内容；origin=demo-authored-code-reviewed；未执行双人正式发布审核。目标Java版本17。\n\n';
+  const body = '  第一段\n\n' + '完整正文。'.repeat(800) + '\n' + header + '文中引用。  ';
+  const seeded = '29f405da-3e5f-318f-a9ac-790603cfa1bb';
+  for (const [releaseId, excerpt, display] of [
+    [seeded, header + body, body],
+    ['custom-release', header + body, header + body],
+    [seeded, '前言：' + header + body, '前言：' + header + body],
+  ]) {
+    const evidence = {
+      ...testConcept.evidence[0],
+      releaseId,
+      excerpt: excerpt.slice(0, 3000),
+      fullText: excerpt,
+    };
+    const topic = { ...testConcept, releaseId, evidence: [evidence] };
+    const lesson = buildMaicLesson(topic);
+    expect(lesson.transcripts.slice(0, -1).join('')).toBe(display);
+    const archive = unzipSync(buildMaicArchive(topic));
+    const raw = JSON.parse(strFromU8(archive['typeforge-sources.json'])).sources[0];
+    expect(raw.excerpt).toBe(excerpt);
+    expect(raw.sha256).toBe(evidence.contentHash);
+  }
 });

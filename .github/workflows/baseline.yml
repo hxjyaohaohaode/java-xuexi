@@ -106,6 +106,10 @@ jobs:
       - name: Install the locked frontend dependencies
         working-directory: frontend
         run: npm ci
+      - name: Record static inputs and verify the isolated MySQL schema
+        run: |
+          python scripts/verify.py
+          python scripts/verify_mysql.py
       - name: Verify and bind the complete fresh frontend build
         run: python scripts/verify_frontend.py
       - name: Verify original peer course Java sources and their observed output
@@ -151,8 +155,14 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Run Java and Python from the packaged classroom in Chromium
         run: node frontend/tests/program-runtime.mjs
+      - name: Verify the HTTP DOM journey against the packaged application
+        run: python scripts/browser_runtime.py --driver dom --jar backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar
       - name: Verify the real browser against the packaged application
         run: python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar
+      - name: Bind all observed gates to this source tree and packaged JAR
+        run: |
+          python scripts/record_verification.py
+          python scripts/record_verification.py --check-snapshot
       - name: Package the verified application and the local classroom launcher
         uses: actions/upload-artifact@v4
         with:
@@ -181,6 +191,10 @@ jobs:
             .work/mysql-content-verification.json
             .work/mysql-account-assets-verification.json
             .work/mysql-v06-modules-verification.json
+            evidence/runtime-check-results.json
+            evidence/runtime-review.md
+            frontend/test-results/dom-runtime-report.json
+            frontend/test-results/live-dom-report.json
             frontend/test-results/program-runtime.json
             frontend/test-results/browser-runtime-report.json
             frontend/test-results/browser-report.json

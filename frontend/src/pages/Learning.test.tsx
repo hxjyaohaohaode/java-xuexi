@@ -153,3 +153,24 @@ it('keeps tutor drafts per lesson and submits the explicitly attached attempt wi
   await user.click(within(pane).getByRole('button', { name: '关闭课堂导师' }));
   expect(screen.getByRole('button', { name: '课堂导师' })).toHaveFocus();
 });
+
+it('reads the complete selected lesson when the directory ends at the excerpt boundary', async () => {
+  const excerpt = '文'.repeat(2999);
+  const fullText = excerpt + '🌿这是目录外的课程原文。';
+  const card = { ...testConcept.evidence[0], excerpt };
+  const brief = { ...testConcept, evidence: [card] };
+  const get = vi.spyOn(api, 'get').mockImplementation(async (url) => {
+    if (url.startsWith('/concepts?')) return { items: [brief] };
+    if (url === '/concepts/concept-1?releaseId=release-1')
+      return { ...brief, evidence: [{ ...card, fullText }] };
+    throw Error(url);
+  });
+  render(
+    <TestWorkspace value={testWorkspace()}>
+      <Learning />
+    </TestWorkspace>,
+  );
+  const paragraph = await screen.findByText(/这是目录外的课程原文/);
+  expect(paragraph.textContent).toBe(fullText);
+  expect(get).toHaveBeenCalledWith('/concepts/concept-1?releaseId=release-1', expect.anything());
+});

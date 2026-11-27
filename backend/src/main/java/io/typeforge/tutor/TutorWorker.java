@@ -46,7 +46,7 @@ public final class TutorWorker {
         try {
             TeachingTurn turn=service.teachingTurn(ticket);
             var evidence=search.search(ticket.releaseId(),turn.searchText(),null,4).items();
-            var prompt=service.prepare(ticket,evidence);
+            var prompt=service.prepare(ticket,evidence,turn);
             if(evidence.isEmpty()) { service.fail(ticket,"INSUFFICIENT_EVIDENCE",null);return true; }
             Answer answer;
             if(ticket.mode()==TutorService.Mode.EVIDENCE_ONLY) {

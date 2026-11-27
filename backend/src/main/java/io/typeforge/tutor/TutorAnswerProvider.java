@@ -7,8 +7,9 @@ import java.util.UUID;
 
 /** Typed boundary: the provider receives only admitted learner context and published evidence. */
 public interface TutorAnswerProvider {
+    enum Purpose { TUTOR, PLANNER, CONCEPT, EXAMPLE, REPAIR, REVIEW }
     record Prompt(UUID requestId,String question,int hintLevel,List<String> recentQuestions,
-                  List<Map<String,Object>> learnerContext,List<EvidenceView> evidence) {
+                  List<Map<String,Object>> learnerContext,List<EvidenceView> evidence,Purpose purpose) {
         public Prompt { recentQuestions=List.copyOf(recentQuestions);learnerContext=List.copyOf(learnerContext);evidence=List.copyOf(evidence); }
     }
     record Usage(long promptTokens,long completionTokens,long totalTokens) {}

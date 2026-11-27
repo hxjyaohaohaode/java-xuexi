@@ -104,9 +104,15 @@ export function Learning() {
   const stage = useRef<HTMLDivElement>(null);
   const scene = context.classroomScene || 'read';
   const items = concepts.data?.items || [];
-  const chosen = selection
+  const listed = selection
     ? items.find((c) => c.id === selection)
     : items.find((c) => c.id === lastConcept) || items[0];
+  // The directory includes bounded excerpts. Fetch complete content only for a potentially clipped lesson.
+  const needsDetail = listed?.evidence.some((e) => e.fullText == null && e.excerpt.length >= 2999);
+  const detail = useResource<Concept>(
+    needsDetail && listed ? `/concepts/${listed.id}?releaseId=${workspace.releaseId}` : null,
+  );
+  const chosen = needsDetail ? detail.data : listed;
   const activePath =
     path.data?.workspaceId === workspace.id && path.data.releaseId === workspace.releaseId
       ? path.data
@@ -216,10 +222,12 @@ export function Learning() {
       <ErrorNotice error={concepts.error} retry={concepts.reload} />
       <ErrorNotice error={readings.error} retry={readings.reload} />
       <ErrorNotice error={path.error} retry={path.reload} />
-      {concepts.loading && !concepts.data ? (
+      <ErrorNotice error={detail.error} retry={detail.reload} />
+      {(concepts.loading && !concepts.data) || (needsDetail && detail.loading) ? (
         <Loading />
       ) : !chosen ? (
-        !concepts.error && (
+        !concepts.error &&
+        !detail.error && (
           <Empty title={selection ? '这个概念不在当前课程版本中' : '课程目录暂时为空'}>
             {selection && items[0] && (
               <button onClick={() => open(items[0].id)}>回到当前课程</button>

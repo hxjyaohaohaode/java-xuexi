@@ -51,6 +51,7 @@ export interface Evidence {
   releaseId: string;
   title: string;
   excerpt: string;
+  fullText?: string | null;
   source: { id: string; title: string; url: string; edition: string; usageNote: string };
   rankScore: number;
   contentHash: string;

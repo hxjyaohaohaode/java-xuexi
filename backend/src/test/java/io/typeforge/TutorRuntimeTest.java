@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles({"test","demo"})
 @Timeout(30)
 class TutorRuntimeTest {
+    @Autowired io.typeforge.curriculum.CourseCompanions course;
     @Autowired JdbcTemplate jdbc;
     @Autowired TransactionTemplate tx;
     @Autowired WorkspaceService workspaces;
@@ -177,7 +178,7 @@ class TutorRuntimeTest {
         assertTrue(tutors.conversation(owner,conversation.id(),null,20).messages().stream().allMatch(result->result.answer()==null));
     }
     @Test void quotaCountsArePerOwnerAcrossWorkspacesAndCancellationDoesNotRefundRequestRate() {
-        TutorSettings limited=limits(2,1);var service=service(limited,new HttpTutorModelProvider(limited,json));
+        TutorSettings limited=limits(2,1);var service=service(limited,new HttpTutorModelProvider(limited,json,course,schemas));
         var first=service.submit(owner,input("PECS"),key());
         assertEquals("TUTOR_PENDING_LIMIT",assertThrows(DomainException.class,()->service.submit(owner,input("Generics"),key())).code());
         service.cancel(owner,first.id(),1);

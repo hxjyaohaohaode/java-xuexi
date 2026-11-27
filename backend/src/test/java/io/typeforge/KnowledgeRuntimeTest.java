@@ -55,7 +55,11 @@ class KnowledgeRuntimeTest {
         assertEquals(current, curriculum.activeRelease());
         assertEquals(12, curriculum.exercises(release, null, null, 100).items().size());
         assertEquals(33, curriculum.exercises(current, null, null, 100).items().size());
-        assertTrue(curriculum.concepts(current).stream().allMatch(c -> c.relatedExerciseIds().size() >= 2));
+        for (var concept : curriculum.concepts(current)) {
+            assertTrue(concept.relatedExerciseIds().size() >= 2);
+            assertEquals(curriculum.exercises(current, concept.id(), null, 100).items().stream()
+                    .map(CurriculumService.ExerciseView::id).limit(20).toList(), concept.relatedExerciseIds());
+        }
     }
 
     @Test void peerPackMatchesAllPublishedConceptsAndTheOriginalRetrievalChecks() throws Exception {
@@ -104,6 +108,24 @@ class KnowledgeRuntimeTest {
         assertEquals(12, curriculum.exercises(release, null, null, 100).items().size());
         assertTrue(concepts.stream().allMatch(c -> !c.evidence().isEmpty()));
         assertTrue(concepts.stream().flatMap(c -> c.evidence().stream()).allMatch(e -> e.contentHash().matches("[a-f0-9]{64}") && e.source().url().startsWith("https://docs.oracle.com/")));
+    }
+
+    @Test void selectedLongLessonRetainsItsEntireVerifiedBodyWithoutExpandingSearchOrDirectory() {
+        var card = curriculum.chunks(release, List.of()).get(0);
+        String body = "学".repeat(2999) + "📚" + "结尾仍是本节课程正文";
+        jdbc.update("UPDATE knowledge_chunk SET body=?,content_hash=? WHERE id=? AND revision=?",
+            body, json.sha256(body), card.chunkId().toString(), card.revision());
+        var selected = curriculum.concept(release, card.conceptId()).evidence().stream()
+            .filter(e -> e.chunkId().equals(card.chunkId())).findFirst().orElseThrow();
+        assertEquals("学".repeat(2999), selected.excerpt());
+        assertEquals(body, selected.fullText());
+        assertEquals(json.sha256(body), selected.contentHash());
+        var preview = curriculum.concepts(release).stream().filter(c -> c.id().equals(card.conceptId()))
+            .findFirst().orElseThrow().evidence().stream().filter(e -> e.chunkId().equals(card.chunkId())).findFirst().orElseThrow();
+        assertEquals(selected.excerpt(), preview.excerpt());
+        assertFalse(json.tree(json.write(preview)).has("fullText"));
+        assertFalse(json.tree(json.write(CurriculumService.evidence(curriculum.chunks(release, List.of(card.conceptId()))
+            .stream().filter(c -> c.chunkId().equals(card.chunkId())).findFirst().orElseThrow(), 1))).has("fullText"));
     }
 
     @Test void reinitializationDoesNotDuplicateOrOverwritePublishedFixtures() {

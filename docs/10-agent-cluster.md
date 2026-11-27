@@ -166,3 +166,10 @@ conductor 输入为目标、已有作品、学习证据、可用工具与预算�
 9. **退出条件**：全部必需验收通过→COMPLETED；仅部分通过→PARTIAL；问题/预算需要用户→WAITING_USER；重试耗尽→FAILED；取消→CANCELLED。完成目标还需检查实际产物清单，不能由某个专家一句“完成”改变状态。
 
 可机器读取的角色/能力/策略与示例见 [agent目录](../agent/README.md)。实施每一项时都应补充真实执行证据、负例与可测边界；当前已有受限学习任务执行链，尚无通用自治集群或真实供应商教学效果测量。
+
+
+### 模型教学步骤的输出契约
+
+调度器从持久化的任务关联确定规划、专家和审阅身份。规划调用在一个 JSON 对象内提交 `strategy`、`sections`、`citedChunkIds`。其中教学计划遵循仓库的 `StudyTeachingPlan`，可引用的知识卡标识来自本次固定发行版的检索。专家和审阅调用各有分工，提交讲解、引用与局限。接收方逐次检查字段、角色范围、引用归属和用量，随后保存不可变草稿及交接记录。
+
+默认工作流使用兼容 Chat Completions 的 `response_format.type=json_schema`。对只支持 JSON Object 的供应端，部署者可设置 `TYPEFORGE_TUTOR_WORKFLOW_STRUCTURED_OUTPUTS=false`。此时仍要求同一输出结构并在服务端校验，提供方生成错误的结构会使该步失败且保留用量记录。普通学习者导师会话始终使用原有 JSON Object 协议。跨角色传递的数据信息限定在被授予的目标、学习记录、版本化草稿和课程证据中。

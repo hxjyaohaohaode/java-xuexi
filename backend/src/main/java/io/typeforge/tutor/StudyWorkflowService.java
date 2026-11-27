@@ -204,7 +204,7 @@ public final class StudyWorkflowService implements RuntimeCapabilityProvider {
 
     private String question(UUID owner,DurableAgentRuntime.RunView run,Map<String,Object> meta,String key) {
         String goal=clip(run.plan().goal(),1800);
-        if(key.equals("planner"))return "学习目标："+goal+"\n请根据提供的Java泛型证据制定教学计划。你的外层回答仍遵循系统JSON协议，但answer文本只能包含一个JSON对象，不加代码围栏：{\"strategy\":\"concept-first\",\"sections\":[{\"role\":\"CONCEPT\",\"title\":\"短标题\",\"focus\":\"相关Java泛型学习重点\"}]}。strategy仅concept-first/example-first/repair-first，sections为1至3项，role仅CONCEPT/EXAMPLE/REPAIR，title不超过80字，focus不超过500字。选择实际需要的专家，保持知识出处，不产生执行命令。";
+        if(key.equals("planner"))return "学习目标："+goal+"\n请根据已发布的课程资料和当前学习记录制定教学计划。每项教学重点都应具体对应本次目标。";
         if(key.equals("review")) {
             StringBuilder source=new StringBuilder();
             for(var step:run.steps()) if(step.key().startsWith("expert-") && step.status().equals("SUCCEEDED")) {
@@ -347,6 +347,6 @@ public final class StudyWorkflowService implements RuntimeCapabilityProvider {
     private static TaskPlan.Step planner(UUID workspace){return step("planner","conductor",List.of(),Set.of("planLearning"),workspace,false,"Admit 1..3 evidence-grounded teaching sections; no arbitrary tools or scopes");}
     private static TaskPlan.Step step(String id,String role,List<String> dependencies,Set<String> tools,UUID workspace,boolean write,String acceptance){return new TaskPlan.Step(id,role,dependencies,Set.of("workspace:"+workspace),write?Set.of("workspace:"+workspace):Set.of(),tools,true,List.of(acceptance),tools.contains("planLearning")||tools.contains("explainLearning")?1:0);}
     private static String clip(String value,int limit){return value.codePointCount(0,value.length())<=limit?value:value.substring(0,value.offsetByCodePoints(0,limit));}
-    private static String readable(JsonNode content){var values=new ArrayList<String>();for(JsonNode block:content.path("blocks")) if(block.has("text") && !Set.of("origin","question","limitations").contains(block.path("id").asText()))values.add(block.path("text").asText());return String.join("\n\n",values);}
+    private static String readable(JsonNode content){var values=new ArrayList<String>();for(JsonNode block:content.path("blocks")) if(block.has("text") && (!Set.of("origin","question","limitations").contains(block.path("id").asText()) || block.path("id").asText().equals("limitations") && block.path("text").asText().startsWith(HttpTutorModelProvider.REVIEW_HEADING)))values.add(block.path("text").asText());return String.join("\n\n",values);}
     private static List<String> pieces(String value,int length){var result=new ArrayList<String>();for(String paragraph:value.split("\\n\\s*\\n")){int[] points=paragraph.codePoints().toArray();for(int i=0;i<points.length;i+=length)result.add(new String(points,i,Math.min(length,points.length-i)));}return result;}
 }

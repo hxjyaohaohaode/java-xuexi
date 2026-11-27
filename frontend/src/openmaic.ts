@@ -9,6 +9,7 @@ import {
 } from '@openmaic/dsl';
 import { strToU8, zipSync } from 'fflate';
 import type { Concept } from './types';
+import { lessonText } from './lessonText';
 import { safeSourceUrl } from './api';
 
 // OpenMAIC v1 classroom manifest. Upstream assigns new stage, scene and agent IDs on import.
@@ -61,6 +62,7 @@ export function buildMaicLesson(concept: Concept, now = Date.now()) {
     chunkId: item.chunkId,
     revision: item.revision,
     sha256: item.contentHash,
+    excerpt: item.fullText ?? item.excerpt,
   }));
   const examples = concept.companion?.examples || [];
   function add(
@@ -121,13 +123,14 @@ export function buildMaicLesson(concept: Concept, now = Date.now()) {
     const source = sources.find((s) => s.chunkId === item.chunkId)!;
     const footer = archiveUrl(source.title, source.url) + ' · ' + escapeHtml(source.section);
     // Keep all published text; a long evidence card continues on additional slides.
-    const parts = Array.from(item.excerpt);
+    const { body, sourceStatus } = lessonText(item);
+    const parts = Array.from(body);
     for (let from = 0; from < Math.max(1, parts.length); from += 250) {
       add(
         item.title + (from ? '（续）' : ''),
         parts.slice(from, from + 250).join(''),
         footer,
-        [source.title, source.edition, source.section, source.url, source.sha256]
+        [source.title, source.edition, source.section, source.url, source.sha256, sourceStatus]
           .filter(Boolean)
           .join('\n'),
       );
