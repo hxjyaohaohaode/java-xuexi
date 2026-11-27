@@ -2,6 +2,14 @@
 
 这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-16T03:49:55.852407+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
 
+## 2026 年 11 月 18 日课程交付
+
+「泛型与类型安全」课程提交包包含八类必交材料、完整源码、可运行的 JAR、9 页答辩 PPT 和网页实操视频。解压后先看 `README.md`，Windows 可从 `05_系统源代码/运行包` 启动。 [课程提交包与发布说明](https://github.com/wioo111/java-xuexi/releases/tag/typeforge-course-20261118)
+
+- 源码固定为 [`4a725a4`](https://github.com/hxjyaohaode/java-xuexi/tree/4a725a475aa598c909a9e6c9d5cb635589731001)。本机重新通过 455 项 Java、65 项前端、108 项 MySQL 业务与重启检查。16 组原创 Java 示例按 Java 17 编译目标核验。 [同一源码的 GitHub Actions 记录](https://github.com/hxjyaohaode/java-xuexi/actions/runs/43800639195)
+- 12 条目标检索均首位命中，另有 1 条无匹配对照。5 次本地 Qwen 问答均返回课程引用，其中 2 个回答含实质性类型错误。提交包保留原始回执、订正与复现说明。
+- ZIP SHA-256 为 `b81a5fe3de1f983047b1d27e80e0d2a2ad893f75769f70566c50a406d2f5e60b`。
+
 ## 实际结果
 
 | 门禁 | 已观察的结果 | 证明边界 |
