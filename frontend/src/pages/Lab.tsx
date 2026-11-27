@@ -7,7 +7,10 @@ import { Badge, Empty, ErrorNotice, Field, Loading, SectionTitle } from '../comp
 import { CompilePanel } from '../components/Compiler';
 import type { LabResult } from '../types';
 
-export function Lab({ initialConceptCode = '' }: { initialConceptCode?: string } = {}) {
+export function Lab({
+  initialConceptCode = '',
+  onDiscuss,
+}: { initialConceptCode?: string; onDiscuss?: (text: string) => void } = {}) {
   const { workspace, session, can, tick, refresh } = useWorkspace();
   const draftScope = `${session.userId}.${workspace.id}${initialConceptCode ? '.' + initialConceptCode : ''}`;
   const readWrite = ['G09', 'G10', 'G11', 'G12'].includes(initialConceptCode);
@@ -51,7 +54,7 @@ export function Lab({ initialConceptCode = '' }: { initialConceptCode?: string }
       <>
         <SectionTitle title="类型实验" />
         <Empty title="当前服务未启用类型实验">可先阅读知识卡并进行客观练习。</Empty>
-        <CompilePanel initialConceptCode={initialConceptCode} />
+        <CompilePanel initialConceptCode={initialConceptCode} onDiscuss={onDiscuss} />
       </>
     );
   return (
@@ -257,7 +260,7 @@ export function Lab({ initialConceptCode = '' }: { initialConceptCode?: string }
           )}
         </section>
       </div>
-      <CompilePanel initialConceptCode={initialConceptCode} />
+      <CompilePanel initialConceptCode={initialConceptCode} onDiscuss={onDiscuss} />
       <section className="panel">
         <h2>最近的实验</h2>
         <ErrorNotice error={history.error} retry={history.reload} />

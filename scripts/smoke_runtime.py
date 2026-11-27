@@ -48,7 +48,8 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 class Client:
-    def __init__(self, smoke, base):
+    def __init__(self, smoke, base, timeout=8):
+        self.timeout = timeout
         self.smoke = smoke
         self.base = base
         self.cookies = http.cookiejar.CookieJar()
@@ -75,7 +76,7 @@ class Client:
         request = urllib.request.Request(self.base + path, data=data, headers=headers, method=method)
         started = time.monotonic()
         try:
-            response = self.opener.open(request, timeout=8)
+            response = self.opener.open(request, timeout=self.timeout)
         except urllib.error.HTTPError as error:
             response = error
         with response:
@@ -99,7 +100,7 @@ class Client:
     def download(self, path):
         if not re.fullmatch(r'/api/v1/export-jobs/[a-f0-9-]{36}/download', path):
             raise SmokeFailure('Refusing a download outside the authenticated export API')
-        with self.opener.open(self.base + path, timeout=8) as response:
+        with self.opener.open(self.base + path, timeout=self.timeout) as response:
             content = response.read(MAX_RESPONSE + 1)
             if response.status != 200 or len(content) > MAX_RESPONSE:
                 raise SmokeFailure('Invalid export download status or size')
@@ -666,6 +667,13 @@ class Smoke:
             expected=(201,), key="baseline-space-" + uuid.uuid4().hex)
         client.request("POST", API + f"/workspaces/{personal_space['id']}/memories", {"summary":"我希望先看代码再解释规则。"},
                        expected=(201,), key="course-memory-" + uuid.uuid4().hex)
+        interest_cases = (
+            {"interest": "篮球比赛统计", "requirements": "先预测编译结果，再解释类型检查。"},
+            {"interest": "天文观测星表", "requirements": "给我一个反例，再把规则迁移到另一条记录。"},
+        )
+        interest_rooms = [client.request("POST", API + "/workspaces", {
+            "releaseId": release, "title": "Applied study " + str(index), "guidanceMode": "COLLABORATIVE"},
+            expected=(201,), key=uuid.uuid4().hex) for index in range(len(interest_cases))]
         editions = {}
         for topic in concepts:
             concept_id = topic["id"]
@@ -682,6 +690,24 @@ class Smoke:
                        and any(s["kind"] == "PRACTICE" and s["exerciseId"] for s in personal["scenes"])
                        and (source is None or (source == personal["scenes"][0]
                             and source["exampleSha256"] == hashlib.sha256(source["body"].encode()).hexdigest())))
+            applied = []
+            for room, brief in zip(interest_rooms, interest_cases):
+                path = API + f"/workspaces/{room['id']}/courseware/{concept_id}"
+                plan = client.request("POST", path, {"approach": "AUTO", "brief": brief},
+                                      expected=(201,), key=uuid.uuid4().hex)
+                check = next(scene for scene in plan["scenes"] if scene.get("selfCheck"))
+                question = check["selfCheck"]
+                self.check(topic["code"] + " freezes a checkable application for " + brief["interest"],
+                           plan["brief"] == brief and plan["releaseId"] == release
+                           and plan["conceptId"] == concept_id and check.get("portable")
+                           and bool(question["explanation"]) and "class Main" in question["javaSource"]
+                           and 0 <= question["answerIndex"] < len(question["options"])
+                           and any(scene["kind"] == "PRACTICE" and scene["exerciseId"] for scene in plan["scenes"]))
+                applied.append(check)
+            self.check(topic["code"] + " changes the task and worked case across interests",
+                       applied[0]["body"] != applied[1]["body"]
+                       and applied[0]["selfCheck"]["explanation"] != applied[1]["selfCheck"]["explanation"]
+                       and applied[0]["selfCheck"]["javaSource"] != applied[1]["selfCheck"]["javaSource"])
             editions[concept_id] = personal
         personal_base = f"/workspaces/{personal_space['id']}/courseware/{chapter['id']}"
         lesson = editions[chapter['id']]

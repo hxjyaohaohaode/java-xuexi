@@ -16750,6 +16750,139 @@
         },
         "description": "按所选个人分镜调度教学 Agent 制作可编辑幻灯片"
       }
+    },
+    "/compile-jobs/{id}/debrief": {
+      "get": {
+        "operationId": "getCompileDebrief",
+        "summary": "依据已完成的运行回执复盘",
+        "tags": [
+          "M04"
+        ],
+        "x-status": "implemented",
+        "description": "从本人已结束的代码任务读取公开诊断。可与同一空间、发布、语言和模式下另一回执比较。仅返回解释、核查步骤及可见结果的差异。",
+        "responses": {
+          "400": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控错误，详见 docs/04-api.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "实际响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompileDebrief"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "previousJobId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -27313,6 +27446,10 @@
               "EXAMPLE_FIRST",
               "CHALLENGE"
             ]
+          },
+          "brief": {
+            "$ref": "#/components/schemas/LessonBrief",
+            "description": "Private, revocable brief for this concept. Omit to reuse; two empty strings withdraw all briefs for the concept. Mutually exclusive with snapshotId."
           }
         }
       },
@@ -27427,6 +27564,12 @@
               "null"
             ],
             "format": "uuid"
+          },
+          "selfCheck": {
+            "$ref": "#/components/schemas/LessonSelfCheck"
+          },
+          "portable": {
+            "$ref": "#/components/schemas/PortableLessonText"
           }
         }
       },
@@ -27541,6 +27684,9 @@
             "items": {
               "$ref": "#/components/schemas/CoursewareScene"
             }
+          },
+          "brief": {
+            "$ref": "#/components/schemas/LessonBrief"
           }
         }
       },
@@ -27602,6 +27748,190 @@
             "minimum": 0
           }
         }
+      },
+      "CompileComparison": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "jobId",
+          "status",
+          "sameSource",
+          "visibleOutputChanged",
+          "previousDiagnostics",
+          "currentDiagnostics"
+        ],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "SUCCEEDED",
+              "COMPILE_ERROR",
+              "RUNTIME_ERROR",
+              "TIMED_OUT",
+              "RESOURCE_LIMIT",
+              "INFRA_ERROR",
+              "CANCELLED"
+            ]
+          },
+          "sameSource": {
+            "type": "boolean"
+          },
+          "visibleOutputChanged": {
+            "type": "boolean"
+          },
+          "previousDiagnostics": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currentDiagnostics": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "CompileDebrief": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "jobId",
+          "sourceHash",
+          "status",
+          "phase",
+          "observation",
+          "investigate",
+          "nextExperiment",
+          "comparison"
+        ],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "SUCCEEDED",
+              "COMPILE_ERROR",
+              "RUNTIME_ERROR",
+              "TIMED_OUT",
+              "RESOURCE_LIMIT",
+              "INFRA_ERROR",
+              "CANCELLED"
+            ]
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "COMPILE",
+              "RUN",
+              "TYPE_WARNING",
+              "LIMIT",
+              "NO_OBSERVATION"
+            ]
+          },
+          "observation": {
+            "type": "string"
+          },
+          "investigate": {
+            "type": "string"
+          },
+          "nextExperiment": {
+            "type": "string"
+          },
+          "comparison": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CompileComparison"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "LessonBrief": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "interest": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "requirements": {
+            "type": "string",
+            "maxLength": 600
+          }
+        },
+        "required": [
+          "interest",
+          "requirements"
+        ]
+      },
+      "LessonSelfCheck": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "options": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "string"
+            }
+          },
+          "answerIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "javaSource": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32768,
+            "description": "Optional complete Java 17 Main.java unit for the same prediction, suitable for the isolated course laboratory. No student free text is executable."
+          }
+        },
+        "required": [
+          "options",
+          "answerIndex",
+          "explanation"
+        ]
+      },
+      "PortableLessonText": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "body",
+          "prompt"
+        ]
       }
     }
   }

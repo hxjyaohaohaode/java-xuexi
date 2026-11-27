@@ -45,11 +45,16 @@ public final class TutorDocumentService {
             if(refs.size()>64) throw new DomainException("TUTOR_DOCUMENT_REFERENCE_LIMIT",422,"This document needs more than 64 source references; choose a smaller fresh context instead of dropping dependencies");
             List<Reference> inputs=new ArrayList<>(refs.values());
             var evidenceRefs=response.evidenceRefs().stream().map(e->Map.of("id",e.chunkId(),"revision",e.revision())).toList();
-            var blocks=List.of(
+            var blocks=new ArrayList<Map<String,Object>>(List.of(
                 Map.of("id","origin","kind","PARAGRAPH","text","导师请求 "+requestId+"；模式 "+response.mode()+"。本稿未经过人工事实核验，保存为 DRAFT。","evidenceRefs",List.of()),
                 Map.of("id","question","kind","PARAGRAPH","text","学习问题："+response.question(),"evidenceRefs",List.of()),
                 Map.of("id","answer","kind","PARAGRAPH","text",response.answer(),"evidenceRefs",evidenceRefs),
-                Map.of("id","limitations","kind","PARAGRAPH","text",response.limitations(),"evidenceRefs",List.of()));
+                Map.of("id","limitations","kind","PARAGRAPH","text",response.limitations(),"evidenceRefs",List.of())));
+            String edits=jdbc.queryForObject("SELECT review_edits FROM tutor_message WHERE request_id=?",String.class,requestId.toString());
+            if(edits!=null) json.tree(edits).properties().forEach(entry->{
+                if(!entry.getValue().asText().isBlank()) blocks.add(Map.of("id","review-edit-"+entry.getKey(),
+                    "kind","PARAGRAPH","text",entry.getValue().textValue(),"evidenceRefs",evidenceRefs));
+            });
             var content=json.tree(json.write(Map.of("kind","DOCUMENT","schemaVersion","1.0","title",title,"blocks",blocks)));
             String artifactKey=json.sha256("tutor.document:"+owner+":"+key);
             var artifact=artifacts.create(owner,response.workspaceId(),"DOCUMENT",title,null,artifactKey);

@@ -79,7 +79,7 @@ const pickScene = async (page, title) => {
 };
 const titles = (plan) => plan.scenes.map((s) => s.title);
 
-export async function verifyPersonalCourseware(browser, base, monitor) {
+export async function verifyPersonalCourseware(browser, base, monitor, screenshot) {
   const a = await enroll(browser, base, 'a', monitor);
   let b;
   try {
@@ -120,20 +120,31 @@ export async function verifyPersonalCourseware(browser, base, monitor) {
       personalB = await exported(b.page, true);
     assert.notDeepEqual(personalA.manifest.scenes, personalB.manifest.scenes);
     await pickScene(b.page, example.scenes.find((s) => s.kind === 'PRACTICE').title);
+    const lessonUrl = b.page.url();
     await b.page.getByRole('button', { name: '作答这道练习', exact: true }).click();
+    const embedded = b.page.getByRole('region', { name: '课件内作答' });
     const intended = example.scenes.find((s) => s.kind === 'PRACTICE');
-    assert.ok(b.page.url().includes(intended.exerciseId));
-    const wrong = b.page.getByLabel(/自动调用 toString\(\) 后加入|String 是否继承 Object/);
+    assert.equal(b.page.url(), lessonUrl);
+    const wrong = embedded.getByLabel(/自动调用 toString\(\) 后加入|String 是否继承 Object/);
     await wrong.check();
     const [receipt] = await Promise.all([
       b.page.waitForResponse(
         (r) => r.url() === base + '/api/v1/attempts' && r.request().method() === 'POST',
       ),
-      b.page.getByRole('button', { name: '提交作答', exact: true }).click(),
+      embedded.getByRole('button', { name: '提交作答', exact: true }).click(),
     ]);
     const answer = await receipt.json();
     assert.equal(answer.exerciseId, intended.exerciseId);
     assert.equal(answer.score, 0);
+    assert.equal(answer.exerciseRevision, intended.exerciseRevision);
+    await embedded.getByText(answer.feedback, { exact: true }).waitFor();
+    const discuss = embedded.getByRole('button', { name: '请导师讲解这次作答' });
+    await discuss.click();
+    const tutor = b.page.getByRole('complementary', { name: '课堂导师' });
+    assert.ok(await tutor.getByLabel('附上本节最近一次关联作答').isChecked());
+    assert.match(await tutor.getByLabel('输入你的问题').inputValue(), /这次作答/);
+    await tutor.getByRole('button', { name: '关闭课堂导师' }).click();
+    assert.ok(await discuss.evaluate((el) => el === document.activeElement));
     const [repairResponse] = await Promise.all([
       b.page.waitForResponse((r) => r.url() === b.endpoint && r.request().method() === 'POST'),
       b.page.getByRole('button', { name: '依据这次反馈更新课件', exact: true }).click(),
@@ -192,7 +203,138 @@ export async function verifyPersonalCourseware(browser, base, monitor) {
       b.endpoint + '/study?planId=' + repair.id + '&mode=EVIDENCE_ONLY',
     );
     assert.equal((await recovered.json()).id, run.id);
+    const profiles = [
+      { interest: '篮球比赛', requirements: '先给我一个反例，并解释如何验证。' },
+      { interest: '音乐歌单', requirements: '用详细推导说明原因，最后给我一道迁移题。' },
+    ];
+    const custom = [];
+    for (const [i, learner] of [a, b].entries()) {
+      const { page } = learner;
+      const edit = page.getByRole('button', { name: '调整兴趣与要求' });
+      await edit.focus();
+      await edit.press('Enter');
+      const interest = page.getByLabel('我的兴趣', { exact: true });
+      assert.ok(await interest.evaluate((el) => el === document.activeElement));
+      await interest.fill(profiles[i].interest);
+      await page.getByLabel('本节学习要求', { exact: true }).fill(profiles[i].requirements);
+      const [generated] = await Promise.all([
+        page.waitForResponse(
+          (r) => r.url() === learner.endpoint && r.request().method() === 'POST',
+        ),
+        page.getByRole('button', { name: '按我的要求生成课件', exact: true }).click(),
+      ]);
+      assert.ok(generated.ok(), 'courseware generated');
+      const plan = await generated.json();
+      assert.deepEqual(plan.brief, profiles[i]);
+      const application = plan.scenes.find((s) => s.key === 'application');
+      assert.ok(application);
+      assert.match(application.title, i === 0 ? /篮球/ : /音乐/);
+      assert.match(application.body, i === 0 ? /Guard/ : /Track/);
+      const transfer = plan.scenes.find((scene) => scene.key === 'application-transfer');
+      assert.ok(transfer.body.includes(profiles[i].requirements));
+      custom.push(application.body);
+      await pickScene(page, application.title);
+      const player = page.getByRole('region', { name: '我的课件播放器' });
+      await player.getByRole('button', { name: '随页练习', exact: true }).click();
+      await player
+        .getByRole('region', { name: '课件内作答' })
+        .locator('.question-prompt')
+        .waitFor();
+      const sheet = player.locator('.maic-sheet');
+      await sheet.scrollIntoViewIfNeeded();
+      if (i === 0) await screenshot?.(page, 'personal-interest-desktop.png');
+      await page.setViewportSize({ width: 320, height: 844 });
+      const mobile = player.getByRole('article', { name: '本页讲义' });
+      await mobile.waitFor();
+      assert.ok(
+        await mobile.locator('p').evaluate((el) => parseFloat(getComputedStyle(el).fontSize) >= 16),
+      );
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      assert.ok(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches));
+      await mobile.scrollIntoViewIfNeeded();
+      if (i === 0) await screenshot?.(page, 'personal-interest-mobile.png');
+      const check = plan.scenes.find((s) => s.key === 'application-check');
+      await pickScene(page, check.title);
+      const local = player.locator('form.scene-check');
+      assert.equal(await local.getByRole('status').count(), 0);
+      const posts = [];
+      const listen = (r) => {
+        if (r.url().endsWith('/attempts') && r.method() === 'POST') posts.push(r);
+      };
+      page.on('request', listen);
+      await local.getByRole('radio').nth(check.selfCheck.answerIndex).check();
+      await local.getByRole('button', { name: '核对我的判断' }).click();
+      await local
+        .getByRole('status')
+        .getByText(check.selfCheck.explanation, { exact: true })
+        .waitFor();
+      assert.equal(posts.length, 0);
+      page.off('request', listen);
+      if (i === 0) {
+        const launch = page.getByRole('button', { name: '把这段代码放入本课实验' });
+        await launch.click();
+        const lab = page.getByRole('region', { name: '本题代码实验' });
+        const source = lab.getByLabel('Main.java');
+        assert.equal(await source.inputValue(), check.selfCheck.javaSource);
+        const edited = check.selfCheck.javaSource + '\n// 我想再验证一次';
+        await source.fill(edited);
+        await lab.getByRole('button', { name: '返回这道判断题' }).click();
+        await launch.waitFor();
+        assert.ok(await launch.evaluate((el) => el === document.activeElement));
+        assert.ok(await local.getByRole('radio').nth(check.selfCheck.answerIndex).isChecked());
+        await launch.click();
+        assert.equal(await source.inputValue(), edited);
+        await lab.getByRole('button', { name: '返回这道判断题' }).click();
+        await launch.waitFor();
+        await edit.click();
+        await page.getByLabel('教学方式').selectOption('GUIDED');
+        const [regenerated] = await Promise.all([
+          page.waitForResponse(
+            (r) => r.url() === learner.endpoint && r.request().method() === 'POST',
+          ),
+          page.getByRole('button', { name: '按我的要求生成课件' }).click(),
+        ]);
+        assert.ok(regenerated.ok());
+        const fresh = await regenerated.json();
+        assert.notEqual(fresh.id, plan.id);
+        await page.getByText('个人版本 ' + fresh.revision, { exact: true }).waitFor();
+        await page.evaluate(
+          () =>
+            new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+        );
+        assert.equal(
+          await player.getByLabel('选择课件场景').inputValue(),
+          '0',
+          'A consumed return request must not move a newly generated lesson back to the old experiment',
+        );
+      }
+      await page.setViewportSize({ width: 1280, height: 900 });
+      const share = await exported(page, true);
+      const bytes = JSON.stringify(share);
+      assert.ok(!bytes.includes(profiles[i].requirements));
+      assert.ok(!bytes.includes(plan.id));
+      for (const scene of plan.scenes.filter((s) => s.key.startsWith('application'))) {
+        assert.ok(scene.portable);
+        if (scene.body !== scene.portable.body) assert.ok(!bytes.includes(scene.body));
+      }
+      await page.reload();
+      await page.getByRole('region', { name: '我的课件播放器' }).waitFor();
+      await edit.click();
+      assert.equal(await interest.inputValue(), profiles[i].interest);
+      const [cleared] = await Promise.all([
+        page.waitForResponse(
+          (r) => r.url() === learner.endpoint && r.request().method() === 'POST',
+        ),
+        page.getByRole('button', { name: '清除本节兴趣与要求' }).click(),
+      ]);
+      assert.ok(cleared.ok());
+      assert.ok(!(await cleared.json()).brief);
+    }
+    assert.notEqual(custom[0], custom[1]);
     return {
+      personalizedProfiles: profiles.length,
+      interestCheckAndWithdrawal: true,
+      inPlaceGradingAndTutor: true,
       concept: baseline.conceptCode,
       ordinary: baseline.strategy,
       preference: example.strategy,

@@ -96,6 +96,109 @@ class PersonalCoursewareTest {
         assertEquals("FOUNDATION",replay.strategy());assertTrue(replay.scenes().stream().noneMatch(s->s.attemptId()!=null));
     }
 
+    @Test void studentsCanChangeContextWithoutChangingThePublishedGradeOrSharingPrivateSource() {
+        var owner=user().userId(); var space=room(owner); var concept=topic();
+        var music=new PersonalCourseware.Brief("我喜欢音乐","先做题：用通俗的例子和画面");
+        var plan=courseware.generate(owner,space,concept.id(),null,"AUTO",music,key());
+        var check=plan.scenes().get(0);
+        assertEquals("application-check",check.key()); assertEquals(0,check.selfCheck().answerIndex());
+        assertTrue(check.body().contains("List<? extends Track> view = records;"));
+        assertTrue(check.selfCheck().javaSource().contains("List<? extends Track> view = records;"));
+        assertTrue(check.selfCheck().javaSource().contains("public static void main(String[] args)"));
+        assertTrue(check.selfCheck().explanation().contains("StudioTrack"));
+        var illustration=plan.scenes().stream().filter(s->s.key().equals("application")).findFirst().orElseThrow();
+        assertTrue(illustration.body().contains("画三张记录卡"));
+        assertEquals(plan,courseware.generate(owner,space,concept.id(),null,"AUTO",key()));
+        assertTrue(workspaces.createContext(owner,space).references().isEmpty());
+        var otherConcept=course.concepts(course.activeRelease()).stream().filter(c->!c.id().equals(concept.id())).findFirst().orElseThrow();
+        var otherPlan=courseware.generate(owner,space,otherConcept.id(),null,"AUTO",key());
+        assertNull(otherPlan.brief()); assertFalse(json.write(otherPlan).contains("Track"));
+
+        var hoops=new PersonalCourseware.Brief("篮球比赛统计","深入解释编译期反例，并给出迁移任务");
+        var revision=courseware.generate(owner,space,concept.id(),null,"AUTO",hoops,key());
+        var practice=revision.scenes().stream().filter(s->s.key().equals("application-check")).findFirst().orElseThrow();
+        assertEquals(1,practice.selfCheck().answerIndex());assertTrue(practice.body().contains("List<Player> view = records;"));
+        assertTrue(practice.selfCheck().explanation().contains("Center"));
+        assertTrue(practice.selfCheck().javaSource().contains("List<Player> view = records;"));
+        assertTrue(revision.scenes().get(0).body().contains("先假设容许"));
+        assertEquals(hoops,revision.brief()); assertEquals(plan,courseware.get(owner,space,concept.id(),plan.id()));
+        assertEquals(music,courseware.generate(owner,space,concept.id(),plan.snapshotId(),"AUTO",key()).brief());
+        assertThrows(DomainException.class,()->courseware.generate(owner,space,concept.id(),plan.snapshotId(),"AUTO",hoops,key()));
+
+        var custom=new PersonalCourseware.Brief("蓝色螺旋票根","按我提供的三种票面做一个小项目");
+        var handmade=courseware.generate(owner,space,concept.id(),null,"AUTO",custom,key());
+        var application=handmade.scenes().stream().filter(s->s.key().equals("application")).findFirst().orElseThrow();
+        assertTrue(application.body().contains("FeaturedEntry"));assertTrue(application.body().contains("蓝色螺旋票根"));
+        for(var sc:handmade.scenes()) if(sc.key().startsWith("application")) {
+            assertNotNull(sc.portable());String safe=json.write(sc.portable());
+            assertFalse(safe.contains("public class Main"));
+            if(sc.selfCheck()!=null) {
+                assertFalse(sc.selfCheck().javaSource().contains("票根"));
+                assertFalse(sc.selfCheck().javaSource().contains("票面"));
+            }
+            assertFalse(safe.contains("票根"));assertFalse(safe.contains("票面"));assertFalse(safe.contains("FeaturedEntry"));
+        }
+        assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM workspace_attempt WHERE workspace_id=?",Integer.class,space.toString()));
+        var empty=courseware.generate(owner,space,concept.id(),null,"AUTO",new PersonalCourseware.Brief("",""),key());
+        assertNull(empty.brief());assertTrue(empty.scenes().stream().noneMatch(s->s.key().startsWith("application")));
+        for(var withdrawn:List.of(plan,revision,handmade)) assertEquals(409,
+            assertThrows(DomainException.class,()->courseware.get(owner,space,concept.id(),withdrawn.id())).status());
+        assertEquals(otherPlan,courseware.get(owner,space,otherConcept.id(),otherPlan.id()));
+    }
+
+    @Test void unicodeLimitsAndHttpShapeApplyToTheOwnersBrief() throws Exception {
+        var account=user();var space=room(account.userId());var topic=topic();
+        var auth=HttpSessionFixture.login(mvc,json,account.username(),"fixture-password-strong-123");
+        String url="/api/v1/workspaces/"+space+"/courseware/"+topic.id();
+        for(var invalid:List.of(Map.of("interest","缺少要求"),Map.of("interest","🌟".repeat(161),"requirements",""),
+            Map.of("interest","","requirements","字".repeat(601)),Map.of("interest","a","requirements","b","trusted",true))) {
+            mvc.perform(post(url).with(csrf()).session(auth).header("Idempotency-Key",key()).contentType("application/json")
+                .content(json.write(Map.of("brief",invalid)))).andExpect(status().isBadRequest());
+        }
+        var brief=new PersonalCourseware.Brief("🌟".repeat(160),"学".repeat(600));
+        var result=mvc.perform(post(url).with(csrf()).session(auth).header("Idempotency-Key",key()).contentType("application/json")
+            .content(json.write(Map.of("brief",brief)))).andExpect(status().isCreated()).andReturn().getResponse();
+        var plan=json.read(result.getContentAsString(java.nio.charset.StandardCharsets.UTF_8),PersonalCourseware.Plan.class);
+        assertEquals(brief,plan.brief());
+    }
+
+    @Test void everyPublishedConceptHasItsOwnCitedActivityAndRetainsOfficialPractice() {
+        var owner=user().userId();var space=room(owner);var release=course.activeRelease();
+        var topics=course.concepts(release);assertEquals(16,topics.size());
+        var activities=new java.util.HashSet<String>();
+        var brief=new PersonalCourseware.Brief("天文观测星表","希望深入分析并尝试迁移");
+        for(var topic:topics) {
+            var edition=courseware.generate(owner,space,topic.id(),null,"AUTO",brief,key());
+            var check=edition.scenes().stream().filter(s->s.selfCheck()!=null).findFirst().orElseThrow();
+            assertTrue(check.body().contains("Observation"),topic.code());
+            assertTrue(activities.add(check.body()),"Each chapter needs its own typed question: "+topic.code());
+            assertTrue(topic.evidence().stream().anyMatch(c->c.chunkId().equals(check.chunkId()) && c.revision()==check.chunkRevision()));
+            assertNull(check.exerciseId());assertNull(check.attemptId());
+            assertTrue(edition.scenes().stream().anyMatch(s->s.kind().equals("PRACTICE") && s.exerciseId()!=null));
+            assertTrue(edition.scenes().stream().anyMatch(s->s.key().equals("application-transfer")));
+        }
+    }
+
+    @Test void aStudentCanReuseAnExplicitWorkspaceInterestAcrossLessonsAndRevokeItAtItsSource() {
+        var owner=user().userId();var space=room(owner);
+        var topics=course.concepts(course.activeRelease()).stream().limit(2).toList();
+        var memory=workspaces.stateMemory(owner,space,"不喜欢篮球。我喜欢摄影，私人备注 KEEP_PRIVATE。",key());
+        var plans=new java.util.ArrayList<PersonalCourseware.Plan>();
+        for(var topic:topics) {
+            var plan=courseware.generate(owner,space,topic.id(),null,"AUTO",key());
+            var check=plan.scenes().stream().filter(sc->sc.selfCheck()!=null).findFirst().orElseThrow();
+            assertTrue(check.body().contains("Portrait"));assertFalse(check.body().contains("Player"));
+            assertNull(plan.brief());assertFalse(json.write(plan).contains("KEEP_PRIVATE"));
+            plans.add(plan);
+        }
+        workspaces.revokeMemory(owner,space,memory.id(),memory.revision());
+        for(var plan:plans) {
+            assertEquals(409,assertThrows(DomainException.class,()->courseware.get(owner,space,plan.conceptId(),plan.id())).status());
+            var refreshed=courseware.generate(owner,space,plan.conceptId(),null,"AUTO",key());
+            assertTrue(refreshed.scenes().stream().noneMatch(s->s.key().startsWith("application")));
+        }
+    }
+
     private LearningService.Attempt submitWrong(UUID owner,UUID space,CurriculumService.ExerciseView original) {
         JsonNode spec=json.tree(jdbc.queryForObject("SELECT answer_spec FROM exercise WHERE id=? AND revision=?",String.class,original.id().toString(),original.revision()));
         String wrong=original.options().stream().filter(o->!o.id().equals(spec.path("optionIds").get(0).asText())).findFirst().orElseThrow().id();

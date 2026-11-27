@@ -1,6 +1,6 @@
 # Java 后端：启动、配置与接手
 
-Java 17、Spring Boot 3.5.16、Maven 3.9.x；版本 `0.6.0-SNAPSHOT`，`-Xlint:all -Werror`。当前 134 个公开操作均有实际路由实现，但运行时继续报告 `businessReady=false`，不把接口数量当作完整产品完成率。当前能力与剩余范围集中在[模块接手指南](../docs/02-modules.md)，操作字段见[契约索引](../contracts/README.md)，实际验证见[当前验收](../evidence/runtime-review.md)。
+Java 17、Spring Boot 3.5.16、Maven 3.9.x；版本 `0.6.0-SNAPSHOT`，`-Xlint:all -Werror`。当前 135 个公开操作均有实际路由实现，但运行时继续报告 `businessReady=false`，不把接口数量当作完整产品完成率。当前能力与剩余范围集中在[模块接手指南](../docs/02-modules.md)，操作字段见[契约索引](../contracts/README.md)，实际验证见[当前验收](../evidence/runtime-review.md)。
 
 ## 1. 构建与本地运行
 
@@ -46,9 +46,14 @@ TYPEFORGE_EDITOR_USERS=editor-a,editor-b java -jar backend/target/typeforge-back
 | `TYPEFORGE_TUTOR_PROVIDER_URL` | 完整的 `/chat/completions` HTTPS 地址；本机 llama.cpp 等服务可使用 loopback HTTP |
 | `TYPEFORGE_TUTOR_API_KEY` | 服务端凭据，不进仓库、不进前端、不作为启动命令明文参数 |
 | `TYPEFORGE_TUTOR_MODEL` | 供应商实际模型名，项目不默认猜测 |
-| `TYPEFORGE_TUTOR_TIMEOUT_MILLIS` | 单次 HTTP 期限，默认 20000 ms。允许 100–300000 ms，慢速本地模型可显式设置 180000 ms |
+| `TYPEFORGE_TUTOR_TIMEOUT_MILLIS` | 单次 HTTP 期限，默认 120000 ms。允许 100–300000 ms，慢速本地模型可显式设置 180000 ms |
 | `TYPEFORGE_TUTOR_WORKFLOW_STRUCTURED_OUTPUTS` | 默认 true，为规划、专家与审阅请求服务端校验的 JSON Schema；仅支持 JSON Object 的供应端可显式设置为 false |
-| `typeforge.tutor.max-output-tokens` | 默认2048，64–8192 |
+| `TYPEFORGE_TUTOR_MAX_OUTPUT_TOKENS` | 每个请求的全局输出上界，默认 8192，允许 64–16384。设为供应端实际支持的上界 |
+| `TYPEFORGE_TUTOR_CONTEXT_WINDOW_TOKENS` | 实际部署模型的总上下文窗，默认 32768，允许 2048–1048576。发送前为模板预留 256，并使用完整 UTF-8 请求字节的保守上界 |
+| `TYPEFORGE_TUTOR_HINT_OUTPUT_TOKENS` | 提问/线索（导师提示 0、1 级）默认 768 |
+| `TYPEFORGE_TUTOR_PLAN_OUTPUT_TOKENS` | 结构化教学计划默认 1536 |
+| `TYPEFORGE_TUTOR_EXPLANATION_OUTPUT_TOKENS` | 类型推导、代码示例、错因复练以及导师 3、4 级默认 6144。导师 2 级取解释限额的一半，且至少为提示限额 |
+| `TYPEFORGE_TUTOR_REVIEW_OUTPUT_TOKENS` | 逐份审稿及替换专家正文默认 8192。有固定个人判例时，只需选择教学活动，该次审阅最多 3072 |
 | `typeforge.tutor.daily-token-limit` | 默认1000000，UTC日额度，采用保守输入字节上界预留 |
 | `typeforge.tutor.daily-request-limit` | 默认100，按账户计数 |
 | `typeforge.tutor.max-pending` | 默认4，同时排队/执行上限 |
@@ -96,7 +101,7 @@ typeforge.compiler.worker-token=<至少32字符的服务端随机令牌>
 
 ## 6. MySQL 与运维
 
-设置 `TYPEFORGE_DB_URL` 为真实 MySQL JDBC URL、`TYPEFORGE_DB_USER` 与 `TYPEFORGE_DB_PASSWORD`，运行 `--spring.profiles.active=mysql`（演示验证可加 `,demo`）。连接信息仅放安全配置。MySQL Profile 执行 V001–V017 原始迁移，默认 H2 使用对应兼容迁移；当前有 92 张领域表。已应用迁移不回写，已有库必须沿完整升级链前进。
+设置 `TYPEFORGE_DB_URL` 为真实 MySQL JDBC URL、`TYPEFORGE_DB_USER` 与 `TYPEFORGE_DB_PASSWORD`，运行 `--spring.profiles.active=mysql`（演示验证可加 `,demo`）。连接信息仅放安全配置。MySQL Profile 执行 V001–V018 原始迁移，默认 H2 使用对应兼容迁移；当前有 92 张领域表。已应用迁移不回写，已有库必须沿完整升级链前进。
 
 共享短事务采用 READ_COMMITTED；学习写入锁序为 user → workspace → 具体资源。编辑事务以 content_workbench_lock 串行化编辑并锁定实际编辑账号，该锁内没有网络或 workspace 调用。模型 HTTP 和二进制渲染在数据库事务外执行，提交重新核对状态与来源。
 
@@ -132,7 +137,7 @@ python scripts/verify_mysql.py
 python -m unittest discover -s workers/compiler -p 'test_*.py'
 ```
 
-真实 MySQL HTTP 重启、隔离级别和浏览器检查使用专用配置及同一最终构建。模式验证覆盖 V001–V017 完整升级链；账户/素材使用 `scripts/verify_private_modules_mysql.py`，新增评测/导入/版本比较/TEXT/Notebook 使用 `scripts/verify_v06_modules_mysql.py` 在显式隔离连接上复跑，并输出实际 JDBC 引擎证据。MySQL 专用门禁需要 `MYSQL_TEST_CONNECTION`，只接受标明用途的回环测试库，不能指向个人或生产数据库。
+真实 MySQL HTTP 重启、隔离级别和浏览器检查使用专用配置及同一最终构建。模式验证覆盖 V001–V018 完整升级链；账户/素材使用 `scripts/verify_private_modules_mysql.py`，新增评测/导入/版本比较/TEXT/Notebook 使用 `scripts/verify_v06_modules_mysql.py` 在显式隔离连接上复跑，并输出实际 JDBC 引擎证据。MySQL 专用门禁需要 `MYSQL_TEST_CONNECTION`，只接受标明用途的回环测试库，不能指向个人或生产数据库。
 
 所有结果以验收记录和 CI 的实际执行为准。仍需完成的范围包括通用工具自治、外部模型教学与账单验收、生成式图像/TTS/视频、生产 Docker 宿主部署与容量验收、生产性能 SLO 及备份恢复；测试夹具、有限类型规则和配置入口不能代替这些实测。
 

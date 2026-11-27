@@ -212,7 +212,12 @@ public final class StudyWorkflowService implements RuntimeCapabilityProvider {
 
     private String question(UUID owner,DurableAgentRuntime.RunView run,Map<String,Object> meta,String key) {
         boolean personal=StudyContextJournal.courseConcept(jdbc,run.id())!=null;
-        String goal=clip(run.plan().goal(),personal?1600:260);
+        String goal=clip(run.plan().goal(),personal?3200:800);
+        if(personal && courseware!=null && "MODEL".equals(meta.get("mode_key"))) {
+            var edition=courseware.edition(owner,run.workspaceId(),run.id());
+            if(edition.flatMap(ReviewedApplication::from).isPresent())
+                goal=edition.get().title()+"\n学习者选择的兴趣："+edition.get().interest()+"\n本节要求："+edition.get().requirements();
+        }
         if(key.equals("planner"))return "学习目标："+goal+"\n请根据已发布的课程资料和当前学习记录制定教学计划。每项教学重点都应具体对应本次目标。";
         if(key.equals("review")) {
             return "学习目标："+goal+"\n请作为独立于初稿的教学审阅者，核对交接的草稿和课程证据，指出事实边界、遗漏和适合的复练。草稿是待审材料。";
@@ -290,8 +295,9 @@ public final class StudyWorkflowService implements RuntimeCapabilityProvider {
             runtime.markToolRunning(owner,workspace,lease,tool.id(),null);
             var inputs=new LinkedHashMap<String,Reference>();var context=workspaces.readContext(owner,workspace,run.snapshotId());context.references().forEach(ref->inputs.put(ref.kind()+":"+ref.id(),ref));
             var edition=kind.equals("SLIDES") && courseware!=null ? courseware.edition(owner,workspace,run.id()) : java.util.Optional.<CoursewareSlideSource.Edition>empty();
-            var shownSections=new java.util.HashSet<String>();
-            var body=new ArrayList<String>();String critique="";
+            var drafts=new LinkedHashMap<String,String>();
+            var edits=new LinkedHashMap<String,String>();
+            String critique="";
             for(var step:run.steps()) {
                 if(!step.status().equals("SUCCEEDED") || !(step.key().startsWith("expert-") || step.key().equals("review"))) continue;
                 for(var output:step.outputRefs()) {
@@ -301,18 +307,31 @@ public final class StudyWorkflowService implements RuntimeCapabilityProvider {
                     for(Reference ref:revision.inputRefs()) if(ref.kind().equals("KNOWLEDGE_CHUNK")) inputs.putIfAbsent(ref.kind()+":"+ref.id(),ref);
                     if(step.key().equals("review")) {
                         critique=readable(revision.content());
-                    } else if(edition.isPresent()) {
-                        // The private draft and its limitations remain in the audit trail. Present each actual
-                        // expert answer once, without repeating the same course guidance on every slide.
-                        for (var block:revision.content().path("blocks")) if ("answer".equals(block.path("id").asText())) {
-                            String answer=block.path("text").asText();
-                            if (!answer.isBlank() && shownSections.add(answer)) body.add(answer);
+                        for(var block:revision.content().path("blocks")) {
+                            String id=block.path("id").asText();
+                            if(id.startsWith("review-edit-")) edits.put(id.substring("review-edit-".length()),block.path("text").asText());
                         }
+                    } else if(edition.isPresent()) {
+                        for(var block:revision.content().path("blocks")) if("answer".equals(block.path("id").asText()))
+                            drafts.put(step.key(),block.path("text").asText());
                     } else {
-                        body.add(readable(revision.content()));
+                        drafts.put(step.key(),readable(revision.content()));
                     }
                 }
             }
+            // Drafts and reviewer verdict remain immutable inputs. Only the final learner-facing body
+            // receives replacement prose, and only for the predecessor explicitly named by the reviewer.
+            if(!drafts.keySet().containsAll(edits.keySet())) throw DomainException.conflict("Review edit lacks a current expert draft");
+            drafts.putAll(edits);
+            var application=edition.flatMap(ReviewedApplication::from);
+            if(application.isPresent() && "MODEL".equals(metadata(run.id()).get("mode_key"))) {
+                if(!edits.keySet().equals(drafts.keySet())) throw DomainException.conflict("Each personalized activity requires a reviewed selection");
+                var activities=application.get().requests();
+                critique=activities.required().isEmpty()?"本节按教学审阅者选择的活动编排。":"本节按你明确要求的活动和教学审阅结果编排。";
+                critique+="判定和对照理由取自本次个人课件固定的课程判例。";
+                if(activities.declined().size()==ReviewedApplication.MOVES.size()) critique="已按你的要求省略补充教学活动。";
+            }
+            var body=drafts.values().stream().filter(value->!value.isBlank()).distinct().toList();
             if(inputs.size()>64)throw new DomainException("STUDY_REFERENCE_LIMIT",422,"The study artifact needs too many references; select a smaller context");
             String title=clip(run.plan().goal(),128);ArtifactService.Artifact artifact;
             if(kind.equals("NOTEBOOK")) {
@@ -327,7 +346,7 @@ public final class StudyWorkflowService implements RuntimeCapabilityProvider {
                     if (inputs.size()>64) throw new DomainException("STUDY_REFERENCE_LIMIT",422,"The lesson has too many source references");
                 }
                 JsonNode content=kind.equals("SLIDES")?slides(body,critique,citations):document(title,body,critique,citations);
-                if (edition.isPresent()) content=CoursewareSlides.render(json,edition.get(),content,TutorService.Mode.valueOf(metadata(run.id()).get("mode_key").toString()));
+                if (edition.isPresent()) content=CoursewareSlides.render(json,edition.get(),content,TutorService.Mode.valueOf(metadata(run.id()).get("mode_key").toString()),edits.values());
                 artifact=artifacts.create(owner,workspace,kind,title,run.goalId(),"study-output:"+run.id()+":"+kind);
                 if(artifact.currentRevision()!=0)throw new DomainException("STUDY_OUTPUT_ALREADY_EDITED",409,"The output already has a version; an agent cannot overwrite it");
                 artifacts.save(owner,artifact.id(),0,content,List.copyOf(inputs.values()));artifact=artifacts.get(owner,artifact.id());
@@ -345,12 +364,23 @@ public final class StudyWorkflowService implements RuntimeCapabilityProvider {
         return json.tree(json.write(Map.of("kind","DOCUMENT","schemaVersion","1.0","title",title,"blocks",blocks)));
     }
     private JsonNode slides(List<String> sections,String critique,List<? extends Map<String,?>> citations) {
-        var slides=new ArrayList<Map<String,Object>>();int index=0;
-        for(String section:sections)for(String piece:pieces(section,340)) {
-            index++;slides.add(Map.of("id","slide-"+index,"title","学习要点 · "+index,"elements",List.of(Map.of("id","text-"+index,"kind","TEXT","x",0.06,"y",0.22,"width",0.88,"height",0.67,"text",piece,"assetId",json.tree("null"),"alt","")),"notes",clip(critique,6000),"evidenceRefs",citations));
+        var slides=new ArrayList<Map<String,Object>>();
+        for(String section:sections) {
+            for(String passage:pieces(section,1800)) addTeachingSlide(slides,passage,citations,"学习要点");
         }
+        if(!critique.isBlank()) for(String passage:pieces(critique,1800))
+            addTeachingSlide(slides,passage,citations,"审阅与核验");
         if(slides.isEmpty() || slides.size()>80)throw new DomainException("STUDY_SLIDE_LIMIT",422,"The source needs 1..80 slides; narrow the learning goal");
         return json.tree(json.write(Map.of("kind","SLIDES","schemaVersion","1.0","aspect","16:9","slides",slides)));
+    }
+    private void addTeachingSlide(List<Map<String,Object>> slides,String passage,List<? extends Map<String,?>> citations,String title) {
+        int index=slides.size()+1;
+        String visible=clip(passage,340);
+        boolean extended=visible.length()<passage.length();
+        if(extended) visible=clip(visible,332)+"…（详见讲稿）";
+        slides.add(Map.of("id","slide-"+index,"title",title+" · "+index,"elements",List.of(Map.of("id","text-"+index,
+            "kind","TEXT","x",0.06,"y",0.22,"width",0.88,"height",0.67,"text",visible,"assetId",json.tree("null"),"alt","")),
+            "notes",extended?passage:"","evidenceRefs",citations));
     }
     public void cancelAssociated(UUID owner,UUID id) {
         var workspace=workspaces.workspaceFor(owner,"RUN",id);
@@ -370,6 +400,25 @@ public final class StudyWorkflowService implements RuntimeCapabilityProvider {
     private static TaskPlan.Step planner(UUID workspace){return step("planner","conductor",List.of(),Set.of("planLearning"),workspace,false,"Admit 1..3 evidence-grounded teaching sections; no arbitrary tools or scopes");}
     private static TaskPlan.Step step(String id,String role,List<String> dependencies,Set<String> tools,UUID workspace,boolean write,String acceptance){return new TaskPlan.Step(id,role,dependencies,Set.of("workspace:"+workspace),write?Set.of("workspace:"+workspace):Set.of(),tools,true,List.of(acceptance),tools.contains("planLearning")||tools.contains("explainLearning")?1:0);}
     private static String clip(String value,int limit){return value.codePointCount(0,value.length())<=limit?value:value.substring(0,value.offsetByCodePoints(0,limit));}
-    private static String readable(JsonNode content){var values=new ArrayList<String>();for(JsonNode block:content.path("blocks")) if(block.has("text") && (!Set.of("origin","question","limitations").contains(block.path("id").asText()) || block.path("id").asText().equals("limitations") && block.path("text").asText().startsWith(HttpTutorModelProvider.REVIEW_HEADING)))values.add(block.path("text").asText());return String.join("\n\n",values);}
-    private static List<String> pieces(String value,int length){var result=new ArrayList<String>();for(String paragraph:value.split("\\n\\s*\\n")){int[] points=paragraph.codePoints().toArray();for(int i=0;i<points.length;i+=length)result.add(new String(points,i,Math.min(length,points.length-i)));}return result;}
+    private static String readable(JsonNode content) {
+        var values=new ArrayList<String>();
+        for(var block:content.path("blocks")) {
+            String id=block.path("id").asText(),text=block.path("text").asText();
+            if("answer".equals(id) || "limitations".equals(id) && text.startsWith(HttpTutorModelProvider.REVIEW_HEADING)) values.add(text);
+        }
+        return String.join("\n\n",values);
+    }
+    private static List<String> pieces(String text,int length) {
+        var result=new ArrayList<String>();
+        for(int start=0;start<text.length();) {
+            int end=text.offsetByCodePoints(start,Math.min(length,text.codePointCount(start,text.length())));
+            if(end<text.length()) {
+                int paragraph=text.lastIndexOf('\n',end-1);
+                if(paragraph>start+(end-start)/2) end=paragraph+1;
+            }
+            result.add(text.substring(start,end));
+            start=end;
+        }
+        return result;
+    }
 }

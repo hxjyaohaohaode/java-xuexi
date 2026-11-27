@@ -48,8 +48,8 @@ const Operations = lazy(() =>
 );
 
 const navigation: [Route, string, typeof BookOpen][] = [
-  ['learn', '知识与阅读', BookOpen],
-  ['practice', '练习与反馈', CheckSquare],
+  ['learn', '学练课堂', BookOpen],
+  ['practice', '题库与作答记录', CheckSquare],
   ['progress', '进度与复习', ListChecks],
   ['lab', '类型实验', FlaskConical],
   ['studio', '作品与错题集', FolderPen],

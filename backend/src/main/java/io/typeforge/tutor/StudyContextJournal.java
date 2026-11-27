@@ -69,7 +69,7 @@ public final class StudyContextJournal {
                         String.class,output.id().toString(),output.revision()));
                     String text="";
                     for(var block:content.path("blocks")) if(block.path("id").asText().equals("answer"))text=block.path("text").asText();
-                    String excerpt=LearningContextJournal.compact(text,220);
+                    String excerpt=LearningContextJournal.compact(text,12000);
                     raw+=LearningContextJournal.length(text);retained+=LearningContextJournal.length(excerpt);
                     incoming.add(new Incoming(key,ref,excerpt));
                 }

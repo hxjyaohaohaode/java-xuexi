@@ -41,7 +41,7 @@ class StudyWorkflowIntegrationTest {
     @Test void reviewConsumesOnlyAdmittedDraftsAndDoesNotAttachLaterLearnerData() {
         var run=start();
         var later=workspaces.createGoal(owner,workspace,"这个目标仅供后续课堂使用",List.of("仅供后续课堂"),key());
-        assertEquals("COMPLETED",drain(run.id()).status());
+        assertEquals("COMPLETED",drain(run.id()).status(),()->jdbc.queryForList("SELECT r.status,r.error_code FROM tutor_request r JOIN study_step_execution s ON s.request_id=r.id WHERE s.run_id=?",run.id().toString()).toString());
         var details=studies.details(owner,run.id());
         assertEquals(List.of("CONCEPT","EXAMPLE"),details.teachingPlan().sections().stream().map(StudyWorkflowService.Section::role).toList());
         assertEquals(6,details.handoffs().size());
@@ -64,7 +64,7 @@ class StudyWorkflowIntegrationTest {
         var selected=graded(owner,workspace,exercise,false);
         snapshot=workspaces.createContext(owner,workspace,List.of(selected.id())).id();
         var run=studies.create(owner,workspace,new StudyWorkflowService.Input(goal,snapshot,List.of("DOCUMENT","NOTEBOOK"),input().budget(),input().mode(),List.of(selected.id())),key());
-        assertEquals("COMPLETED",drain(run.id()).status());
+        assertEquals("COMPLETED",drain(run.id()).status(),()->jdbc.queryForList("SELECT r.status,r.error_code FROM tutor_request r JOIN study_step_execution s ON s.request_id=r.id WHERE s.run_id=?",run.id().toString()).toString());
         var details=studies.details(owner,run.id());
         assertEquals("repair-first",details.teachingPlan().strategy());
         assertEquals(List.of("REPAIR","CONCEPT","EXAMPLE"),details.teachingPlan().sections().stream().map(StudyWorkflowService.Section::role).toList());

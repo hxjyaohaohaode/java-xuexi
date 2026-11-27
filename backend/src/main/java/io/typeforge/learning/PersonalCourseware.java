@@ -1,5 +1,6 @@
 package io.typeforge.learning;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.typeforge.curriculum.CurriculumService;
 import io.typeforge.curriculum.CurriculumService.ConceptView;
 import io.typeforge.curriculum.CurriculumService.EvidenceView;
@@ -19,15 +20,36 @@ import org.springframework.transaction.annotation.Transactional;
 /** A student's immutable courseware revision. Only validated, owner-scoped inputs reach the outline. */
 @Service
 public class PersonalCourseware implements RuntimeCapabilityProvider {
+    public record Brief(String interest,String requirements) {
+        public Brief {
+            interest=clean(interest,160); requirements=clean(requirements,600);
+        }
+        private static String clean(String value,int max) {
+            if (value==null || value.codePointCount(0,value.length())>max || value.codePoints().anyMatch(c->Character.isISOControl(c) && c!='\n' && c!='\t' && c!='\r'))
+                throw DomainException.invalid("Invalid lesson brief text");
+            return value.strip();
+        }
+    }
+    public record SelfCheck(List<String> options,int answerIndex,String explanation,
+            @JsonInclude(JsonInclude.Include.NON_NULL) String javaSource) {}
+    public record Portable(String title,String body,String prompt) {}
     public record Scene(String key, String kind, String title, String body, String prompt, UUID chunkId,
             Integer chunkRevision, String exampleId, String exampleSha256, UUID exerciseId,
-            Integer exerciseRevision, UUID attemptId) {}
+            Integer exerciseRevision, UUID attemptId,
+            @JsonInclude(JsonInclude.Include.NON_NULL) SelfCheck selfCheck,
+            @JsonInclude(JsonInclude.Include.NON_NULL) Portable portable) {
+        Scene(String key,String kind,String title,String body,String prompt,UUID chunkId,Integer chunkRevision,
+                String exampleId,String exampleSha256,UUID exerciseId,Integer exerciseRevision,UUID attemptId) {
+            this(key,kind,title,body,prompt,chunkId,chunkRevision,exampleId,exampleSha256,exerciseId,exerciseRevision,attemptId,null,null);
+        }
+    }
     public record Plan(UUID id,UUID workspaceId,UUID releaseId,UUID conceptId,String conceptCode,String title,
             int revision,Instant createdAt,UUID snapshotId,long contextSequence,UUID checkpointId,String checkpointDigest,
-            String contentHash,String requestedApproach,String strategy,String pace,List<String> reasons,List<Scene> scenes) {
+            String contentHash,String requestedApproach,String strategy,String pace,List<String> reasons,List<Scene> scenes,
+            @JsonInclude(JsonInclude.Include.NON_NULL) Brief brief) {
         Plan withHash(String hash) {
             return new Plan(id,workspaceId,releaseId,conceptId,conceptCode,title,revision,createdAt,snapshotId,contextSequence,
-                checkpointId,checkpointDigest,hash,requestedApproach,strategy,pace,reasons,scenes);
+                checkpointId,checkpointDigest,hash,requestedApproach,strategy,pace,reasons,scenes,brief);
         }
     }
     record ExerciseSource(UUID id,int revision,String publicHash) {}
@@ -39,37 +61,46 @@ public class PersonalCourseware implements RuntimeCapabilityProvider {
     private final CurriculumService course;
     private final JsonCodec json;
     private final Clock clock;
+    private final LessonBriefStore briefs;
+    private final InterestApplications applications;
     public PersonalCourseware(JdbcTemplate jdbc,WorkspaceService workspaces,LearningContextJournal journal,
-            CurriculumService course,JsonCodec json,Clock clock) {
-        this.jdbc=jdbc; this.workspaces=workspaces; this.journal=journal; this.course=course; this.json=json; this.clock=clock;
+            CurriculumService course,JsonCodec json,Clock clock,LessonBriefStore briefs,InterestApplications applications) {
+        this.jdbc=jdbc; this.workspaces=workspaces; this.journal=journal; this.course=course; this.json=json; this.clock=clock; this.briefs=briefs; this.applications=applications;
     }
     @Override public Set<String> enabledCapabilities() { return Set.of("PERSONAL_COURSEWARE"); }
 
     @Transactional
     public Plan generate(UUID owner,UUID workspace,UUID concept,UUID selected,String approach,String key) {
+        return generate(owner,workspace,concept,selected,approach,null,key);
+    }
+
+    @Transactional
+    public Plan generate(UUID owner,UUID workspace,UUID concept,UUID selected,String approach,Brief requested,String key) {
         if (approach == null || !Set.of("AUTO","GUIDED","EXAMPLE_FIRST","CHALLENGE").contains(approach))
             throw DomainException.invalid("Unsupported teaching approach");
         WorkspaceService.requireKey(key);
         var scope=workspaces.lockOwned(owner,workspace);
         UUID release=scope.releaseId();
         var topic=course.concept(release,concept);
-        String signature=json.hash(List.of(workspace,concept,selected == null ? "LATEST" : selected.toString(),approach));
+        var identity=new ArrayList<Object>(List.of(workspace,concept,selected == null ? "LATEST" : selected.toString(),approach));
+        if (requested!=null) identity.add(requested);
+        String signature=json.hash(identity);
         UUID replay=workspaces.replay(owner,"personal.courseware",key,signature);
         if (replay != null) return get(owner,workspace,concept,replay);
 
         var previous=stored(workspace,concept,null);
-        WorkspaceService.Context snapshot=null;
-        if (selected!=null) {
-            snapshot=workspaces.readContext(owner,workspace,selected);
-        } else if (previous.isPresent() && previous.get().automatic()) {
+        WorkspaceService.Context snapshot=selected==null?null:workspaces.readContext(owner,workspace,selected);
+        var instruction=briefs.resolve(owner,workspace,concept,requested,snapshot);
+        Brief brief=instruction==null?null:instruction.brief();
+        if (snapshot==null && previous.isPresent() && previous.get().automatic()) {
             var saved=json.read(previous.get().plan(),Plan.class);
-            if (saved.contextSequence()==scope.eventSequence()) {
+            if (Objects.equals(saved.brief(),brief) && saved.contextSequence()==scope.eventSequence()) {
                 // Reuse the source, then recompute the outline: updated public guidance may need a new edition.
                 try { snapshot=workspaces.readContext(owner,workspace,saved.snapshotId()); }
                 catch (DomainException changed) { if (changed.status()!=409 && changed.status()!=404) throw changed; }
             }
         }
-        if (snapshot==null) snapshot=createSnapshot(owner,workspace,release,concept);
+        if (snapshot==null) snapshot=createSnapshot(owner,workspace,release,concept,instruction==null?null:instruction.reference());
         var checkpoint=journal.capture(owner,workspace,snapshot.id(),concept);
         var attempts=new ArrayList<PersonalLessonOutline.Attempt>();
         for (var fact:checkpoint.facts()) if (fact.kind().equals("ATTEMPT")) {
@@ -99,6 +130,8 @@ public class PersonalCourseware implements RuntimeCapabilityProvider {
         if (topic.evidence().isEmpty() && questions.isEmpty() && (topic.companion()==null || topic.companion().examples().isEmpty()))
             throw DomainException.conflict("No published teaching material is available for this concept");
         var outline=PersonalLessonOutline.build(topic,prerequisite,questions,attempts,checkpoint.facts(),completed.contains(concept),approach);
+        var teachingPreference=brief!=null?brief:InterestApplications.profileInterest(checkpoint.facts());
+        if (teachingPreference!=null) outline=applications.adapt(outline,topic,teachingPreference);
         var sources=sources(release,topic,prerequisite,outline.scenes());
         var generation=json.hash(List.of("courseware-v1",release,concept,approach,selected==null?"LATEST":selected.toString(),
             checkpoint.facts().stream().map(f->List.of(f.kind(),f.sourceId(),f.revision(),f.contentHash())).toList(),
@@ -117,7 +150,7 @@ public class PersonalCourseware implements RuntimeCapabilityProvider {
         int revision=Math.addExact(previous.map(Stored::revision).orElse(0),1);
         var body=new Plan(id,workspace,release,concept,topic.code(),topic.title(),revision,clock.instant(),snapshot.id(),
             snapshot.eventSequence(),checkpoint.id(),checkpoint.digest(),"",approach,outline.strategy(),outline.pace(),
-            outline.reasons(),outline.scenes());
+            outline.reasons(),outline.scenes(),brief);
         String hash=json.hash(List.of(body,sources));
         jdbc.update("""
             INSERT INTO personal_courseware(id,workspace_id,release_id,concept_id,revision,snapshot_id,checkpoint_id,
@@ -128,7 +161,7 @@ public class PersonalCourseware implements RuntimeCapabilityProvider {
         return body.withHash(hash);
     }
 
-    private WorkspaceService.Context createSnapshot(UUID owner,UUID workspace,UUID release,UUID concept) {
+    private WorkspaceService.Context createSnapshot(UUID owner,UUID workspace,UUID release,UUID concept,Reference lessonMemory) {
         var attempts=jdbc.queryForList("""
             SELECT a.id FROM exercise_attempt a JOIN workspace_attempt wa ON wa.attempt_id=a.id
             JOIN exercise_concept ec ON ec.exercise_id=a.exercise_id AND ec.exercise_revision=a.exercise_revision
@@ -136,7 +169,7 @@ public class PersonalCourseware implements RuntimeCapabilityProvider {
             AND a.score IS NOT NULL AND a.maximum IS NOT NULL AND a.feedback IS NOT NULL
             ORDER BY a.created_at DESC,a.id DESC LIMIT 8
             """,String.class,workspace.toString(),owner.toString(),release.toString(),concept.toString());
-        return workspaces.createContext(owner,workspace,attempts.isEmpty()?null:attempts.stream().map(UUID::fromString).toList());
+        return workspaces.createLessonContext(owner,workspace,attempts.isEmpty()?null:attempts.stream().map(UUID::fromString).toList(),lessonMemory);
     }
     private Set<UUID> completedReading(UUID workspace,long sequence,ConceptView topic) {
         var relevant=new HashSet<>(topic.prerequisiteIds());relevant.add(topic.id());

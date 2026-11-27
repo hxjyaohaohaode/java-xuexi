@@ -4,13 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.typeforge.shared.DomainException;
 import io.typeforge.shared.JsonCodec;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 final class CoursewareSlides {
     private CoursewareSlides() {}
 
-    static JsonNode render(JsonCodec json,CoursewareSlideSource.Edition edition,JsonNode expertSlides,TutorService.Mode mode) {
+    static JsonNode render(JsonCodec json,CoursewareSlideSource.Edition edition,JsonNode expertSlides,TutorService.Mode mode,Collection<String> reviewedText) {
         var pages=new ArrayList<JsonNode>();
         for (var card:edition.cards()) {
             var evidence=card.evidence()==null ? List.of() : List.of(Map.of("id",card.evidence().id(),"revision",card.evidence().revision()));
@@ -26,12 +27,33 @@ final class CoursewareSlides {
                     "elements",elements,"notes","","evidenceRefs",evidence))));
             }
         }
+        var reviewPages=new ArrayList<JsonNode>();
         int supplement=0;
+        boolean reviewedActivity=mode==TutorService.Mode.MODEL && ReviewedApplication.from(edition).isPresent();
         for (var expert:expertSlides.path("slides")) {
             var page=(com.fasterxml.jackson.databind.node.ObjectNode)expert.deepCopy();
-            page.put("title",(mode==TutorService.Mode.MODEL?"模型补充讲解 · 待核对 ":"课程证据讲解 ")+(++supplement));
-            pages.add(page);
+            supplement++;
+            if(reviewedActivity) page.put("title","教学活动 · "+expert.path("title").asText());
+            else page.put("title",(mode==TutorService.Mode.MODEL?"模型补充讲解 · 待核对 ":"课程证据讲解 ")+supplement);
+            if(expert.path("title").asText().startsWith("审阅与核验")) reviewPages.add(page);
+            else pages.add(page);
         }
+        ReviewedApplication.from(edition).ifPresent(app->{
+            var anchor=edition.cards().stream().filter(card->"application-check".equals(card.key())).findFirst().orElseThrow();
+            var sources=anchor.evidence()==null?List.of():List.of(Map.of("id",anchor.evidence().id(),"revision",anchor.evidence().revision()));
+            for(String move:app.requests().required()) {
+                String activity=app.activity(move);
+                if(reviewedText.contains(activity)) continue;
+                var pieces=pages(activity);
+                for(int i=0;i<pieces.size();i++) {
+                    String id="requested-"+move+"-"+(i+1);
+                    pages.add(json.tree(json.write(Map.of("id",id,"title","本节指定活动 · "+activity.lines().findFirst().orElseThrow(),
+                        "elements",List.of(Map.of("id",id+"-text","kind","TEXT","x",0.06,"y",0.18,"width",0.88,"height",0.70,
+                                "text",pieces.get(i),"assetId",json.tree("null"),"alt","")),"notes","","evidenceRefs",sources))));
+                }
+            }
+        });
+        pages.addAll(reviewPages);
         if (pages.size()>80) throw new DomainException("STUDY_SLIDE_LIMIT",422,"This lesson exceeds the editable slide limit");
         return json.tree(json.write(Map.of("kind","SLIDES","schemaVersion","1.0","aspect","16:9","slides",pages)));
     }

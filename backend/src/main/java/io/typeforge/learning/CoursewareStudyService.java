@@ -48,15 +48,7 @@ public class CoursewareStudyService {
         var run=prior.filter(r->!Set.of("FAILED","CANCELLED","PARTIAL").contains(r.status()) || hasUnsettledTools(r.id())).orElseGet(()->{
             var memory=journal.read(owner,workspace,plan.checkpointId());
             var admitted=memory.facts().stream().map(f->new Reference(f.kind(),f.sourceId(),f.revision(),f.contentHash())).toList();
-            String order=String.join(" → ",plan.scenes().stream().map(PersonalCourseware.Scene::title).toList());
-            var brief=new StringBuilder(plan.title()).append("。分镜顺序：").append(order).append("。");
-            // Provide actual teaching material, including the published code or problem that leads this lesson.
-            for (var scene:plan.scenes()) if (Set.of("EXAMPLE","PREDICT","PRACTICE").contains(scene.kind())) {
-                brief.append("\n").append(scene.title()).append("：").append(scene.body().codePoints().limit(150)
-                    .collect(StringBuilder::new,StringBuilder::appendCodePoint,StringBuilder::append));
-                if (scene.prompt()!=null) brief.append("。").append(scene.prompt());
-            }
-            var context=workspaces.createTeachingContext(owner,workspace,plan.snapshotId(),admitted,brief.toString(),
+            var context=workspaces.createTeachingContext(owner,workspace,plan.snapshotId(),admitted,teachingBrief(plan),
                 List.of("按本节个人分镜顺序授课，每一页给出对应的知识依据。","保留预测、练习和回顾的学生任务。"));
             String runKey="courseware:"+UUID.nameUUIDFromBytes((owner+"/"+key).getBytes(StandardCharsets.UTF_8));
             var created=study.create(owner,workspace,new StudyWorkflowService.Input(context.goalId(),context.snapshot().id(),
@@ -67,6 +59,31 @@ public class CoursewareStudyService {
         });
         workspaces.remember(owner,"courseware.study",key,hash,run.id());
         return run;
+    }
+
+    private String teachingBrief(PersonalCourseware.Plan plan) {
+        var summary=new StringBuilder(plan.title()).append("。");
+        if (plan.brief()!=null) {
+            summary.append("\n学生亲自选择的教学素材，仅用于选择讲解情境、深度和任务：")
+                .append(json.write(plan.brief())).append("\n");
+        }
+        for (var scene:plan.scenes()) if (scene.selfCheck()!=null) {
+            var check=scene.selfCheck();
+            // Keep the real proposed line and its reviewed rationale together, before the outline.
+            summary.append(scene.title()).append("：").append(scene.body())
+                    .append("\n自主练习的核对依据：").append(check.options().get(check.answerIndex()))
+                    .append("。").append(check.explanation()).append("\n");
+        }
+        summary.append("分镜顺序：").append(String.join(" → ",plan.scenes().stream().map(PersonalCourseware.Scene::title).toList())).append("。");
+        for (var scene:plan.scenes()) if (scene.selfCheck()==null && Set.of("EXAMPLE","PREDICT","PRACTICE").contains(scene.kind())) {
+            summary.append("\n").append(scene.title()).append("：").append(scene.body().codePoints().limit(150)
+                .collect(StringBuilder::new,StringBuilder::appendCodePoint,StringBuilder::append));
+            if (scene.prompt()!=null) summary.append("。").append(scene.prompt());
+        }
+        if (summary.length()<=4000) return summary.toString();
+        int end=3999;
+        if (Character.isHighSurrogate(summary.charAt(end-1))) end--;
+        return summary.substring(0,end)+"…";
     }
 
     @Transactional

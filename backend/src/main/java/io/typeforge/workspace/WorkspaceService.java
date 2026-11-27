@@ -161,6 +161,12 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
     }
     /** Explicit selection replaces the recent-attempt window; the server derives every immutable reference. */
     public Context createContext(UUID owner,UUID workspace,List<UUID> attemptIds) {
+        return createLessonContext(owner,workspace,attemptIds,null);
+    }
+
+    /** Reserve one memory slot for the exact, revocable preference used to teach this lesson. */
+    public Context createLessonContext(UUID owner,UUID workspace,List<UUID> attemptIds,Reference lessonMemory) {
+        if (lessonMemory!=null && !lessonMemory.kind().equals("MEMORY")) throw DomainException.invalid("Invalid lesson memory");
         if(attemptIds!=null && (attemptIds.isEmpty() || attemptIds.size()>8 || attemptIds.stream().anyMatch(java.util.Objects::isNull)
             || new HashSet<>(attemptIds).size()!=attemptIds.size()))throw DomainException.invalid("Select 1..8 distinct graded attempts for this context");
         List<UUID> selected=attemptIds==null?null:List.copyOf(attemptIds);
@@ -170,9 +176,13 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
             jdbc.query("SELECT id,revision,goal_text,acceptance,status FROM learning_goal WHERE workspace_id=? AND origin_kind='LEARNER' AND status='ACTIVE' ORDER BY created_at,id LIMIT 20",rs -> {
                 refs.add(new Reference("GOAL",UUID.fromString(rs.getString("id")),rs.getInt("revision"),json.hash(Map.of("text",rs.getString("goal_text"),"acceptance",json.tree(rs.getString("acceptance"))))));
             },workspace.toString());
-            jdbc.query("SELECT id,revision,content_json FROM learner_memory WHERE workspace_id=? AND status='ACTIVE' AND (expires_at IS NULL OR expires_at>?) ORDER BY created_at,id LIMIT 20",rs -> {
+            jdbc.query("SELECT id,revision,content_json FROM learner_memory WHERE workspace_id=? AND status='ACTIVE' AND kind NOT LIKE 'LESSON:%' AND (expires_at IS NULL OR expires_at>?) ORDER BY created_at,id LIMIT ?",rs -> {
                 refs.add(new Reference("MEMORY",UUID.fromString(rs.getString("id")),rs.getInt("revision"),json.hash(json.tree(rs.getString("content_json")))));
-            },workspace.toString(),Timestamp.from(clock.instant()));
+            },workspace.toString(),Timestamp.from(clock.instant()),lessonMemory==null?20:19);
+            if (lessonMemory!=null) {
+                validateReferences(owner,workspace,List.of(lessonMemory));
+                refs.add(lessonMemory);
+            }
             jdbc.query("SELECT a.id,r.revision,r.content_hash FROM learning_artifact a JOIN artifact_revision r ON r.artifact_id=a.id AND r.revision=a.current_revision WHERE a.workspace_id=? AND r.review_status<>'STALE' ORDER BY a.created_at DESC,a.id LIMIT 16",rs -> {
                 refs.add(new Reference("ARTIFACT",UUID.fromString(rs.getString("id")),rs.getInt("revision"),rs.getString("content_hash")));
             },workspace.toString());

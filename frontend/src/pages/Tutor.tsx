@@ -55,7 +55,7 @@ export function ConversationPanel({
 }: {
   lesson?: Concept;
   attemptId?: string;
-  discussion?: { id: string; text: string };
+  discussion?: { id: string; text: string; attemptId?: string };
   onDiscussionLoaded?: () => void;
 } = {}) {
   const { workspace, session, can, tick, refresh } = useWorkspace();
@@ -91,6 +91,7 @@ export function ConversationPanel({
     consumed.current = discussion.id;
     setDiscussionNotice('');
     setQuestion(combined);
+    if (discussion.attemptId) setIncludeAttempt(true);
     onDiscussionLoaded?.();
     composer.current?.focus();
   }, [discussion, mutation.busy, question, maxLength, onDiscussionLoaded, setQuestion]);
@@ -356,7 +357,8 @@ export function ConversationPanel({
 function TutorMessage({ request, onChange }: { request: TutorRequest; onChange: () => void }) {
   const { navigate, refresh } = useWorkspace();
   const mutation = useMutation();
-  const courseReviewed = request.mode === 'MODEL' && request.limitations?.startsWith('课程已审订的核对依据');
+  const courseReviewed =
+    request.mode === 'MODEL' && request.limitations?.startsWith('课程已审订的核对依据');
   return (
     <article className="conversation-turn">
       <div className="user-message">

@@ -373,7 +373,7 @@ export async function runWorkbenchJourney(d, check) {
       await d.click('button', '注册并进入');
       await d.fill('工作空间名称', '全链学习验收空间');
       await d.click('button', '创建工作空间');
-      await d.click('link', '知识与阅读');
+      await d.click('link', '学练课堂');
       await d.heading('泛型与类型安全');
       workspace = await selectedWorkspace();
       assert.equal(workspace.releaseId, release.id);
@@ -397,10 +397,13 @@ export async function runWorkbenchJourney(d, check) {
       await d.click('button', '阅读这一概念', '#concept-path-detail');
       await d.click('button', '阅读原文');
       await d.text(names.childChunk, '.scene-read .evidence-card');
-      await d.text(/泛型读取边界：List<\? extends Number> 读取为 Number/, '.scene-read .evidence-card');
+      await d.text(
+        /泛型读取边界：List<\? extends Number> 读取为 Number/,
+        '.scene-read .evidence-card',
+      );
       await d.click('button', '记录已读');
       await d.text('服务端已记录本次阅读。');
-      await d.click('link', '练习与反馈');
+      await d.click('link', '题库与作答记录');
       await d.click('button', new RegExp(escape(names.question)), '.practice-list');
       await d.fill('写下你的文本答案', 'Integer');
       await d.click('button', '提交文本作答');
@@ -488,7 +491,7 @@ export async function runWorkbenchJourney(d, check) {
         [320, 390],
         '.notebook-counterfactual',
       );
-      await d.click('link', '知识与阅读');
+      await d.click('link', '学练课堂');
       await d.click('link', '作品与错题集');
       await d.clickArtifact(notebook.id);
       currentNotebook = await d.readJson(`/artifacts/${notebook.id}`);

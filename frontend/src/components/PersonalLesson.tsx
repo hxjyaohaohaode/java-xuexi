@@ -3,7 +3,9 @@ import { api, ApiError, isAbort } from '../api';
 import { useWorkspace } from '../context';
 import { useMutation } from '../hooks';
 import type {
+  Attempt,
   Concept,
+  CoursewareBrief,
   CoursewareApproach,
   CoursewareScene,
   PersonalCourseware,
@@ -25,14 +27,22 @@ export function PersonalLesson({
   concept,
   scope,
   onActivity,
+  onExperiment,
+  resumeActivity,
+  onActivityResumed,
   onDiscuss,
+  onAttempt,
   courseEvidence,
   refreshAfterAttempt,
 }: {
   concept: Concept;
   scope: string;
   onActivity: (activity: CoursewareScene) => void;
+  onExperiment?: (planId: string, sceneKey: string) => void;
+  resumeActivity?: string;
+  onActivityResumed?: () => void;
   onDiscuss: (text: string, attemptId?: string) => void;
+  onAttempt: (attempt: Attempt) => void;
   courseEvidence: Evidence[];
   refreshAfterAttempt?: string;
 }) {
@@ -41,7 +51,29 @@ export function PersonalLesson({
   const [plan, setPlan] = useState<PersonalCourseware | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [retry, reload] = useState(0);
-  const [approach, selectApproach] = useState<CoursewareApproach>('AUTO');
+  const [editor, setEditor] = useState(false);
+  const [draft, setDraft] = useState<(CoursewareBrief & { approach: CoursewareApproach }) | null>(
+    null,
+  );
+  const briefButton = useRef<HTMLButtonElement>(null);
+  const interestInput = useRef<HTMLInputElement>(null);
+  const generationPending = useRef(false);
+  const values = draft ?? {
+    interest: plan?.brief?.interest || '',
+    requirements: plan?.brief?.requirements || '',
+    approach: plan?.requestedApproach || 'AUTO',
+  };
+  const interestLength = Array.from(values.interest).length;
+  const requirementLength = Array.from(values.requirements).length;
+  const withinLimits = interestLength <= 160 && requirementLength <= 600;
+  useEffect(() => {
+    if (editor) interestInput.current?.focus();
+  }, [editor]);
+  function closeEditor() {
+    setEditor(false);
+    setDraft(null);
+    briefButton.current?.focus();
+  }
   const generation = useMutation();
   const download = useMutation();
   const requestVersion = useRef(0);
@@ -57,7 +89,7 @@ export function PersonalLesson({
         .flatMap((s) => {
           const card = s.chunkId && cards.get(s.chunkId);
           return card && card.releaseId === concept.releaseId && card.revision === s.chunkRevision
-            ? [{ ...card, fullText: s.kind === 'READ' ? s.body : card.fullText }]
+            ? [card]
             : [];
         })
         .filter((card, i, all) => all.findIndex((other) => other.chunkId === card.chunkId) === i),
@@ -74,6 +106,7 @@ export function PersonalLesson({
     return saved;
   }
   useEffect(() => {
+    if (generationPending.current) return;
     const ticket = ++requestVersion.current;
     const control = new AbortController();
     async function load() {
@@ -95,7 +128,6 @@ export function PersonalLesson({
       const checked = validate(saved);
       if (update) refreshedAttempt.current = refreshAfterAttempt!;
       setPlan(checked);
-      selectApproach(checked.requestedApproach);
       setError(null);
     }
     void load().catch((e) => {
@@ -106,25 +138,31 @@ export function PersonalLesson({
     });
     return () => control.abort();
   }, [endpoint, tick, retry, refreshAfterAttempt]);
-  function regenerate() {
-    const ticket = ++requestVersion.current;
-    void generation.run(
-      async () =>
-        validate(
-          await api.request<PersonalCourseware>(
-            endpoint,
-            'POST',
-            { approach },
-            { idempotent: true },
+  function regenerate(brief?: CoursewareBrief) {
+    if (generationPending.current) return;
+    generationPending.current = true;
+    ++requestVersion.current;
+    const approach = brief ? values.approach : plan?.requestedApproach || 'AUTO';
+    void generation
+      .run(
+        async () =>
+          validate(
+            await api.request<PersonalCourseware>(
+              endpoint,
+              'POST',
+              brief ? { approach, brief } : { approach },
+              { idempotent: true },
+            ),
           ),
-        ),
-      (saved) => {
-        if (ticket === requestVersion.current) {
+        (saved) => {
           setPlan(saved);
           setError(null);
-        } else reload((n) => n + 1);
-      },
-    );
+          if (brief) closeEditor();
+        },
+      )
+      .finally(() => {
+        generationPending.current = false;
+      });
   }
   async function exportPersonal() {
     if (!plan) return;
@@ -142,26 +180,114 @@ export function PersonalLesson({
     <section className="personal-lesson" aria-label="我的个性化课件">
       <ErrorNotice error={error} retry={() => reload((n) => n + 1)} />
       <ErrorNotice error={generation.error} />
-      {plan ? (
-        <>
-          <header className="personal-lesson-head">
+      {(plan || (error instanceof ApiError && error.status === 409)) && (
+        <div className="lesson-settings">
+          <div className="lesson-settings-bar">
             <div>
-              <p className="classroom-kicker">
-                {strategies[plan.strategy]} · {paces[plan.pace]}
-              </p>
-              <h3>{plan.title}</h3>
+              {plan && (
+                <strong>
+                  {strategies[plan.strategy]} · {paces[plan.pace]}
+                </strong>
+              )}
+              {plan?.brief && (
+                <span className="brief-summary">
+                  {plan.brief.interest
+                    ? '本节兴趣 · ' + plan.brief.interest
+                    : '本节要求 · ' + plan.brief.requirements}
+                </span>
+              )}
+              <small className="muted" role="status">
+                {plan ? '个人版本 ' + plan.revision : '本节课件待更新'}
+              </small>
             </div>
-            <span className="muted small">个人版本 {plan.revision}</span>
-          </header>
-          <details className="personal-reasons">
-            <summary>为什么这样安排</summary>
-            <ul>
-              {plan.reasons.map((reason, i) => (
-                <li key={i}>{reason}</li>
-              ))}
-            </ul>
-          </details>
-          {can('STUDY_WORKFLOW') && <CoursewareStudy key={plan.id} plan={plan} scope={scope} />}
+            <button
+              ref={briefButton}
+              type="button"
+              aria-expanded={editor}
+              aria-controls="lesson-brief-editor"
+              onClick={() => (editor ? closeEditor() : setEditor(true))}
+            >
+              {editor ? '收起设置' : '调整兴趣与要求'}
+            </button>
+          </div>
+          {editor && (
+            <form
+              id="lesson-brief-editor"
+              className="lesson-brief"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (withinLimits)
+                  regenerate({
+                    interest: values.interest.trim(),
+                    requirements: values.requirements.trim(),
+                  });
+              }}
+            >
+              <label>
+                我的兴趣
+                <input
+                  ref={interestInput}
+                  disabled={generation.busy}
+                  placeholder="例如，篮球比赛或独立音乐"
+                  value={values.interest}
+                  aria-invalid={interestLength > 160}
+                  aria-describedby="lesson-interest-help"
+                  onChange={(e) => setDraft({ ...values, interest: e.target.value })}
+                />
+              </label>
+              <small id="lesson-interest-help" className="muted">
+                用你熟悉的事物来讲这个知识点。{interestLength} / 160
+              </small>
+              <label>
+                本节学习要求
+                <textarea
+                  rows={3}
+                  disabled={generation.busy}
+                  placeholder="例如，先用反例解释原因，再给我一道迁移题"
+                  value={values.requirements}
+                  aria-invalid={requirementLength > 600}
+                  aria-describedby="lesson-requirements-help"
+                  onChange={(e) => setDraft({ ...values, requirements: e.target.value })}
+                />
+              </label>
+              <small id="lesson-requirements-help" className="muted">
+                仅用于这节个人课件。{requirementLength} / 600
+              </small>
+              <label>
+                教学方式
+                <select
+                  disabled={generation.busy}
+                  value={values.approach}
+                  onChange={(e) =>
+                    setDraft({ ...values, approach: e.target.value as CoursewareApproach })
+                  }
+                >
+                  <option value="AUTO">由学习记录决定</option>
+                  <option value="EXAMPLE_FIRST">先看示例</option>
+                  <option value="GUIDED">分步讲解</option>
+                  <option value="CHALLENGE">挑战迁移</option>
+                </select>
+              </label>
+              <div className="row">
+                <button className="primary" disabled={!withinLimits || generation.busy}>
+                  {generation.busy ? '正在更新课件…' : '按我的要求生成课件'}
+                </button>
+                {plan?.brief && (
+                  <button
+                    type="button"
+                    disabled={generation.busy}
+                    onClick={() => regenerate({ interest: '', requirements: '' })}
+                  >
+                    清除本节兴趣与要求
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+      {plan && (
+        <>
           <Suspense fallback={<Loading label="正在打开个人课件…" />}>
             <Player
               key={plan.id}
@@ -170,37 +296,38 @@ export function PersonalLesson({
               personal={plan}
               discussionEnabled={can('TUTOR_EVIDENCE_ONLY')}
               onDiscuss={onDiscuss}
+              onExperiment={onExperiment}
+              resumeActivity={resumeActivity}
+              onActivityResumed={onActivityResumed}
               onActivity={onActivity}
+              onAttempt={onAttempt}
+              onUpdate={() => regenerate()}
+              updating={generation.busy}
             />
           </Suspense>
-        </>
-      ) : null}
-      {(plan || (error instanceof ApiError && error.status === 409)) && (
-        <>
-          <div className="personal-plan-controls">
-            <label>
-              教学方式
-              <select
-                value={approach}
-                onChange={(event) => selectApproach(event.target.value as CoursewareApproach)}
-              >
-                <option value="AUTO">由学习记录决定</option>
-                <option value="EXAMPLE_FIRST">先看示例</option>
-                <option value="GUIDED">分步讲解</option>
-                <option value="CHALLENGE">挑战迁移</option>
-              </select>
-            </label>
-            <button type="button" disabled={generation.busy} onClick={regenerate}>
+          <div className="lesson-plan-footer">
+            <details className="personal-reasons">
+              <summary>为什么这样安排</summary>
+              <ul>
+                {plan.reasons.map((reason, i) => (
+                  <li key={i}>{reason}</li>
+                ))}
+              </ul>
+            </details>
+            <button type="button" disabled={generation.busy} onClick={() => regenerate()}>
               {generation.busy ? '正在更新…' : '按最新学习记录更新课件'}
             </button>
           </div>
+          {can('STUDY_WORKFLOW') && <CoursewareStudy key={plan.id} plan={plan} scope={scope} />}
         </>
       )}
       {plan && (
         <>
           <details className="personal-export">
             <summary>导出我的个性化课件</summary>
-            <p>包含本版为你编排的教学文字、代码、讨论与课程出处。分享前请核对其中的个性化讲解。</p>
+            <p>
+              下载保留本节的编排、课程出处和可分享的教学情境。私人兴趣、要求和作答记录留在工作空间。
+            </p>
             <button
               type="button"
               disabled={download.busy}

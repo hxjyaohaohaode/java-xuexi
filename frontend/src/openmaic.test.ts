@@ -157,4 +157,44 @@ it('renders privately ordered evidence, questions and role actions without seria
     agentIndex: 1,
   });
   expect(JSON.stringify(buildMaicLesson(testConcept, 1).scenes)).not.toContain(activity.title);
+  const privateScene = {
+    ...activity,
+    key: 'application-check',
+    title: '私人兴趣标题',
+    body: '自行定义的队名',
+    prompt: '私人要求',
+    selfCheck: {
+      options: ['私有选项', '另一项'],
+      answerIndex: 0,
+      explanation: '私有解析',
+      javaSource: '私有源码专用标记',
+    },
+    portable: { title: '课程应用', body: '已审核的共用示例', prompt: '哪种写法类型安全？' },
+  };
+  const adapted = {
+    ...plan,
+    title: '专属课件名',
+    brief: { interest: '私密爱好', requirements: '私密要求' },
+    scenes: [privateScene],
+  };
+  expect(buildMaicLesson(testConcept, 1, adapted).transcripts[0]).toBe(privateScene.body);
+  const portable = Object.values(unzipSync(buildMaicArchive(testConcept, 1, adapted)))
+    .map((v) => strFromU8(v))
+    .join('');
+  for (const secret of [
+    adapted.title,
+    adapted.brief.interest,
+    adapted.brief.requirements,
+    privateScene.title,
+    privateScene.body,
+    privateScene.prompt,
+    privateScene.selfCheck.options[0],
+    privateScene.selfCheck.explanation,
+    privateScene.selfCheck.javaSource,
+  ])
+    expect(portable).not.toContain(secret);
+  expect(portable).toContain(privateScene.portable.body);
+  expect(() =>
+    buildMaicArchive(testConcept, 1, { ...adapted, scenes: [{ ...privateScene, portable: null }] }),
+  ).toThrow('缺少可分享');
 });

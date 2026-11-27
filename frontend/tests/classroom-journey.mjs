@@ -36,7 +36,7 @@ export async function verifyClassroom(page, screenshot) {
   assert.equal(await helper.getByLabel('输入你的问题').inputValue(), '我想检验这条规则的边界。');
   await helper.getByLabel('输入你的问题').fill('');
   await helper.getByRole('button', { name: '关闭课堂导师' }).click();
-  await button('练习这一概念').click();
+  await button('本节题库').click();
   await stage.locator('.question-card').waitFor();
   assert.equal(await stage.locator('.classroom-lesson h2').innerText(), lesson);
   assert.match(page.url(), /#learn\/[^?]+\?scene=practice/);
@@ -49,7 +49,7 @@ export async function verifyClassroom(page, screenshot) {
   await button('协作创作').click();
   const goal = stage.getByLabel('你想真正理解什么？');
   assert.ok((await goal.inputValue()).includes(lesson));
-  await button('课程阅读').click();
+  await button('本节学练').click();
   await stage.locator('summary').filter({ hasText: '导出本节课堂' }).click();
   const [download] = await Promise.all([
     page.waitForEvent('download'),

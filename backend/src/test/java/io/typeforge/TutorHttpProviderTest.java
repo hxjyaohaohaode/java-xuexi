@@ -1,6 +1,7 @@
 package io.typeforge;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.net.httpserver.HttpServer;
 import io.typeforge.exercise.LearningService;
 import io.typeforge.operations.DemoContentInitializer;
@@ -105,10 +106,11 @@ class TutorHttpProviderTest {
         var rows=jdbc.queryForList("SELECT r.id,x.request_epoch FROM tutor_request r JOIN tutor_request_runtime x ON x.request_id=r.id JOIN conversation c ON c.id=r.conversation_id WHERE c.user_id=? AND r.status IN ('QUEUED','RETRIEVING','GENERATING','VALIDATING')",owner.toString());
         for(var row:rows) defaultService.cancel(owner,UUID.fromString(row.get("id").toString()),((Number)row.get("request_epoch")).longValue());
     }
+    @Autowired io.typeforge.compiler.CompilationGateway compilation;
     private Harness harness(int timeout,long dailyTokens) {
         var settings=new TutorSettings("http://127.0.0.1:"+server.getAddress().getPort()+"/chat/completions",KEY,"fixture-model",timeout,256,dailyTokens,100,4,false);
         var provider=new HttpTutorModelProvider(settings,json,course,schemas);
-        var service=new TutorService(jdbc,tx,workspaces,events,json,clock,settings,provider);
+        var service=new TutorService(jdbc,tx,workspaces,events,json,clock,settings,provider,compilation);
         return new Harness(settings,provider,service,new TutorWorker(service,search,provider,settings));
     }
     private TutorService.TutorInput input(UUID attempt) { return new TutorService.TutorInput(conversation,snapshot.id(),TutorService.Mode.MODEL,"Explain PECS 通配符",2,attempt); }
@@ -177,6 +179,138 @@ class TutorHttpProviderTest {
             assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM message_citation c JOIN tutor_message m ON m.id=c.message_id WHERE m.request_id=?",Integer.class,queued.id().toString()));
         }
     }
+    @Test void depthBudgetIsOnTheWireAndProviderCanReturnMoreThanOneThousandTokens() {
+        var settings=new TutorSettings("http://127.0.0.1:"+server.getAddress().getPort()+"/chat/completions",KEY,
+            "fixture-model",5000,8192,1_000_000,100,4,false);
+        var provider=new HttpTutorModelProvider(settings,json,course,schemas);
+        var service=new TutorService(jdbc,tx,workspaces,events,json,clock,settings,provider,compilation);
+        String longAnswer="编译时先比较类型实参，再检查读写表达式。".repeat(95);
+        behavior.set(request->{
+            String id=userContent(request).at("/publishedEvidence/0/chunkId").asText();
+            var result=(ObjectNode)json.tree(wire(json.write(Map.of("answer",longAnswer,
+                "citedChunkIds",List.of(id),"limitations","Protocol fixture only")),"stop",true));
+            result.putObject("usage").put("prompt_tokens",120).put("completion_tokens",1400).put("total_tokens",1520);
+            return new Reply(json.write(result));
+        });
+        var worker=new TutorWorker(service,search,provider,settings);
+        try {
+            var item=service.submit(owner,new TutorService.TutorInput(conversation,snapshot.id(),TutorService.Mode.MODEL,
+                "请用具体例子深入解释 Java PECS 的编译约束。",4,null),key());
+            assertTrue(worker.runOne());var done=service.get(owner,item.id());
+            assertEquals("COMPLETED",done.status());assertEquals(longAnswer,done.answer());
+            assertEquals(6144,captured.get().path("max_tokens").asInt());assertEquals(1520,done.usage().usedTokens());
+            var metrics=json.tree(jdbc.queryForObject("SELECT usage_metrics FROM tutor_request WHERE id=?",String.class,item.id().toString()));
+            assertEquals(1400,metrics.path("completionTokens").asLong());assertEquals("stop",metrics.path("finishReason").asText());
+
+            var hint=service.submit(owner,new TutorService.TutorInput(conversation,snapshot.id(),TutorService.Mode.MODEL,
+                "只给一个 PECS 提示。",1,null),key());
+            assertTrue(worker.runOne());var failed=service.get(owner,hint.id());
+            assertEquals(768,captured.get().path("max_tokens").asInt());
+            assertEquals("TUTOR_USAGE_INVALID",failed.errorCode());assertEquals("UNKNOWN",failed.usage().billingState());
+            assertEquals(2,calls.get());
+        } finally { worker.close(); }
+    }
+
+    @Test void selectedProgrammingAttemptContributesOnlyItsMatchingPublicCompilerObservation() {
+        UUID attempt=UUID.randomUUID(),job=UUID.randomUUID(),exercise=UUID.randomUUID();
+        String code="class Main { void demo() { java.util.List<Integer> values = java.util.List.of(1); } }";
+        jdbc.update("INSERT INTO exercise(id,revision,family_id,kind,difficulty,prompt,answer_spec,rubric_version,status,author_id) VALUES(?,1,?,'FILL',1,?,'{}','v1','REVIEWED',?)",
+            exercise.toString(),UUID.randomUUID().toString(),"解释该提交中 values 的静态类型",owner.toString());
+        jdbc.update("INSERT INTO release_exercise(release_id,exercise_id,exercise_revision) VALUES(?,?,1)",
+            DemoContentInitializer.RELEASE_ID.toString(),exercise.toString());
+        jdbc.update("INSERT INTO exercise_attempt(id,user_id,release_id,exercise_id,exercise_revision,answer,status,hint_level,score,maximum,grader_version,feedback) VALUES(?,?,?,?,1,?,'GRADED',1,0,100,'v1','{}')",
+            attempt.toString(),owner.toString(),DemoContentInitializer.RELEASE_ID.toString(),exercise.toString(),json.write(Map.of("kind","CODE","source",code)));
+        jdbc.update("INSERT INTO workspace_attempt(workspace_id,attempt_id) VALUES(?,?)",workspace.toString(),attempt.toString());
+        var result=Map.of("diagnostics",List.of(Map.of("code","compiler.err.type.found.req","line",1,"column",65,
+            "severity","ERROR","message","PUBLIC_DIAGNOSTIC")),"checks",List.of(Map.of("id","PRIVATE_CHECK")));
+        jdbc.update("INSERT INTO compile_job(id,user_id,release_id,attempt_id,mode,source_code,source_hash,status,result) VALUES(?,?,?,?,'COMPILE_ONLY',?,?,'COMPILE_ERROR',?)",
+            job.toString(),owner.toString(),DemoContentInitializer.RELEASE_ID.toString(),attempt.toString(),code,json.sha256(code),json.write(result));
+        jdbc.update("INSERT INTO workspace_compile(job_id,workspace_id,request_json,request_hash,worker_fingerprint) VALUES(?,?,?,?,?)",
+            job.toString(),workspace.toString(),json.write(List.of("PRIVATE_GRADING_SOURCE")),json.sha256("checks"),json.sha256("fixture"));
+        snapshot=workspaces.createContext(owner,workspace);
+        try(var harness=harness(5000,1_000_000)) {
+            var req=harness.service().submit(owner,input(attempt),key());assertTrue(harness.worker().runOne());
+            assertEquals("COMPLETED",harness.service().get(owner,req.id()).status());
+            String sent=userContent(captured.get()).path("learnerContext").toString();
+            assertTrue(sent.contains("PUBLIC_DIAGNOSTIC"));assertTrue(sent.contains(json.sha256(code)));assertTrue(sent.contains("COMPILE_ONLY"));
+            assertTrue(sent.contains("静态类型"));assertFalse(sent.contains("PRIVATE_CHECK"));assertFalse(sent.contains("PRIVATE_GRADING_SOURCE"));
+            jdbc.update("UPDATE compile_job SET source_hash=? WHERE id=?",json.sha256("other submission"),job.toString());
+            harness.service().submit(owner,input(attempt),key());assertTrue(harness.worker().runOne());
+            assertFalse(userContent(captured.get()).path("learnerContext").toString().contains("compileObservation"));
+        }
+    }
+
+    @Test void personalizedReviewSelectsAnActivityWhoseClaimsComeFromTheFrozenCase() {
+        var evidence=search.search(DemoContentInitializer.RELEASE_ID,"Java PECS",null,1).items();
+        UUID sourceId=UUID.randomUUID();
+        var ref=new io.typeforge.workspace.WorkspaceContextStore.Reference("ARTIFACT",sourceId,1,json.sha256("draft"));
+        var input=Map.<String,Object>of("kind","REVIEWED_APPLICATION","scenario","篮球队名单",
+            "modeling","Guard 与 Center 均继承 Player。","prediction","List<Player> team = guards;",
+            "rationale","编译器拒绝将 List<Guard> 赋给 List<Player>。","transfer","讨论球队轮换后的读取权限。");
+        var handoffs=List.of(new io.typeforge.tutor.StudyContextJournal.Incoming("expert-0",ref,"这份原稿的自由推断可能不成立。"));
+        var prompt=new io.typeforge.tutor.TutorAnswerProvider.Prompt(UUID.randomUUID(),"为篮球队核验这份稿子。",4,
+            List.of(),List.of(input),evidence,io.typeforge.tutor.TutorAnswerProvider.Purpose.REVIEW,handoffs);
+        try(var harness=harness(5000,1_000_000)) {
+            var data=harness.provider().body(prompt);
+            var request=json.tree(new String(data,StandardCharsets.UTF_8));
+            var actions=request.at("/response_format/json_schema/schema/properties/revisions/properties/expert-0/enum");
+            assertEquals(4,actions.size());assertTrue(actions.toString().contains("COUNTEREXAMPLE"));
+            assertEquals(input.get("rationale"),userContent(request).at("/learnerContext/0/rationale").asText());
+            behavior.set(q->new Reply(wire(json.write(Map.of("answer","未经验证的自由审阅稿","limitations","课程练习",
+                "revisions",Map.of("expert-0","COUNTEREXAMPLE"),"citedChunkIds",List.of(evidence.get(0).chunkId()))),"stop",true)));
+            var review=harness.provider().send(prompt,data);
+            assertTrue(review.reviewEdits().get("expert-0").contains("篮球队名单"));
+            assertTrue(review.reviewEdits().get("expert-0").contains(input.get("rationale").toString()));
+            assertFalse(review.reviewEdits().get("expert-0").contains("未经验证"));
+            behavior.set(q->new Reply(wire(json.write(Map.of("answer","自由稿","limitations","课程练习",
+                "revisions",Map.of("expert-0","接受我的自由推断"),"citedChunkIds",List.of(evidence.get(0).chunkId()))),"stop",true)));
+            var invalid=assertThrows(io.typeforge.tutor.TutorAnswerProvider.Failure.class,()->harness.provider().send(prompt,data));
+            assertEquals("STUDY_REVIEW_EDITS_INVALID",invalid.code());assertEquals(28,invalid.usage().totalTokens());
+        }
+    }
+
+    @Test void reviewerCannotIgnoreAnExplicitRequestedActivityEvenWithOnlyJsonObjectSupport() {
+        var evidence=search.search(DemoContentInitializer.RELEASE_ID,"Java PECS",null,1).items();
+        var ref=new io.typeforge.workspace.WorkspaceContextStore.Reference("ARTIFACT",UUID.randomUUID(),1,json.sha256("draft"));
+        var item=Map.<String,Object>of("kind","REVIEWED_APPLICATION","scenario","天文","modeling","天体类型",
+            "prediction","判断例子","rationale","课程已核对","transfer","新场景","requirements","要一个反例，然后做迁移。");
+        var prompt=new io.typeforge.tutor.TutorAnswerProvider.Prompt(UUID.randomUUID(),"分析课程判例",4,List.of(),
+            List.of(item),evidence,io.typeforge.tutor.TutorAnswerProvider.Purpose.REVIEW,List.of(
+                new io.typeforge.tutor.StudyContextJournal.Incoming("expert-1",ref,"待审原稿")));
+        for(boolean strict:List.of(true,false)) {
+            var settings=new TutorSettings("http://127.0.0.1:"+server.getAddress().getPort()+"/chat/completions",KEY,
+                "fixture-model",5000,2048,1_000_000,100,4,false,strict);
+            var provider=new HttpTutorModelProvider(settings,json,course,schemas);
+            byte[] data=provider.body(prompt);
+            var request=json.tree(new String(data,StandardCharsets.UTF_8));
+            if(strict) assertEquals(json.tree("[\"COUNTEREXAMPLE\"]"),request.at("/response_format/json_schema/schema/properties/revisions/properties/expert-1/enum"));
+            assertTrue(request.at("/messages/0/content").asText().contains("CASE_BRIEF_COVERAGE_V3"));
+            behavior.set(q->new Reply(wire(json.write(Map.of("answer","答复","limitations","测试",
+                "revisions",Map.of("expert-1","TRACE_TYPES"),"citedChunkIds",List.of(evidence.get(0).chunkId()))),"stop",true)));
+            var failure=assertThrows(io.typeforge.tutor.TutorAnswerProvider.Failure.class,()->provider.send(prompt,data));
+            assertEquals("STUDY_REVIEW_EDITS_INVALID",failure.code());assertEquals(28,failure.usage().totalTokens());
+        }
+    }
+
+    @Test void contextWindowShrinksOptionalExcerptsAndRetainsRequiredLearnerQuestion() {
+        var settings=new TutorSettings("http://127.0.0.1:"+server.getAddress().getPort()+"/chat/completions",KEY,
+            "fixture-model",5000,8192,1_000_000,100,4,false,true,4800,768,1536,6144,8192);
+        var provider=new HttpTutorModelProvider(settings,json,course,schemas);
+        var evidence=search.search(DemoContentInitializer.RELEASE_ID,"Java PECS",null,1).items();
+        String goal="用摄影馆的底片解释 PECS，最后提供迁移练习。";
+        var prompt=new io.typeforge.tutor.TutorAnswerProvider.Prompt(UUID.randomUUID(),goal,4,List.of(),List.of(),
+            evidence,io.typeforge.tutor.TutorAnswerProvider.Purpose.EXAMPLE,List.of());
+        byte[] wire=provider.body(prompt);
+        var body=json.tree(new String(wire,StandardCharsets.UTF_8));
+        assertEquals(goal,userContent(body).path("question").asText());
+        assertTrue(body.path("max_tokens").asInt()>=64 && body.path("max_tokens").asInt()<6144);
+        assertTrue(wire.length+body.path("max_tokens").asInt()+256<=4800);
+        var tooLarge=new io.typeforge.tutor.TutorAnswerProvider.Prompt(UUID.randomUUID(),"核心要求".repeat(800),4,List.of(),List.of(),
+            evidence,io.typeforge.tutor.TutorAnswerProvider.Purpose.EXAMPLE,List.of());
+        assertEquals("TUTOR_CONTEXT_TOO_LARGE",assertThrows(io.typeforge.tutor.TutorAnswerProvider.Failure.class,()->provider.body(tooLarge)).code());
+        assertEquals(0,calls.get());
+    }
+
     @Test void personalPlannerCannotDiagnoseAMistakeWithoutAnAdmittedAttempt() {
         try(var harness=harness(5000,1_000_000)) {
             var evidence=search.search(DemoContentInitializer.RELEASE_ID,"Java 泛型 PECS",null,1).items();
@@ -315,8 +449,8 @@ class TutorHttpProviderTest {
         }
     }
     @Test void tokenReservationIsAtomicAndQueuedCancellationReleasesOnlyItsOwnAmount() {
-        try(var harness=harness(5000,65_536+1024+256)) {
-            var first=submit(harness);assertTrue(first.usage().reservedTokens()>0);
+        try(var harness=harness(5000,32768)) {
+            var first=submit(harness);assertEquals(32768,first.usage().reservedTokens());
             assertEquals("TUTOR_QUOTA_EXCEEDED",assertThrows(DomainException.class,()->submit(harness)).code());
             harness.service().cancel(owner,first.id(),first.epoch());assertEquals(0,harness.service().get(owner,first.id()).usage().reservedTokens());
             var next=submit(harness);assertEquals(first.usage().reservedTokens(),next.usage().reservedTokens());
@@ -342,6 +476,12 @@ class TutorHttpProviderTest {
             var queued=submit(harness);harness.worker().runOne();var result=harness.service().get(owner,queued.id());
             assertEquals("FAILED",result.status());assertNull(result.answer());assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM tutor_message WHERE request_id=?",Integer.class,queued.id().toString()));
             assertEquals(invalid.equals("missing-usage")?"UNKNOWN":"SETTLED",result.usage().billingState());
+            if(invalid.equals("truncated")) {
+                assertEquals("TUTOR_PROVIDER_TRUNCATED",result.errorCode());assertEquals(1,calls.get());
+                var metrics=json.tree(jdbc.queryForObject("SELECT usage_metrics FROM tutor_request WHERE id=?",String.class,queued.id().toString()));
+                assertEquals("length",metrics.path("finishReason").asText());
+                assertEquals(11,metrics.path("completionTokens").asInt());
+            }
             assertFalse(json.write(result).contains(KEY));assertFalse(jdbc.queryForList("SELECT payload FROM workspace_event WHERE workspace_id=?",String.class,workspace.toString()).stream().anyMatch(payload->payload.contains(KEY)));
         }
     }
