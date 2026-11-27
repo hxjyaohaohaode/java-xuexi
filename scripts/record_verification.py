@@ -3,8 +3,8 @@
 
 Run after the documented Java, frontend, H2/MySQL HTTP and isolation commands.
 --check-snapshot only validates that the versioned report describes the exact source tree.
-Browser acceptance belongs to the exact pushed commit's independent GitHub Actions run;
-local DOM integration is explicitly recorded separately from a graphical browser.
+The packaged DOM and graphical Chromium runs are recorded independently. CI also runs the
+real isolated Java/Python worker and UI against Docker and publishes the complete receipts.
 """
 from __future__ import annotations
 import argparse
@@ -212,7 +212,7 @@ def main():
         'httpAndRestart':{profile:{k:v for k,v in compact(value).items() if k in {'result','profile','engine','startedAt','finishedAt','jarSha256','scope','checks','unexpectedLogErrors','verificationInputs','inputsUnchanged'}}
                           | {'httpRequests':len(value['http']),'shutdown':'graceful process termination and restart against the same database'} for profile,value in smokes.items()},
         'remoteCi':{'status':'VERIFY_EXACT_COMMIT_IN_GITHUB_ACTIONS','workflow':'.github/workflows/baseline.yml',
-                    'note':'This report records local gates. The published commit Actions run independently verifies Java 17, Docker MySQL, the actual isolated javac worker and real Chromium.'},
+                    'note':'This report binds the current verification environment to the recorded source. The exact published commit is also tested in GitHub Actions, including Docker Java/Python execution from Chromium.'},
         'notVerified':['real supplier model teaching quality or billing invoices','unrestricted autonomous planner and full expert/media tool roster',
                        'production deployment of the Java/Python execution service','generative image/audio/video services and production deployment of the isolated compiler service',
                        'formal human review of the complete course corpus','production load/SLO/backup restore',
@@ -258,7 +258,7 @@ Java 测试类汇总
 
 真实作答经 outbox 和幂等 receipt 进入独立题目家族证据与复习；错题块调用同一判分服务。阅读/预测/作品生成只记活动，不给虚假的掌握分。
 
-导师会话绑定本人空间和固定课程；请求固定上下文、租约、epoch 与额度。MODEL协议使用本地真实 HTTP 服务夹具测试响应、超时、异常与引用，EVIDENCE_ONLY真实检索。夹具不是付费供应商教学质量证明。取消、账号禁用、归档、deadline、自然过期、来源撤回及未知计量均有独立边界。
+导师会话绑定本人空间和固定课程；请求固定上下文、租约、epoch 与额度。MODEL协议使用本地真实 HTTP 服务夹具测试响应、超时、异常与引用，EVIDENCE_ONLY真实检索。本地真实权重的逐题核对、错误实例及教学创作验收另见[模型实测](classroom-model-review.md)。取消、账号禁用、归档、deadline、自然过期、来源撤回及未知计量均有独立边界。
 
 回答转文档保存完整来源；作品保存、上下文读取、错题动作、导出与下载复核有界祖先图、实际内容hash和叶子来源。自然到期不依赖提前产生撤回事件。导出固定 renderer 与源 revision，真实字节与终态同事务；HTML/SVG转义、非法XML字符、失效来源和越权均不会变成可用下载。
 
@@ -303,7 +303,7 @@ python scripts/record_verification.py --check-snapshot
 
 ## 仍未完成和未验证
 
-真实供应商模型的教学效果、费用账单、通用任意工具调度、隔离编译服务的生产部署、生成式图像/音频/视频、全课程人工审核、生产负载与备份恢复、正式答辩和个人贡献均不在本轮PASS范围内。真实 Docker 编译检查由远端 CI 独立证明，不等于生产部署。逐模块剩余事项及代码入口见 [接手指南](../docs/02-modules.md)。最终40项课程验收保持独立，不因自动测试通过而自动升级。
+真实供应商模型的教学效果、费用账单、通用任意工具调度、隔离编译服务的生产部署、生成式图像/音频/视频、全课程人工审核、生产负载与备份恢复、正式答辩和个人贡献均不在本轮PASS范围内。Docker 上的 Java/Python 运行和浏览器提交结果由 GitHub Actions 独立记录。逐模块剩余事项及代码入口见 [接手指南](../docs/02-modules.md)。最终40项课程验收保持独立，不因自动测试通过而自动升级。
 
 旧基线报告和重复字段字典已清理；历史保留在Git。V001–V014为合法升级链，由 `database/migrations.lock.json`锁定，不能为清理旧版本而删除。
 '''

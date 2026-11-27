@@ -177,6 +177,25 @@ class TutorHttpProviderTest {
             assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM message_citation c JOIN tutor_message m ON m.id=c.message_id WHERE m.request_id=?",Integer.class,queued.id().toString()));
         }
     }
+    @Test void slowConfiguredProviderRetainsBoundedLeaseDeadlineAndUnknownDispatchFence() {
+        assertThrows(IllegalArgumentException.class,()->harness(300001,1_000_000));
+        try(var harness=harness(180000,1_000_000)) {
+            Instant start=clock.instant();
+            var request=submit(harness);
+            var deadline=jdbc.queryForObject("SELECT deadline_at FROM tutor_request_runtime WHERE request_id=?",
+                Timestamp.class,request.id().toString()).toInstant();
+            assertTrue(deadline.isAfter(start.plusSeconds(239)) && deadline.isBefore(clock.instant().plusSeconds(241)));
+            var ticket=harness.service().claimNext();
+            assertTrue(ticket.leaseUntil().isAfter(start.plusSeconds(194)) && ticket.leaseUntil().isBefore(deadline));
+            harness.service().prepare(ticket,search.search(ticket.releaseId(),"Java 泛型 PECS",null,1).items());
+            harness.service().markDispatched(ticket);
+            var cancelled=harness.service().cancel(owner,request.id(),ticket.epoch());
+            assertEquals("UNKNOWN",cancelled.usage().billingState());
+            assertTrue(cancelled.usage().reservedTokens()>0);
+            assertNull(harness.service().claimNext());
+        }
+    }
+
     @Test void learnerTextCannotSelectThePlannerProtocol() {
         try(var harness=harness(5000,1_000_000)) {
             var queued=harness.service().submit(owner,new TutorService.TutorInput(conversation,snapshot.id(),TutorService.Mode.MODEL,

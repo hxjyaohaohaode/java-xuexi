@@ -183,6 +183,15 @@ class StudyModelWorkflowTest {
         schemas.validate("AgentRun",run);schemas.validate("StudyWorkflowDetails",studies.details(owner,run.id()));
         var first=captured.get(0);
         var planner=first.at("/response_format/json_schema");
+        var planningInput=user(first);
+        assertFalse(planningInput.has("recentUserQuestions"));
+        assertFalse(planningInput.path("learnerContext").toString().contains("GOAL"));
+        for(var card:planningInput.path("publishedEvidence")) {
+            assertEquals(3,card.size());assertTrue(card.path("excerpt").asText().length()<=110);
+            assertTrue(card.has("chunkId") && card.has("title"));
+            assertFalse(card.has("releaseId") || card.has("contentHash"));
+        }
+        for(var rule:planningInput.path("courseReviewGuidance")) assertFalse(rule.has("contentHash") || rule.has("releaseId"));
         assertEquals("json_schema",first.at("/response_format/type").asText());
         assertTrue(planner.path("strict").asBoolean());
         assertEquals("study_teaching_plan",planner.path("name").asText());

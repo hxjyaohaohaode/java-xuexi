@@ -134,7 +134,7 @@ public final class TutorService {
             jdbc.update("INSERT INTO tutor_request(id,conversation_id,attempt_id,question,hint_level,status,prompt_version,model_id,created_at) VALUES(?,?,?,?,?,'QUEUED','evidence-tutor-v1',?,?)",
                 id.toString(),input.conversationId().toString(),string(input.attemptId()),input.question(),input.hintLevel(),input.mode()==Mode.MODEL?settings.model():null,Timestamp.from(now));
             jdbc.update("INSERT INTO tutor_request_runtime(request_id,workspace_id,snapshot_id,mode,deadline_at,input_hash,context_hash,evidence_refs,provider_fingerprint,reserved_tokens,billing_state,budget_date) VALUES(?,?,?,?,?,?,?,'[]',?,?,?,?)",
-                id.toString(),conversation.workspaceId().toString(),input.snapshotId().toString(),input.mode().name(),Timestamp.from(now.plusSeconds(120)),hash,context.contentHash(),input.mode()==Mode.MODEL?provider.fingerprint():null,reservation,reservation>0?"RESERVED":"NONE",day);
+                id.toString(),conversation.workspaceId().toString(),input.snapshotId().toString(),input.mode().name(),Timestamp.from(now.plusMillis(input.mode()==Mode.MODEL?Math.max(120000L,settings.timeoutMillis()+60000L):120000L)),hash,context.contentHash(),input.mode()==Mode.MODEL?provider.fingerprint():null,reservation,reservation>0?"RESERVED":"NONE",day);
             workspaces.remember(owner,"tutor.request",key,hash,id);
             events.append(conversation.workspaceId(),"TUTOR_REQUEST_QUEUED","CLIENT",Map.of("requestId",id,"conversationId",conversation.id(),"mode",input.mode().name(),"epoch",1));
             return view(owned(owner,id));

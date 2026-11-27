@@ -43,10 +43,11 @@ TYPEFORGE_EDITOR_USERS=editor-a,editor-b java -jar backend/target/typeforge-back
 
 | 配置 | 用途 |
 |---|---|
-| `TYPEFORGE_TUTOR_PROVIDER_URL` | 完整 `/chat/completions` HTTPS地址；本地协议测试才使用loopback HTTP |
+| `TYPEFORGE_TUTOR_PROVIDER_URL` | 完整的 `/chat/completions` HTTPS 地址；本机 llama.cpp 等服务可使用 loopback HTTP |
 | `TYPEFORGE_TUTOR_API_KEY` | 服务端凭据，不进仓库、不进前端、不作为启动命令明文参数 |
 | `TYPEFORGE_TUTOR_MODEL` | 供应商实际模型名，项目不默认猜测 |
-| `typeforge.tutor.timeout-millis` | 默认20000，100–60000ms；HTTP整体超时 |
+| `TYPEFORGE_TUTOR_TIMEOUT_MILLIS` | 单次 HTTP 期限，默认 20000 ms。允许 100–300000 ms，慢速本地模型可显式设置 180000 ms |
+| `TYPEFORGE_TUTOR_WORKFLOW_STRUCTURED_OUTPUTS` | 默认 true，为规划、专家与审阅请求服务端校验的 JSON Schema；仅支持 JSON Object 的供应端可显式设置为 false |
 | `typeforge.tutor.max-output-tokens` | 默认2048，64–8192 |
 | `typeforge.tutor.daily-token-limit` | 默认1000000，UTC日额度，采用保守输入字节上界预留 |
 | `typeforge.tutor.daily-request-limit` | 默认100，按账户计数 |
@@ -79,7 +80,7 @@ typeforge.compiler.worker-token=<至少32字符的服务端随机令牌>
 
 普通编译返回公共诊断；代码题另执行审核后的 2～8 个正反编译契约检查，公共编译通过本身不能给成绩。隐藏检查、隐藏诊断和标准答案不返回学习者。基础设施失败产生 `FAILED`/不可用状态，不伪装成学生答错。多层提示持久记录，同题族后续作答保留辅助练习属性。
 
-本地执行环境没有 Docker/Podman；独立 GitHub Actions 已在真实 Docker 宿主通过八项检查，包括隔离/资源配置、实际编译、取消、超时、输出限制和零残留清理，见[已执行的容器门禁](https://github.com/hxjyaohaohaode/java-xuexi/actions/runs/43743602623/job/132901926094)。协议测试与 CI 实际容器结果分别记录；生产宿主部署、容量压测及运维恢复仍需在目标环境验收。
+新课堂的独立容器门禁已实测 Java 自由运行、Python 标准输入、原始课程代码、严格判分、取消、限时和清理。[33 项实际容器检查](https://github.com/hxjyaohaohaode/java-xuexi/actions/runs/45953463316/job/140354421582) · [当前提交的完整验证](https://github.com/hxjyaohaohaode/java-xuexi/actions/workflows/baseline.yml)
 
 ## 5. 教学工作流、作品与私有素材
 

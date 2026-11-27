@@ -162,4 +162,4 @@ python3 scripts/browser_runtime.py \
 
 `reference-ledger.csv` 保留全部 209 项的研究与取舍记录。当前界面为业务导向的原创实现，**没有把 209 项演示全部运行、高保真复刻或授权审核的说法**；未复制 React Bits 源码，也没有安装整个动效库。具体落点见 [交互实现与参考边界](interaction-implementation.md)。
 
-设计检查采用 unslop 方法（Damir Sokolovsky，@heydamir，CC BY 4.0），用于方向、间距、颜色、文字、布局与动效顺序审查；没有复制该技能的图像或组件资产。图标来自锁定版本的 Lucide React，依赖许可保留在各 npm 包中。
+设计检查采用 unslop 方法（Damir Sokolovsky，@heydamir，CC BY 4.0），用于方向、间距、颜色、文字、布局与动效顺序审查；没有复制该技能的图像或组件资产。图标来自锁定版本的 Lucide React，生产构建在 `/assets/third-party-licenses.txt` 提供打包依赖的版权与许可文本，包括 OpenMAIC 官方组件。

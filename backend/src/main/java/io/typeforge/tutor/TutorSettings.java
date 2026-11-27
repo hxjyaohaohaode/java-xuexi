@@ -45,7 +45,7 @@ public final class TutorSettings {
             throw new IllegalArgumentException("Tutor provider requires HTTPS or loopback HTTP and a /chat/completions path");
         }
         if(this.apiKey.length()>4096 || this.apiKey.chars().anyMatch(c->c<32 || c==127) || this.model.length()>128 || this.model.chars().anyMatch(c->c<32 || c==127)
-            || timeoutMillis<100 || timeoutMillis>60000 || maxOutputTokens<64 || maxOutputTokens>8192
+            || timeoutMillis<100 || timeoutMillis>300000 || maxOutputTokens<64 || maxOutputTokens>8192
             || dailyTokenLimit<1 || dailyTokenLimit>1_000_000_000L || dailyRequestLimit<1 || dailyRequestLimit>10000 || maxPending<1 || maxPending>16) {
             throw new IllegalArgumentException("Invalid bounded tutor configuration");
         }

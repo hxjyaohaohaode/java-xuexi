@@ -1,0 +1,684 @@
+{
+  "date": "2026-11-27",
+  "model": "Qwen3-0.6B Q8_0 GGUF (official)",
+  "sha256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
+  "engine": "llama.cpp b12503 CPU; reasoning off, temperature 0",
+  "sources": {
+    "weights": "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF",
+    "runner": "https://github.com/ggml-org/llama.cpp/releases/tag/b12503",
+    "questions": "knowledge/peer-course-20261118.json"
+  },
+  "cases": [
+    {
+      "id": "M01",
+      "jarSHA256": "25a215ff6a83e64ac12659e136fb9609db7f1fc62f9c0843191668d5d1fefdbf",
+      "question": "为什么 List<Integer> 不能赋值给 List<Number>？请用 Double 写入说明泛型不变性。",
+      "criterion": "说明 List 的类型参数不变，并用假设赋值后经 Number 视图添加 Double 破坏约束解释。",
+      "sampledModelAnswer": "List<Integer> 不能赋值给 List<Number>，因为 List<Number> 是 List<? extends Number> 的子类。如果允许赋值，那么 List<Number> 可以通过其别名 List<Integer> 来写入 Double，这会破坏 List<Integer> 的 Integer 约束。因此，Double 的写入会违反泛型不变性，导致类型不匹配。",
+      "assessment": "PARTIAL",
+      "reason": "判断赋值受限，也识别了 Double 会破坏 Integer 列表约束，但用无关通配符当作赋值原因，写入别名的方向反了。",
+      "status": "COMPLETED",
+      "sourceState": "CURRENT",
+      "evidenceCount": 3,
+      "guidanceShown": true,
+      "billing": {
+        "billingState": "SETTLED",
+        "reservedTokens": 0,
+        "usedTokens": 2669
+      },
+      "http": 200,
+      "finishReason": "stop",
+      "tokens": {
+        "completion_tokens": 249,
+        "prompt_tokens": 2420,
+        "total_tokens": 2669,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "citationMembership": true
+    },
+    {
+      "id": "M02",
+      "jarSHA256": "25a215ff6a83e64ac12659e136fb9609db7f1fc62f9c0843191668d5d1fefdbf",
+      "question": "PECS producer extends consumer super。请给出把 List<Integer> 的元素追加到 List<Number> 的泛型方法签名，说明这两个参数各自做什么。",
+      "criterion": "签名或等价关系为 List<? extends T> 与 List<? super T>；从前者读 T，向后者写 T。",
+      "sampledModelAnswer": "PECS producer extends consumer super. The method signature for adding elements from List<Integer> to List<Number> would be static <T> void add(List<? extends T> from, List<? super T> to). The method from reads T values from the source list, and the method to adds these values to the destination list. The 'extends' in the first parameter indicates that the elements are of a type that can be converted to T, while the 'super' in the second parameter indicates that the elements are of a type that can be added to the destination list.",
+      "assessment": "MEETS_CORE",
+      "reason": "给出正确方法签名，能分清源读和目标写。中文提问收到英文答案。",
+      "status": "COMPLETED",
+      "sourceState": "CURRENT",
+      "evidenceCount": 2,
+      "guidanceShown": true,
+      "billing": {
+        "billingState": "SETTLED",
+        "reservedTokens": 0,
+        "usedTokens": 2388
+      },
+      "http": 200,
+      "finishReason": "stop",
+      "tokens": {
+        "completion_tokens": 237,
+        "prompt_tokens": 2151,
+        "total_tokens": 2388,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "citationMembership": true
+    },
+    {
+      "id": "M03",
+      "jarSHA256": "25a215ff6a83e64ac12659e136fb9609db7f1fc62f9c0843191668d5d1fefdbf",
+      "question": "上界通配符 List<? extends Number> 是不可变的吗？ArrayList 的 clear 和 add(1) 各会怎样？",
+      "criterion": "说明可变 ArrayList 可 clear；静态类型不允许 add(1)；说明未知元素子类型。",
+      "sampledModelAnswer": "上界通配符 List<? extends Number> 是不可变的，因为类型系统允许通过捕获辅助方法实现可变性。ArrayList 的 clear 方法会从列表中移除所有元素，而 add(1) 方法会添加一个元素，但该元素的类型必须是 Number 类型。",
+      "assessment": "INCORRECT",
+      "reason": "误说列表不可变，且把 add(1) 描述为允许。clear() 的效果说明正确。",
+      "status": "COMPLETED",
+      "sourceState": "CURRENT",
+      "evidenceCount": 2,
+      "guidanceShown": true,
+      "billing": {
+        "billingState": "SETTLED",
+        "reservedTokens": 0,
+        "usedTokens": 2340
+      },
+      "http": 200,
+      "finishReason": "stop",
+      "tokens": {
+        "completion_tokens": 177,
+        "prompt_tokens": 2163,
+        "total_tokens": 2340,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "citationMembership": true
+    },
+    {
+      "id": "M04",
+      "jarSHA256": "25a215ff6a83e64ac12659e136fb9609db7f1fc62f9c0843191668d5d1fefdbf",
+      "question": "下界通配符 List<? super Integer> 里可以添加 Integer 吗？只凭这个声明能否将 get(0) 直接赋值给 Integer？",
+      "criterion": "可写 Integer；读取时静态安全类型是 Object，需要额外判断才能当 Integer。",
+      "sampledModelAnswer": "下界通配符 List<? super Integer> 可以添加 Integer，因为静态类型为 Number 的变量不能直接传给 List<? super Integer>。读取时未知真实元素类型，静态安全结果通常只有 Object。虽然 super 不是自动转换为 Integer，但可以安全地将 Integer 作为参数传递给 List<? super Integer>。",
+      "assessment": "MEETS_CORE",
+      "reason": "可以写 Integer、读取只能静态保证 Object 两点正确。论证因果较弱。",
+      "status": "COMPLETED",
+      "sourceState": "CURRENT",
+      "evidenceCount": 3,
+      "guidanceShown": true,
+      "billing": {
+        "billingState": "SETTLED",
+        "reservedTokens": 0,
+        "usedTokens": 2383
+      },
+      "http": 200,
+      "finishReason": "stop",
+      "tokens": {
+        "completion_tokens": 230,
+        "prompt_tokens": 2153,
+        "total_tokens": 2383,
+        "prompt_tokens_details": {
+          "cached_tokens": 251
+        }
+      },
+      "citationMembership": true
+    },
+    {
+      "id": "M05",
+      "jarSHA256": "d518c3a7915a7ef3be98ef8a30774f70a0762ac10fa05004a53195779e09beb9",
+      "question": "泛型类型擦除时 T 总是 Object 吗？以 T extends Number & Comparable<T> 的最左边界为例。",
+      "criterion": "正确指出最左界的擦除 Number；无显式边界才默认为 Object。",
+      "sampledModelAnswer": "泛型类型擦除时 T 总是 Object，但最左边界擦除时 T 会根据类型参数的约束而变化。以 T extends Number & Comparable<T> 的最左边界为例，T 的擦除为 Number，因为类型变量擦除为最左边界的擦除，而 Number 是 T 的类型参数。边界仍保留在相应声明元数据中供反射查看。",
+      "assessment": "INCORRECT",
+      "reason": "知道示例擦除为 Number，但断言泛型 T 总是 Object，两个结论矛盾。",
+      "status": "COMPLETED",
+      "sourceState": "CURRENT",
+      "evidenceCount": 4,
+      "guidanceShown": true,
+      "billing": {
+        "billingState": "SETTLED",
+        "reservedTokens": 0,
+        "usedTokens": 2239
+      },
+      "http": 200,
+      "finishReason": "stop",
+      "tokens": {
+        "completion_tokens": 276,
+        "prompt_tokens": 1963,
+        "total_tokens": 2239,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "citationMembership": true
+    }
+  ],
+  "historicalRegression": {
+    "case": "M01",
+    "status": "COMPLETED",
+    "usedTokens": 1371,
+    "evidenceCount": 3,
+    "error": "把 ArrayStoreException 当作泛型列表赋值的错误机制。"
+  },
+  "modelWorkflowBuild": {
+    "jarSHA256": "a195a1d044a0cfbc3c1f406120584f6cce59f9022500801ac9758654e9b0d485",
+    "applicationClassesCount": 381,
+    "applicationClassesFingerprint": "8207acedd147a80a45d413e258d41806a208510104a243614843de3d88e3c172"
+  },
+  "studyDeployment": {
+    "ctx": 2048,
+    "temperature": 0,
+    "reasoning": "off",
+    "weights": "Q8_0",
+    "kvCache": "q8_0",
+    "maxOutputTokens": 640,
+    "providerTimeoutMillis": 180000,
+    "maxRunWallMillis": 480000,
+    "maxRunTokens": 100000,
+    "maxParallel": 1,
+    "cpuThreads": 3,
+    "batchSize": 128,
+    "microBatchSize": 64,
+    "observedResources": {
+      "peakRss": {
+        "model": 837056,
+        "app": 258184
+      },
+      "minHostAvailable": 1174208
+    }
+  },
+  "studyWorkflow": {
+    "EVIDENCE_ONLY": {
+      "status": "COMPLETED",
+      "steps": [
+        {
+          "key": "planner",
+          "role": "conductor",
+          "status": "SUCCEEDED",
+          "attempts": 0
+        },
+        {
+          "key": "expert-0",
+          "role": "learning-designer",
+          "status": "SUCCEEDED",
+          "attempts": 1
+        },
+        {
+          "key": "expert-1",
+          "role": "generics-expert",
+          "status": "SUCCEEDED",
+          "attempts": 1
+        },
+        {
+          "key": "review",
+          "role": "fact-checker",
+          "status": "SUCCEEDED",
+          "attempts": 1
+        },
+        {
+          "key": "output-document",
+          "role": "document-author",
+          "status": "SUCCEEDED",
+          "attempts": 1
+        }
+      ],
+      "handoffs": [
+        {
+          "fromRole": "conductor",
+          "toRole": "learning-designer",
+          "fromStep": "planner",
+          "toStep": "expert-0",
+          "kind": "QUESTION",
+          "references": 1,
+          "planRevision": 2,
+          "runEpoch": 3
+        },
+        {
+          "fromRole": "conductor",
+          "toRole": "generics-expert",
+          "fromStep": "planner",
+          "toStep": "expert-1",
+          "kind": "QUESTION",
+          "references": 1,
+          "planRevision": 2,
+          "runEpoch": 3
+        },
+        {
+          "fromRole": "learning-designer",
+          "toRole": "fact-checker",
+          "fromStep": "expert-0",
+          "toStep": "review",
+          "kind": "PROPOSAL",
+          "references": 1,
+          "planRevision": 2,
+          "runEpoch": 3
+        },
+        {
+          "fromRole": "generics-expert",
+          "toRole": "fact-checker",
+          "fromStep": "expert-1",
+          "toStep": "review",
+          "kind": "PROPOSAL",
+          "references": 1,
+          "planRevision": 2,
+          "runEpoch": 3
+        },
+        {
+          "fromRole": "fact-checker",
+          "toRole": "document-author",
+          "fromStep": "review",
+          "toStep": "output-document",
+          "kind": "VERDICT",
+          "references": 1,
+          "planRevision": 2,
+          "runEpoch": 3
+        }
+      ],
+      "plan": {
+        "strategy": "example-first",
+        "sections": [
+          {
+            "role": "EXAMPLE",
+            "title": "题目与独立预测",
+            "focus": "用一个例子解释 Java 集合泛型不变性，理解 List<Integer> 与 List<Number> 的区别。"
+          },
+          {
+            "role": "CONCEPT",
+            "title": "规则与适用条件",
+            "focus": "用一个例子解释 Java 集合泛型不变性，理解 List<Integer> 与 List<Number> 的区别。"
+          }
+        ]
+      },
+      "artifactCount": 4,
+      "roleRequests": [
+        {
+          "status": "COMPLETED",
+          "errorCode": null,
+          "usage": {
+            "billingState": "NONE",
+            "reservedTokens": 0,
+            "usedTokens": null
+          },
+          "mode": "EVIDENCE_ONLY"
+        },
+        {
+          "status": "COMPLETED",
+          "errorCode": null,
+          "usage": {
+            "billingState": "NONE",
+            "reservedTokens": 0,
+            "usedTokens": null
+          },
+          "mode": "EVIDENCE_ONLY"
+        },
+        {
+          "status": "COMPLETED",
+          "errorCode": null,
+          "usage": {
+            "billingState": "NONE",
+            "reservedTokens": 0,
+            "usedTokens": null
+          },
+          "mode": "EVIDENCE_ONLY"
+        }
+      ],
+      "spentTokens": 0,
+      "reservedTokens": 0,
+      "finalDrafts": [
+        {
+          "kind": "DOCUMENT",
+          "title": "用一个例子解释 Java 集合泛型不变性，理解 List<Integer> 与 List<Number> 的区别。",
+          "reviewStatus": "DRAFT",
+          "revision": 1,
+          "contentHash": "242b7129a0c657b5a947e21304fadb2b6b8a1db708d09a4bdcc7f5ade9e2b165",
+          "hashMatchesReference": true,
+          "inputRefs": 8,
+          "contentBlocks": 5,
+          "schemaVersion": "1.0"
+        }
+      ]
+    },
+    "MODEL": {
+      "status": "COMPLETED",
+      "steps": [
+        {
+          "key": "planner",
+          "role": "conductor",
+          "status": "SUCCEEDED",
+          "attempts": 0
+        },
+        {
+          "key": "expert-0",
+          "role": "generics-expert",
+          "status": "SUCCEEDED",
+          "attempts": 1
+        },
+        {
+          "key": "expert-1",
+          "role": "learning-designer",
+          "status": "SUCCEEDED",
+          "attempts": 1
+        },
+        {
+          "key": "review",
+          "role": "fact-checker",
+          "status": "SUCCEEDED",
+          "attempts": 1
+        },
+        {
+          "key": "output-document",
+          "role": "document-author",
+          "status": "SUCCEEDED",
+          "attempts": 1
+        }
+      ],
+      "handoffs": [
+        {
+          "fromRole": "conductor",
+          "toRole": "generics-expert",
+          "fromStep": "planner",
+          "toStep": "expert-0",
+          "kind": "QUESTION",
+          "references": 1,
+          "planRevision": 2,
+          "runEpoch": 3
+        },
+        {
+          "fromRole": "conductor",
+          "toRole": "learning-designer",
+          "fromStep": "planner",
+          "toStep": "expert-1",
+          "kind": "QUESTION",
+          "references": 1,
+          "planRevision": 2,
+          "runEpoch": 3
+        },
+        {
+          "fromRole": "generics-expert",
+          "toRole": "fact-checker",
+          "fromStep": "expert-0",
+          "toStep": "review",
+          "kind": "PROPOSAL",
+          "references": 1,
+          "planRevision": 2,
+          "runEpoch": 3
+        },
+        {
+          "fromRole": "learning-designer",
+          "toRole": "fact-checker",
+          "fromStep": "expert-1",
+          "toStep": "review",
+          "kind": "PROPOSAL",
+          "references": 1,
+          "planRevision": 2,
+          "runEpoch": 3
+        },
+        {
+          "fromRole": "fact-checker",
+          "toRole": "document-author",
+          "fromStep": "review",
+          "toStep": "output-document",
+          "kind": "VERDICT",
+          "references": 1,
+          "planRevision": 2,
+          "runEpoch": 3
+        }
+      ],
+      "plan": {
+        "strategy": "concept-first",
+        "sections": [
+          {
+            "role": "CONCEPT",
+            "title": "泛型不变性与容器赋值",
+            "focus": "概念分析"
+          },
+          {
+            "role": "EXAMPLE",
+            "title": "List<Integer> 与 List<Number> 的区别",
+            "focus": "实例分析"
+          }
+        ]
+      },
+      "artifactCount": 5,
+      "roleRequests": [
+        {
+          "status": "COMPLETED",
+          "errorCode": null,
+          "usage": {
+            "billingState": "SETTLED",
+            "reservedTokens": 0,
+            "usedTokens": 1024
+          },
+          "mode": "MODEL",
+          "provider": {
+            "http": 200,
+            "finishReason": "stop",
+            "requestedStructuredOutput": "json_schema",
+            "tokens": {
+              "completion_tokens": 236,
+              "prompt_tokens": 788,
+              "total_tokens": 1024,
+              "prompt_tokens_details": {
+                "cached_tokens": 0
+              }
+            },
+            "allCitationsSupplied": true,
+            "outputFields": [
+              "citedChunkIds",
+              "sections",
+              "strategy"
+            ],
+            "candidateAnswer": "concept-first"
+          }
+        },
+        {
+          "status": "COMPLETED",
+          "errorCode": null,
+          "usage": {
+            "billingState": "SETTLED",
+            "reservedTokens": 0,
+            "usedTokens": 1106
+          },
+          "mode": "MODEL",
+          "provider": {
+            "http": 200,
+            "finishReason": "stop",
+            "requestedStructuredOutput": "json_schema",
+            "tokens": {
+              "completion_tokens": 251,
+              "prompt_tokens": 855,
+              "total_tokens": 1106,
+              "prompt_tokens_details": {
+                "cached_tokens": 0
+              }
+            },
+            "allCitationsSupplied": true,
+            "outputFields": [
+              "answer",
+              "citedChunkIds",
+              "limitations"
+            ],
+            "candidateAnswer": "泛型不变性是指在Java泛型中，类型参数的类型不变性，即类型参数的类型不会被修改。List<Integer>和List<Number>的区别在于，前者是Number子类，后者是Number的上界。若允许赋值，List<Number>别名写入Double会破坏原列表的Integ类型。"
+          }
+        },
+        {
+          "status": "COMPLETED",
+          "errorCode": null,
+          "usage": {
+            "billingState": "SETTLED",
+            "reservedTokens": 0,
+            "usedTokens": 1092
+          },
+          "mode": "MODEL",
+          "provider": {
+            "http": 200,
+            "finishReason": "stop",
+            "requestedStructuredOutput": "json_schema",
+            "tokens": {
+              "completion_tokens": 232,
+              "prompt_tokens": 860,
+              "total_tokens": 1092,
+              "prompt_tokens_details": {
+                "cached_tokens": 0
+              }
+            },
+            "allCitationsSupplied": true,
+            "outputFields": [
+              "answer",
+              "citedChunkIds",
+              "limitations"
+            ],
+            "candidateAnswer": "List<Integer> 和 List<Number> 的区别在于 List<Integer> 是 Number 子类的列表，而 List<Number> 是 Number 的上界类型。若允许 List<Number> 别名写入 Double，会破坏 List<Integer> 的不变性。"
+          }
+        },
+        {
+          "status": "COMPLETED",
+          "errorCode": null,
+          "usage": {
+            "billingState": "SETTLED",
+            "reservedTokens": 0,
+            "usedTokens": 1343
+          },
+          "mode": "MODEL",
+          "provider": {
+            "http": 200,
+            "finishReason": "stop",
+            "requestedStructuredOutput": "json_schema",
+            "tokens": {
+              "completion_tokens": 231,
+              "prompt_tokens": 1112,
+              "total_tokens": 1343,
+              "prompt_tokens_details": {
+                "cached_tokens": 0
+              }
+            },
+            "allCitationsSupplied": true,
+            "outputFields": [
+              "answer",
+              "citedChunkIds",
+              "limitations"
+            ],
+            "candidateAnswer": "泛型不变性是指类型参数的类型不会被修改。List<Integer> 是 Number 子类的列表，而 List<Number> 是 Number 的上界类型。若允许 List<Number> 别名写入 Double，会破坏 List<Integer> 的不变性。"
+          }
+        }
+      ],
+      "spentTokens": 4565,
+      "reservedTokens": 0,
+      "finalDrafts": [
+        {
+          "kind": "DOCUMENT",
+          "title": "用一个例子解释 Java 集合泛型不变性，理解 List<Integer> 与 List<Number> 的区别。",
+          "reviewStatus": "DRAFT",
+          "revision": 1,
+          "contentHash": "9d9f6060feaab787e2f3406c5d1ff4bfb1942098c0e8b3814a3e3671dff74c79",
+          "hashMatchesReference": true,
+          "inputRefs": 8,
+          "contentBlocks": 5,
+          "schemaVersion": "1.0",
+          "blocks": [
+            {
+              "kind": "PARAGRAPH",
+              "text": "学习草稿。请结合知识引用、编译证据和审阅意见核对；模型审阅不代表人工审核。",
+              "citedKnowledgeRevisions": []
+            },
+            {
+              "kind": "PARAGRAPH",
+              "text": "泛型不变性是指在Java泛型中，类型参数的类型不变性，即类型参数的类型不会被修改。List<Integer>和List<Number>的区别在于，前者是Number子类，后者是Number的上界。若允许赋值，List<Number>别名写入Double会破坏原列表的Integ类型。\n\n课程已审订的核对依据（typeforge-course-20261118）\nM01 · 说明 List 的类型参数不变，并用假设赋值后经 Number 视图添加 Double 破坏约束解释。 历史案例勘误：本次模型误把 ArrayStoreException 用在泛型列表上。反例中的赋值在编译期就被拒绝，程序不会运行到写入。〔课程知识卡 318e8232-f98e-31aa-882c-54c524bf17d5，修订 1〕\nM03 · 说明可变 ArrayList 可 clear；静态类型不允许 add(1)；说明未知元素子类型。〔课程知识卡 f4722524-2ae7-39ea-82c8-034ac06ff8a7，修订 1〕\nM02 · 签名或等价关系为 List<? extends T> 与 List<? super T>；从前者读 T，向后者写 T。〔课程知识卡 a621937f-0f6f-37b3-b6fc-ebac40e7252f，修订 1〕\n\n模型讲解仅通过引用归属与版本校验，尚未经独立事实或编译核验。 需注意类型参数的类型不变性与类型安全读取的区别。",
+              "citedKnowledgeRevisions": [
+                {
+                  "id": "318e8232-f98e-31aa-882c-54c524bf17d5",
+                  "revision": 1
+                },
+                {
+                  "id": "f4722524-2ae7-39ea-82c8-034ac06ff8a7",
+                  "revision": 1
+                },
+                {
+                  "id": "8d054a2c-b72f-3af0-8519-52ab3c6cc53e",
+                  "revision": 1
+                },
+                {
+                  "id": "a621937f-0f6f-37b3-b6fc-ebac40e7252f",
+                  "revision": 1
+                }
+              ]
+            },
+            {
+              "kind": "PARAGRAPH",
+              "text": "List<Integer> 和 List<Number> 的区别在于 List<Integer> 是 Number 子类的列表，而 List<Number> 是 Number 的上界类型。若允许 List<Number> 别名写入 Double，会破坏 List<Integer> 的不变性。\n\n课程已审订的核对依据（typeforge-course-20261118）\nM01 · 说明 List 的类型参数不变，并用假设赋值后经 Number 视图添加 Double 破坏约束解释。 历史案例勘误：本次模型误把 ArrayStoreException 用在泛型列表上。反例中的赋值在编译期就被拒绝，程序不会运行到写入。〔课程知识卡 318e8232-f98e-31aa-882c-54c524bf17d5，修订 1〕\nM03 · 说明可变 ArrayList 可 clear；静态类型不允许 add(1)；说明未知元素子类型。〔课程知识卡 f4722524-2ae7-39ea-82c8-034ac06ff8a7，修订 1〕\nM02 · 签名或等价关系为 List<? extends T> 与 List<? super T>；从前者读 T，向后者写 T。〔课程知识卡 a621937f-0f6f-37b3-b6fc-ebac40e7252f，修订 1〕\n\n模型讲解仅通过引用归属与版本校验，尚未经独立事实或编译核验。 需确保引用的证据与实际教学内容一致，避免虚构执行或审核结果。",
+              "citedKnowledgeRevisions": [
+                {
+                  "id": "318e8232-f98e-31aa-882c-54c524bf17d5",
+                  "revision": 1
+                },
+                {
+                  "id": "f4722524-2ae7-39ea-82c8-034ac06ff8a7",
+                  "revision": 1
+                },
+                {
+                  "id": "8d054a2c-b72f-3af0-8519-52ab3c6cc53e",
+                  "revision": 1
+                },
+                {
+                  "id": "a621937f-0f6f-37b3-b6fc-ebac40e7252f",
+                  "revision": 1
+                }
+              ]
+            },
+            {
+              "kind": "HEADING",
+              "text": "审阅意见与待验证点",
+              "citedKnowledgeRevisions": []
+            },
+            {
+              "kind": "PARAGRAPH",
+              "text": "泛型不变性是指类型参数的类型不会被修改。List<Integer> 是 Number 子类的列表，而 List<Number> 是 Number 的上界类型。若允许 List<Number> 别名写入 Double，会破坏 List<Integer> 的不变性。\n\n课程已审订的核对依据（typeforge-course-20261118）\nM01 · 说明 List 的类型参数不变，并用假设赋值后经 Number 视图添加 Double 破坏约束解释。 历史案例勘误：本次模型误把 ArrayStoreException 用在泛型列表上。反例中的赋值在编译期就被拒绝，程序不会运行到写入。〔课程知识卡 318e8232-f98e-31aa-882c-54c524bf17d5，修订 1〕\nM03 · 说明可变 ArrayList 可 clear；静态类型不允许 add(1)；说明未知元素子类型。〔课程知识卡 f4722524-2ae7-39ea-82c8-034ac06ff8a7，修订 1〕\nM02 · 签名或等价关系为 List<? extends T> 与 List<? super T>；从前者读 T，向后者写 T。〔课程知识卡 a621937f-0f6f-37b3-b6fc-ebac40e7252f，修订 1〕\n\n模型讲解仅通过引用归属与版本校验，尚未经独立事实或编译核验。 未验证草稿内容与课程材料的核对依据是否一致。",
+              "citedKnowledgeRevisions": [
+                {
+                  "id": "318e8232-f98e-31aa-882c-54c524bf17d5",
+                  "revision": 1
+                },
+                {
+                  "id": "f4722524-2ae7-39ea-82c8-034ac06ff8a7",
+                  "revision": 1
+                },
+                {
+                  "id": "8d054a2c-b72f-3af0-8519-52ab3c6cc53e",
+                  "revision": 1
+                },
+                {
+                  "id": "a621937f-0f6f-37b3-b6fc-ebac40e7252f",
+                  "revision": 1
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "studySemanticReview": "NEEDS_REVISION: the example mentions a Double written through a Number-list alias, but the explanation confuses invariant type arguments with immutability and misidentifies the type of the list. The reviewer repeats the errors.",
+  "priorModelTrials": [
+    {
+      "configuration": "generic tutor JSON planning",
+      "usedTokens": 2838,
+      "workflowStatus": "FAILED",
+      "artifacts": 0,
+      "reason": "Ordinary Java explanation did not contain a teaching plan."
+    },
+    {
+      "configuration": "typed planner with original 60s timeout and larger prompt",
+      "workflowStatus": "WAITING_USER",
+      "usageState": "UNKNOWN",
+      "reservation": 67200
+    },
+    {
+      "configuration": "typed final JAR with 8192 context",
+      "completedCalls": 3,
+      "fourthCall": "model process exited with SIGKILL; cause unconfirmed"
+    }
+  ],
+  "reviewProvenance": "AI-assisted comparison with the contributor’s course criteria and recorded program behavior. No teacher or independent human sign-off is claimed."
+}

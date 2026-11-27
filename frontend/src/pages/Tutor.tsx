@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { ArrowUp, CirclePause, Play, Plus, Square, Workflow } from 'lucide-react';
 import { api } from '../api';
 import { useWorkspace } from '../context';
@@ -81,7 +81,7 @@ export function ConversationPanel({
   const composer = useRef<HTMLTextAreaElement>(null);
   const consumed = useRef('');
   const [discussionNotice, setDiscussionNotice] = useState('');
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!discussion || consumed.current === discussion.id || mutation.busy) return;
     const combined = [question.trimEnd(), discussion.text].filter(Boolean).join('\n\n');
     if (combined.length > maxLength) {
@@ -356,6 +356,7 @@ export function ConversationPanel({
 function TutorMessage({ request, onChange }: { request: TutorRequest; onChange: () => void }) {
   const { navigate, refresh } = useWorkspace();
   const mutation = useMutation();
+  const courseReviewed = request.mode === 'MODEL' && request.limitations?.startsWith('课程已审订的核对依据');
   return (
     <article className="conversation-turn">
       <div className="user-message">
@@ -372,14 +373,19 @@ function TutorMessage({ request, onChange }: { request: TutorRequest; onChange: 
             关联快照或来源已失效，旧回答已隐藏。请用当前上下文重新提问。
           </div>
         ) : request.answer ? (
-          <>
-            {request.limitations?.startsWith('课程已审订的核对依据') && (
+          courseReviewed ? (
+            <>
               <aside className="notice preserve-text" aria-label="课程核对依据">
                 {request.limitations}
               </aside>
-            )}
+              <details>
+                <summary>查看模型原始讲解（待核对）</summary>
+                <p className="preserve-text">{request.answer}</p>
+              </details>
+            </>
+          ) : (
             <p className="preserve-text">{request.answer}</p>
-          </>
+          )
         ) : !terminalTutor.includes(request.status) ? (
           <Loading label="请求已持久化，正在等待服务端处理…" />
         ) : request.status === 'INSUFFICIENT_EVIDENCE' ? (
@@ -395,7 +401,7 @@ function TutorMessage({ request, onChange }: { request: TutorRequest; onChange: 
             <EvidenceList items={request.evidenceRefs} compact />
           </details>
         )}
-        {request.limitations && !request.limitations.startsWith('课程已审订的核对依据') && (
+        {request.limitations && !courseReviewed && (
           <p className="muted small">{request.limitations}</p>
         )}
         {request.usage.billingState === 'UNKNOWN' && (

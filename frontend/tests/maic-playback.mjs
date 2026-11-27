@@ -33,6 +33,11 @@ export async function verifyMaicPlayback(page, conceptId) {
   await player.getByLabel('我的课堂观点').fill(prediction);
   await player.getByRole('button', { name: '带入课堂导师', exact: true }).click();
   const composer = page.getByLabel('输入你的问题', { exact: true });
+  await composer.waitFor({ state: 'visible' });
+  await page.waitForFunction(
+    (text) => document.getElementById('tutor-question')?.value.includes(text),
+    prediction,
+  );
   assert.ok((await composer.inputValue()).includes(prediction));
   assert.ok((await composer.inputValue()).includes('List<Integer>'));
   const [response] = await Promise.all([

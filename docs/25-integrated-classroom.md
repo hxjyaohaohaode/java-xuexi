@@ -22,6 +22,8 @@
 
 ZIP 的 SHA-256 为 `b81a5fe3de1f983047b1d27e80e0d2a2ad893f75769f70566c50a406d2f5e60b`。课程资料标识为 `typeforge-course-20261118`。课内样例来自“02_数据集与知识库/清洗后数据/原创代码样例.jsonl”，已逐项与原始 Demo.java 字节核对。导师问题与教学校验取自“06_智能体设计与测试”，检索用例取自同学的“检索测试用例.json”。课程包历史 JAR 的代码基线是 4a725a4。历史模型观测、运行中的学生代码输出、课程的人工审核与评分分别留有来源。
 
+课程正文与材料来源分别显示。学生展开来源可查看演示内容的审核状态与目标 Java 版本。超过目录摘要容量的课程在进入本节时读取完整、经哈希核对的正文，课包保留原文与引用。课内导师遇到已有课程审订判据时先展示核对依据，学生可展开查看这次模型生成的原始讲解。[桌面课堂](images/classroom-desktop.webp) · [手机课件与代码](images/classroom-mobile.webp)
+
 ## 教学发布与旧空间
 
 原来的 12 道客观题覆盖了 11 个概念。G01 类型安全动机、G02 泛型类、G07 类型参数上界、G09 无界通配符和 G12 PECS 均缺少对应题目。演示课堂的新发布 `demo-classroom-v2` 保留已有知识、来源、练习与题号，另加 21 道迁移应用题。16 个概念每个至少有两道独立题，可用于首次作答和变式复练。新题由本次改造补写，原始代码样例和模型复核来自同学的提交。课堂示例与成绩题使用不同记录。
@@ -33,18 +35,18 @@ ZIP 的 SHA-256 为 `b81a5fe3de1f983047b1d27e80e0d2a2ad893f75769f70566c50a406d2f
 | 上游能力 | 本项目的具体接入 | 范围 |
 |---|---|---|
 | OpenMAIC v1.5 工作台的课堂与对话并列、单一学习舞台和移动端切换 | 页面在同一选中概念下切换阅读、练习、实验、复盘、协作；导师支持收放和调宽，地址中保留章节及场景 | 课堂主体由本项目的 React/Spring 实现 |
-| OpenMAIC 站内课件和跨平台交换 | 官方 `@openmaic/renderer@0.2.4` 播放本课场景，`@openmaic/dsl@0.13.0` 组织来源、代码与讨论；同一场景构造器生成可下载的 `.maic.zip` | 浏览器逐节核对 16 个课堂、84 个场景、16 个讨论动作与官方 Schema；播放时可翻页、查看小屏文本和代码，并将学生写下的观点带入导师 |
+| OpenMAIC 站内课件和跨平台交换 | 官方 `@openmaic/renderer@0.2.4` 播放本课场景，`@openmaic/dsl@0.13.0` 组织来源、代码与讨论；同一场景构造器生成可下载的 `.maic.zip` | 浏览器逐节核对 16 个课堂、78 个场景、16 个讨论动作与官方 Schema；播放时可翻页、查看小屏文本和代码，并将学生写下的观点带入导师 |
 | DeepSeek Harness 的显式工具注册、事件与会话范围 | [可安装的 Harness 插件](../integrations/dsh-classroom/README.md)读取学生主动导出的课堂文件，通过官方工具服务提供本节依据和后续行动 | 文件是一次导出的快照；重新导出可更新，无需将账号会话交给插件 |
 | 教学 Agent 的任务与证据交接 | 学习目标、授权的本人作答、固定证据、专家分工、接收回执、复核及可编辑草稿 | 证据模式与真实模型模式分开计量；已有显式能力表限制工具范围 |
 | Apple HIG 的内容层与导航层、可访问性 | 正文与代码保持可读，课堂导航和上下文面板分层，保留低动效、小屏重排、焦点、键盘分隔条和触控操作 | Web 界面实现，视觉核验见浏览器报告 |
 
-[OpenMAIC 官方源码](https://github.com/THU-MAIC/OpenMAIC) · [DeepSeek Harness 官方源码](https://github.com/deepseek-ai/deepseek-harness) · [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) · [Apple 材料规范](https://developer.apple.com/design/human-interface-guidelines/materials)
+[在原版 OpenMAIC 导入本课](../integrations/openmaic/README.md) · [安装并使用原版 DeepSeek Harness 课堂插件](../integrations/dsh-classroom/README.md) · [OpenMAIC 官方源码](https://github.com/THU-MAIC/OpenMAIC) · [DeepSeek Harness 官方源码](https://github.com/deepseek-ai/deepseek-harness) · [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) · [Apple 材料规范](https://developer.apple.com/design/human-interface-guidelines/materials)
 
 ## 验收范围与后续工程
 
 学员可以通过当前版本的源码构建、课堂工作台和两个上游的交换入口复现学习过程。本地启动器可同时启动应用和隔离 worker；已将实际容器和网页运行用例接入 GitHub Actions。完整的实时语音师生课堂、共享白板、通用自主专家编排、生成式音视频及生产部署仍属开放工作。上游场景导出与 Harness 文件工具均有明确的数据方向。媒体资产管理、可选模型适配和这两种互通分别验收。
 
-课程最终目标还包括经人工审核的更大语料与题库（64 张知识卡、48 组示例、120 道练习等）、教学有效性评测及最终答辩包。新发布在本次固定语料上覆盖所有概念。生产负载、学生的真实学习增益与最终两人贡献需用相应证据验收。[完整课程目标](00-blueprint.md) · [评分与成果](16-course-delivery.md)
+课程最终目标还包括经人工审核的更大语料与题库（64 张知识卡、48 组示例、120 道练习等）、教学有效性评测及最终答辩包。新发布在本次固定语料上覆盖所有概念。生产负载、学生的真实学习增益与最终两人贡献需用相应证据验收。[真实模型逐题复核及作品回执](../evidence/classroom-model-review.md) · [完整课程目标](00-blueprint.md) · [评分与成果](16-course-delivery.md)
 
 ### 尚需分别验收的功能
 
