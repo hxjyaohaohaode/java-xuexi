@@ -1,6 +1,6 @@
 # 联动课堂运行验收记录
 
-这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-27T08:58:10.630271+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
+这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：2026-11-27T09:00:37.694532+00:00。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
 
 ## 课程组交付的来源
 
@@ -17,7 +17,7 @@
 | MySQL 内容服务 | 15 项 | 实际 JDBC 引擎证明；人工录入、审核hash、发布/激活及并发服务在真实 MySQL 上复跑 |
 | MySQL 账户与素材 | 22 项 | 实际 JDBC 引擎证明；账户关闭/会话/并发身份、UTC统计、上传/撤回/配额及下载隔离 |
 | MySQL v0.6 业务链 | 79 项 | 实际 JDBC 引擎证明；批量导入/原子回滚、修订对比、私有评测/容量/取消、TEXT独立审核判分、六类错题块、管理统计及个人课件生成和恢复 |
-| 编译 broker Python | 17 项 | 离线协议/边界/清理归属；真实容器隔离在远端 CI 独立执行 |
+| 编译 broker Python | 19 项 | 离线协议/边界/清理归属；真实容器隔离在远端 CI 独立执行 |
 | 验收脚本回归 | 20 项 | 临时 Git/进程夹具验证旧 PASS 复用、缺失测试、源码/JAR变化与驱动失败；不是实际 Maven、浏览器或数据库执行 |
 | H2 实际 HTTP/重启 | 114 项；221 次请求 | 单独进程、真实会话/CSRF、业务链、真实下载、重启保留与撤回后失效 |
 | MySQL 实际 HTTP/重启 | 129 项；224 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
@@ -113,7 +113,7 @@ python scripts/record_verification.py --check-snapshot
 ## 当前包与源码
 
 - JAR SHA-256：`9c744f655016329da480cdbb9b0abd8907fb2b14f48df5bf83dced7804e00764`。
-- 源码文件数：442；SHA-256 摘要：`69860956009bf998c44a1a4eaa1e8d979c442902f250cc810a407debcf1d10e9`。
+- 源码文件数：442；SHA-256 摘要：`6be40095507211c76e87d84a00e3a7623442e78f77d2271967e8a50c666f741d`。
 - 只有本记录与机器报告自身从源码摘要排除，避免循环hash；迁移、代码、契约、页面、锁文件、文档及CI均包含。
 - 发布提交的远端结果在 [GitHub Actions](https://github.com/hxjyaohaohaode/java-xuexi/actions)核对，不能把本地环境结果当成Java17/Ubuntu/Chromium结果。
 

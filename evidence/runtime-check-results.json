@@ -2,8 +2,8 @@
   "schemaVersion": "1.2",
   "result": "PASS",
   "scope": "Integrated classroom verification including the packaged browser journey; isolated code execution is separately verified in CI",
-  "recordedAt": "2026-11-27T08:58:10.630271+00:00",
-  "baselineCommit": "9e6cf1dd8e9dc7d308cf4aa8cd89d1fca540bbc3",
+  "recordedAt": "2026-11-27T09:00:37.694532+00:00",
+  "baselineCommit": "dee9050731cbb2e917a80b79cc4b7f96440c1fb1",
   "environment": {
     "os": "Linux",
     "maven": "Apache Maven 3.9.11 (3e54c93a704957b63ee3494413a2b544fd3d825b)",
@@ -17,7 +17,7 @@
   },
   "sourceSnapshot": {
     "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-    "digest": "69860956009bf998c44a1a4eaa1e8d979c442902f250cc810a407debcf1d10e9",
+    "digest": "6be40095507211c76e87d84a00e3a7623442e78f77d2271967e8a50c666f741d",
     "fileCount": 442,
     "files": {
       ".gitattributes": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c",
@@ -457,10 +457,10 @@
       "workers/compiler/Dockerfile": "5b8cc4161ea44952bc54009799b33de05819e6c6fe10cb43eb4288c6da6a96ae",
       "workers/compiler/README.md": "e9c2879672ed9951ce6a9340582449d26b4f399fadad20c2e2f114c8c7a8ca68",
       "workers/compiler/runner.py": "882de27b8c3c75adde52da06ec122097f47cc219108a38f74894353214a049a2",
-      "workers/compiler/server.py": "4ee4b438f0e9b19f4d9e221e1c86b0cac50390d4e12e12deb623968c0556fc1c",
-      "workers/compiler/start_workbench.py": "8863cb75a66482aa65d4e321b503f3a3395a74f18000e092ded60b3b3387d309",
+      "workers/compiler/server.py": "caa51f1395ff4a04eca068e3d460a4e71faaf46f62dead135047f1abcea4f636",
+      "workers/compiler/start_workbench.py": "18a1175d4ad001e288e26a247a6aa97bbb704dd20a2271519440a4363a2a3488",
       "workers/compiler/test_verifier.py": "84a5e18880dcbafc2ed0fecaaf8bccd7a910bdba537328fe1dce9f93ba8f938b",
-      "workers/compiler/test_worker.py": "cb450686497f011a9e985025a2427f513a54b4cebddc834ea9050ab22422c755",
+      "workers/compiler/test_worker.py": "519869d6df5f8e18d6d58595e63e9ee5ab4e91b3d7cb3278fcb67a7e0080a6a8",
       "workers/compiler/verify_docker.py": "bdfd1044bb7f4d8daf796457dbaae0595996369696c639f5048dda2f0b782dfc"
     },
     "excludedReports": [
@@ -3715,7 +3715,7 @@
       "schemaVersion": 1,
       "scope": "static",
       "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-      "digest": "69860956009bf998c44a1a4eaa1e8d979c442902f250cc810a407debcf1d10e9",
+      "digest": "6be40095507211c76e87d84a00e3a7623442e78f77d2271967e8a50c666f741d",
       "fileCount": 442,
       "extraFiles": []
     },
@@ -4958,7 +4958,7 @@
   "compilerPython": {
     "result": "PASS",
     "scope": "Offline compiler broker/verifier behavior; no real container execution claim",
-    "tests": 17,
+    "tests": 19,
     "failures": 0,
     "errors": 0,
     "skipped": 0,
@@ -4966,7 +4966,7 @@
       "schemaVersion": 1,
       "scope": "compiler",
       "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-      "digest": "33f4d833df4f24564186cf6b8a7334edd54af04abbdd869b28e09b1327e74ee3",
+      "digest": "8f3a693789897a54e36faf3c859d5b6eadd8c11bba11a6dc025d847765fa7b86",
       "fileCount": 10,
       "extraFiles": [
         "scripts/record_verification.py"
@@ -4985,7 +4985,7 @@
       "schemaVersion": 1,
       "scope": "static",
       "algorithm": "SHA-256 of sorted relative path + NUL + file SHA-256 + LF",
-      "digest": "69860956009bf998c44a1a4eaa1e8d979c442902f250cc810a407debcf1d10e9",
+      "digest": "6be40095507211c76e87d84a00e3a7623442e78f77d2271967e8a50c666f741d",
       "fileCount": 442,
       "extraFiles": [
         "scripts/record_verification.py"
