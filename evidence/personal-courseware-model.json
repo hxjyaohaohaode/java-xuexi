@@ -1,6 +1,6 @@
 {
   "dateUTC": "2026-11-27",
-  "scope": "Six real CPU model runs through the authenticated courseware and study APIs. Latest candidate A/B used the same final application JAR, release, topic, learner goal and preference; only B submitted an actual wrong option. Local ZIP check used the same B plan and public concept.",
+  "scope": "Seven real CPU model runs through the authenticated courseware and study APIs. The v4 A/B teaching comparison used the same JAR, release, topic, learner goal and preference; only B submitted an actual wrong option. The ZIP check used that B plan and public concept. The seventh run exercised the verified Maven JAR on native MySQL 8.4.13 at REPEATABLE READ with a fresh corrective student, concurrent study reads and an independent SQL-to-API artifact comparison.",
   "assessmentMethod": "Automated receipt/hash/ordering/byte checks plus AI-assisted Java semantic comparison against the submitted course criteria and JLS 17. No educator signoff.",
   "weights": "Qwen3-0.6B-GGUF Q8_0",
   "engine": "llama.cpp b12503",
@@ -17,7 +17,8 @@
       3072,
       3072,
       3072,
-      3072
+      3072,
+      2048
     ]
   },
   "runs": [
@@ -2013,6 +2014,416 @@
         "choiceAndGradingKeysOmitted": true,
         "privateAttemptAndContextOmitted": true
       }
+    },
+    {
+      "jarSHA256": "ef287a3706393cfbe36477a10a8a42654f75a44cadd58bc646d8b5dd48ba3a6d",
+      "weightSHA256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
+      "runtime": "llama.cpp b12503 CPU; reasoning off, temperature 0",
+      "demoRelease": "29f405da-3e5f-318f-a9ac-790603cfa1bb",
+      "control": {
+        "strategy": "FOUNDATION",
+        "order": [
+          "READ",
+          "READ",
+          "PREDICT",
+          "EXAMPLE",
+          "PRACTICE",
+          "REFLECT"
+        ]
+      },
+      "edition": {
+        "topic": "G06",
+        "revision": 3,
+        "strategy": "REPAIR",
+        "pace": "GUIDED",
+        "rationale": [
+          "本次纳入的最近同概念作答未获满分，本节先回到那一道题。"
+        ],
+        "checkpointDigest": "c88e8ad67c66e7f3f8eb96b9952e0fff27297e77238aeeb3e86e6db8d3eb94d1",
+        "planHash": "66139df67f2d0cf7e5d6bb5baba4c3a71a7e8d3625d09c1cc2c47bdc493f42e2",
+        "workspaceEventSequence": 4,
+        "ownerReadMatches": true
+      },
+      "modelRun": {
+        "mode": "MODEL",
+        "terminal": "COMPLETED",
+        "resumedSameRun": true,
+        "steps": [
+          {
+            "key": "planner",
+            "role": "conductor",
+            "status": "SUCCEEDED",
+            "attempts": 0
+          },
+          {
+            "key": "expert-0",
+            "role": "learning-designer",
+            "status": "SUCCEEDED",
+            "attempts": 1
+          },
+          {
+            "key": "expert-1",
+            "role": "learning-designer",
+            "status": "SUCCEEDED",
+            "attempts": 1
+          },
+          {
+            "key": "expert-2",
+            "role": "learning-designer",
+            "status": "SUCCEEDED",
+            "attempts": 1
+          },
+          {
+            "key": "review",
+            "role": "fact-checker",
+            "status": "SUCCEEDED",
+            "attempts": 1
+          },
+          {
+            "key": "output-slides",
+            "role": "slide-designer",
+            "status": "SUCCEEDED",
+            "attempts": 1
+          }
+        ],
+        "admittedModelPlan": {
+          "strategy": "concept-first",
+          "sections": [
+            {
+              "role": "EXAMPLE",
+              "title": "泛型不变性与容器赋值",
+              "focus": "泛型不变性与容器赋值"
+            },
+            {
+              "role": "EXAMPLE",
+              "title": "泛型不变性与容器赋值",
+              "focus": "类型实参及其限制"
+            },
+            {
+              "role": "EXAMPLE",
+              "title": "泛型不变性与容器赋值",
+              "focus": "编译结果预测"
+            }
+          ]
+        },
+        "handoffs": 7,
+        "artifacts": 6,
+        "tokens": 5262,
+        "reservedAtCompletion": 0,
+        "roles": [
+          {
+            "step": "planner",
+            "plannerAllowedRoles": [
+              "CONCEPT",
+              "EXAMPLE",
+              "REPAIR"
+            ],
+            "plannerAllowedStrategies": [
+              "concept-first",
+              "example-first",
+              "repair-first"
+            ],
+            "declaredGoalPresent": true,
+            "declaredPreferencePresent": true,
+            "teacherQuestionIncludesPeerSource": true,
+            "teacherQuestionIncludesPublishedExercise": true,
+            "inputTokens": 828,
+            "outputTokens": 183,
+            "totalTokens": 1011,
+            "status": "COMPLETED",
+            "billing": "SETTLED",
+            "http": 200,
+            "stopReason": "stop",
+            "format": "json_schema",
+            "allCitationsAdmitted": true,
+            "sourceTitles": [
+              "泛型不变性与容器赋值"
+            ],
+            "modelOutput": "concept-first"
+          },
+          {
+            "step": "expert-0",
+            "plannerAllowedRoles": null,
+            "plannerAllowedStrategies": null,
+            "declaredGoalPresent": true,
+            "declaredPreferencePresent": true,
+            "teacherQuestionIncludesPeerSource": true,
+            "teacherQuestionIncludesPublishedExercise": true,
+            "inputTokens": 898,
+            "outputTokens": 139,
+            "totalTokens": 1037,
+            "status": "COMPLETED",
+            "billing": "SETTLED",
+            "http": 200,
+            "stopReason": "stop",
+            "format": "json_schema",
+            "allCitationsAdmitted": true,
+            "sourceTitles": [
+              "泛型不变性与容器赋值"
+            ],
+            "modelOutput": "在 Java17 中，List<Integer> 不能直接赋值给 List<Number>，因为 List<Integer> 的类型参数不变，而 List<Number> 的类型参数发生变化。若允许赋值，经 List<Number> 别名写入 Double 就会破坏原列表的 Integers。"
+          },
+          {
+            "step": "expert-1",
+            "plannerAllowedRoles": null,
+            "plannerAllowedStrategies": null,
+            "declaredGoalPresent": true,
+            "declaredPreferencePresent": true,
+            "teacherQuestionIncludesPeerSource": true,
+            "teacherQuestionIncludesPublishedExercise": true,
+            "inputTokens": 895,
+            "outputTokens": 139,
+            "totalTokens": 1034,
+            "status": "COMPLETED",
+            "billing": "SETTLED",
+            "http": 200,
+            "stopReason": "stop",
+            "format": "json_schema",
+            "allCitationsAdmitted": true,
+            "sourceTitles": [
+              "泛型不变性与容器赋值"
+            ],
+            "modelOutput": "在 Java17 中，List<Integer> 不能直接赋值给 List<Number>，因为 List<Integer> 的类型参数不变，而 List<Number> 的类型参数发生变化。若允许赋值，经 List<Number> 别名写入 Double 就会破坏原列表的 Integers。"
+          },
+          {
+            "step": "expert-2",
+            "plannerAllowedRoles": null,
+            "plannerAllowedStrategies": null,
+            "declaredGoalPresent": true,
+            "declaredPreferencePresent": true,
+            "teacherQuestionIncludesPeerSource": true,
+            "teacherQuestionIncludesPublishedExercise": true,
+            "inputTokens": 894,
+            "outputTokens": 133,
+            "totalTokens": 1027,
+            "status": "COMPLETED",
+            "billing": "SETTLED",
+            "http": 200,
+            "stopReason": "stop",
+            "format": "json_schema",
+            "allCitationsAdmitted": true,
+            "sourceTitles": [
+              "泛型不变性与容器赋值"
+            ],
+            "modelOutput": "在 Java17 中，List<Integer> 不能直接赋值给 List<Number>，因为 List<Integer> 的类型参数不变，而 List<Number> 的类型参数发生变化。若允许赋值，会破坏泛型不变性，导致编译错误。"
+          },
+          {
+            "step": "review",
+            "plannerAllowedRoles": null,
+            "plannerAllowedStrategies": null,
+            "declaredGoalPresent": true,
+            "declaredPreferencePresent": true,
+            "teacherQuestionIncludesPeerSource": true,
+            "teacherQuestionIncludesPublishedExercise": true,
+            "inputTokens": 1008,
+            "outputTokens": 145,
+            "totalTokens": 1153,
+            "status": "COMPLETED",
+            "billing": "SETTLED",
+            "http": 200,
+            "stopReason": "stop",
+            "format": "json_schema",
+            "allCitationsAdmitted": true,
+            "sourceTitles": [
+              "泛型不变性与容器赋值"
+            ],
+            "modelOutput": "在 Java17 中，List<Integer> 不能直接赋值给 List<Number>，因为 List<Integer> 的类型参数不变，而 List<Number> 的类型参数发生变化。若允许赋值，经 List<Number> 别名写入 Double 就会破坏原列表的 Integers。"
+          }
+        ]
+      },
+      "slides": {
+        "kind": "SLIDES",
+        "revision": 1,
+        "status": "DRAFT",
+        "sha256": "fe328189292edd1fab0ba9bddee8cddd760294d14068b0a7212da1e37f91c80b",
+        "outputDigestMatchesAuthenticatedRevision": true,
+        "count": 11,
+        "directInputTypes": [
+          "GOAL",
+          "MEMORY",
+          "ATTEMPT",
+          "GOAL",
+          "ARTIFACT",
+          "KNOWLEDGE_CHUNK",
+          "ARTIFACT",
+          "ARTIFACT",
+          "ARTIFACT",
+          "KNOWLEDGE_CHUNK"
+        ],
+        "frozenSceneAlignment": [
+          {
+            "kind": "PREDICT",
+            "title": "重看这次作答",
+            "pages": [
+              1
+            ],
+            "bodyMatches": true,
+            "taskMatches": true,
+            "source": {
+              "chunkId": "318e8232-f98e-31aa-882c-54c524bf17d5",
+              "chunkRevision": 1,
+              "exerciseId": "449576db-9aaa-395c-a5d3-22a53a56196f",
+              "exerciseRevision": 1
+            }
+          },
+          {
+            "kind": "READ",
+            "title": "先回顾 · 泛型类",
+            "pages": [
+              2,
+              3
+            ],
+            "bodyMatches": true,
+            "taskMatches": true,
+            "source": {
+              "chunkId": "8d054a2c-b72f-3af0-8519-52ab3c6cc53e",
+              "chunkRevision": 1
+            }
+          },
+          {
+            "kind": "PREDICT",
+            "title": "分三步检查类型",
+            "pages": [
+              4
+            ],
+            "bodyMatches": true,
+            "taskMatches": true,
+            "source": {}
+          },
+          {
+            "kind": "READ",
+            "title": "泛型不变性与容器赋值",
+            "pages": [
+              5,
+              6
+            ],
+            "bodyMatches": true,
+            "taskMatches": true,
+            "source": {
+              "chunkId": "318e8232-f98e-31aa-882c-54c524bf17d5",
+              "chunkRevision": 1
+            }
+          },
+          {
+            "kind": "EXAMPLE",
+            "title": "不同的 List 类型实参不能直接替换",
+            "pages": [
+              7
+            ],
+            "bodyMatches": true,
+            "taskMatches": true,
+            "source": {
+              "exampleId": "06-invariant-lists",
+              "exampleSha256": "ea1b64c61477d42473f484b1db36a3c229c95ce74c3733eab64155b80252c0f8"
+            }
+          },
+          {
+            "kind": "PRACTICE",
+            "title": "独立验证",
+            "pages": [
+              8
+            ],
+            "bodyMatches": true,
+            "taskMatches": true,
+            "source": {
+              "exerciseId": "efcb1992-7d22-3d2a-a781-d4ad382f70f2",
+              "exerciseRevision": 1
+            }
+          },
+          {
+            "kind": "REFLECT",
+            "title": "写下你的解释",
+            "pages": [
+              9
+            ],
+            "bodyMatches": true,
+            "taskMatches": true,
+            "source": {}
+          }
+        ],
+        "modelSupplementTitles": [
+          "模型补充讲解 · 待核对 1",
+          "模型补充讲解 · 待核对 2"
+        ],
+        "studentTaskCoverage": {
+          "peerCode": "import java.util.List;\n\nclass Demo {\n    List<Integer> integers = List.of(1, 2);\n    List<Number> numbers = integers;\n}\n",
+          "publicQuestion": "List<Integer> values 需要以 Number 读取，哪种声明还能防止经新引用写入 Double？",
+          "publishedRulePageVerified": true
+        },
+        "verifiedDistinctExpertText": {
+          "expertReceipts": 3,
+          "distinctExpertAnswers": 2,
+          "supplementPages": 2,
+          "eachDistinctTextOccursExactlyOnce": true,
+          "groups": [
+            {
+              "occurrencesInRoleReceipts": 2,
+              "identicalCopiesShown": 1,
+              "representativeAnswer": "在 Java17 中，List<Integer> 不能直接赋值给 List<Number>，因为 List<Integer> 的类型参数不变，而 List<Number> 的类型参数发生变化。若允许赋值，经 List<Number> 别名写入 Double 就会破坏原列表的 Integers。"
+            },
+            {
+              "occurrencesInRoleReceipts": 1,
+              "identicalCopiesShown": 1,
+              "representativeAnswer": "在 Java17 中，List<Integer> 不能直接赋值给 List<Number>，因为 List<Integer> 的类型参数不变，而 List<Number> 的类型参数发生变化。若允许赋值，会破坏泛型不变性，导致编译错误。"
+            }
+          ]
+        }
+      },
+      "observedPeakRSSKiB": {
+        "model": 835588,
+        "app": 257868
+      },
+      "sample": "shipping-mysql-concurrency-corrective",
+      "submittedAssessment": {
+        "beforeGradeStrategy": "EXAMPLE_FIRST",
+        "beforeGradeOrder": [
+          "EXAMPLE",
+          "PREDICT",
+          "READ",
+          "PRACTICE",
+          "REFLECT"
+        ],
+        "status": "GRADED",
+        "score": 0.0,
+        "maximum": 100.0,
+        "publicQuestion": "Java17中，已知 List<Integer> values，哪项赋值类型检查允许？",
+        "studentChoice": "List<Number> result = values;",
+        "admittedCorrectiveSceneMatchesSubmittedAttempt": true,
+        "nextExerciseDiffers": true,
+        "nextQuestion": "List<Integer> values 需要以 Number 读取，哪种声明还能防止经新引用写入 Double？",
+        "reviewedCorrection": {
+          "source": "typeforge-course-20261118",
+          "reviewId": "M01",
+          "criterion": "说明 List 的类型参数不变，并用假设赋值后经 Number 视图添加 Double 破坏约束解释。",
+          "correction": "本次模型误把 ArrayStoreException 用在泛型列表上。反例中的赋值在编译期就被拒绝，程序不会运行到写入。",
+          "firstPageBody": "Java17中，已知 List<Integer> values，哪项赋值类型检查允许？\n\n课程包核对依据 · typeforge-course-20261118 · M01\n说明 List 的类型参数不变，并用假设赋值后经 Number 视图添加 Double 破坏约束解释。\n课程包记录的模型勘误 · 本次模型误把 ArrayStoreException 用在泛型列表上。反例中的赋值在编译期就被拒绝，程序不会运行到写入。",
+          "studentChoiceAbsent": true,
+          "hiddenKeysAbsent": true
+        }
+      },
+      "nativeDatabase": {
+        "version": "8.4.13",
+        "isolation": "REPEATABLE-READ",
+        "runStatus": "COMPLETED",
+        "planRevision": 2,
+        "outputStep": "SUCCEEDED",
+        "outputRefs": 1,
+        "persistedHash": "fe328189292edd1fab0ba9bddee8cddd760294d14068b0a7212da1e37f91c80b",
+        "persistedSlides": 11,
+        "reviewStatus": "DRAFT",
+        "matchesAuthenticatedOutput": true
+      },
+      "concurrentAuthenticatedResumeReads": {
+        "responses": 184,
+        "finalObservations": 2,
+        "inconsistent": 0,
+        "statuses": {
+          "QUEUED": 1,
+          "RUNNING": 181,
+          "COMPLETED": 2
+        },
+        "errors": []
+      }
     }
   ],
   "technicalAssessmentOfPreCorrectionBuild": {
@@ -2028,5 +2439,43 @@
   "technicalAssessment": {
     "example": "Example specialist and reviewer correctly explain the potentially unsafe Double write through a hypothetically admitted Number alias. Two concept specialists supplied exactly the same answer; both receipts survived and one copy reached the supplementary pages.",
     "corrective": "Frozen repair page reproduces public M01 criterion/correction, not the submitted option or hidden key. The real planner had permission to choose REPAIR but selected three EXAMPLE specialists. Two expert answers are identical and appear once. They correctly reject the assignment; their statement that the type parameter of List<Number> changes is misleading. The two declared parameterized types differ at compile time. The new wildcard transfer question is included, but the model does not explain its answer."
+  },
+  "shippingMySQLVerificationBuild": {
+    "jarSHA256": "ef287a3706393cfbe36477a10a8a42654f75a44cadd58bc646d8b5dd48ba3a6d",
+    "serverAndDependenciesSHA256": "c98333db96739788a995315e27607a47db8b45cb3bf26fb2f042fe82821bc045",
+    "entries": 509,
+    "algorithm": "Sort BOOT-INF/classes/ entries excluding static/, plus BOOT-INF/lib/ entries, excluding directories. SHA-256 over each UTF-8 path, NUL, lowercase hexadecimal SHA-256 of entry bytes, LF.",
+    "changedServerAndDependencyEntriesRelativeToPreviousModelBuild": [
+      "BOOT-INF/classes/io/typeforge/orchestration/DurableAgentRuntime$RunRow.class",
+      "BOOT-INF/classes/io/typeforge/orchestration/DurableAgentRuntime$StepRow.class",
+      "BOOT-INF/classes/io/typeforge/orchestration/DurableAgentRuntime$ToolRow.class",
+      "BOOT-INF/classes/io/typeforge/orchestration/DurableAgentRuntime.class"
+    ],
+    "formalMavenVerification": {
+      "tests": 484,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "semanticAssessment": "The planner again chose three EXAMPLE sections despite permission to use a repair expert. All three experts and the review used the incorrect explanation that the type parameter of List<Number> changes. The versioned public correction is present on the first page, and the authenticated slide revision remains a draft. The corrective artifact hash equals the fourth-build H2 corrective sample."
+  },
+  "preliminaryShippingObservation": {
+    "jarSHA256": "ef287a3706393cfbe36477a10a8a42654f75a44cadd58bc646d8b5dd48ba3a6d",
+    "database": "MySQL 8.4.13",
+    "driverHTTPReadTimeoutSeconds": 8,
+    "completedProviderCalls": [
+      {
+        "http": 200,
+        "totalTokens": 1011
+      },
+      {
+        "http": 200,
+        "totalTokens": 1037
+      }
+    ],
+    "driverError": "TimeoutError: timed out",
+    "finalArtifactVerified": false,
+    "retryHTTPReadTimeoutSeconds": 60,
+    "retryOutcomeSample": "shipping-mysql-concurrency-corrective"
   }
 }
