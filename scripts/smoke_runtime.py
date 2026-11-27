@@ -656,6 +656,42 @@ class Smoke:
                  "reviews": client.request("GET", API + "/me/reviews"),
                  "memories": client.request("GET", API + f"/workspaces/{workspace_id}/memories")}
         self.verify_private_sql(saved)
+        # Admit a personal lesson just before stopping the JVM. The next JVM must finish the same run.
+        chapter = next(item for item in concepts if item["code"] == "G06")
+        personal_space = client.request("POST", API + "/workspaces", {
+            "releaseId": release, "title": "Personal lesson restart", "guidanceMode": "COLLABORATIVE"},
+            expected=(201,), key="personal-space-" + uuid.uuid4().hex)
+        baseline_space = client.request("POST", API + "/workspaces", {
+            "releaseId": release, "title": "First lessons", "guidanceMode": "COLLABORATIVE"},
+            expected=(201,), key="baseline-space-" + uuid.uuid4().hex)
+        client.request("POST", API + f"/workspaces/{personal_space['id']}/memories", {"summary":"我希望先看代码再解释规则。"},
+                       expected=(201,), key="course-memory-" + uuid.uuid4().hex)
+        editions = {}
+        for topic in concepts:
+            concept_id = topic["id"]
+            def generate(room):
+                path = API + f"/workspaces/{room['id']}/courseware/{concept_id}"
+                return client.request("POST", path, {"approach":"AUTO"}, expected=(201,), key="lesson-" + uuid.uuid4().hex)
+            ordinary, personal = generate(baseline_space), generate(personal_space)
+            source = next((scene for scene in personal["scenes"] if scene["kind"] == "EXAMPLE"), None)
+            self.check(topic["code"] + " differentiates actual personal lesson activities over the same released topic",
+                       ordinary["releaseId"] == personal["releaseId"] == release
+                       and ordinary["conceptId"] == personal["conceptId"] == concept_id
+                       and ordinary["strategy"] == "FOUNDATION" and personal["strategy"] == "EXAMPLE_FIRST"
+                       and ordinary["scenes"][0]["kind"] == "READ" and personal["scenes"][0]["kind"] in ("EXAMPLE","PREDICT")
+                       and any(s["kind"] == "PRACTICE" and s["exerciseId"] for s in personal["scenes"])
+                       and (source is None or (source == personal["scenes"][0]
+                            and source["exampleSha256"] == hashlib.sha256(source["body"].encode()).hexdigest())))
+            editions[concept_id] = personal
+        personal_base = f"/workspaces/{personal_space['id']}/courseware/{chapter['id']}"
+        lesson = editions[chapter['id']]
+        self.check("personal lesson before restart opens with the selected published code", lesson["scenes"][0]["kind"] == "EXAMPLE")
+        personal_key = "personal-study-" + uuid.uuid4().hex
+        personal_input = {"planId": lesson["id"], "mode": "EVIDENCE_ONLY"}
+        admitted = client.request("POST", API + personal_base + "/study", personal_input, expected=(202,), key=personal_key)
+        version_path = personal_base + "?planId=" + lesson["id"]
+        resume_path = personal_base + "/study?planId=" + lesson["id"] + "&mode=EVIDENCE_ONLY"
+        private_paths += (version_path, resume_path)
         self.app.stop()
         self.phase = "after-restart"
         base = self.app.start()
@@ -692,6 +728,20 @@ class Smoke:
             self.check(name + " survives process restart unchanged", actual == expected)
         self.check("capability honesty survives restart", self.capabilities(restored) == saved["capabilities"])
         self.verify_private_sql(saved)
+        self.check("identical personal storyboard and frozen sources survive an actual process restart",
+                   restored.request("GET", API + version_path) == lesson)
+        continued = self.wait_for("new JVM completes the previously admitted personal teaching run",
+            lambda: restored.request("GET", API + resume_path),
+            lambda row: row["status"] in ("COMPLETED","PARTIAL","FAILED","CANCELLED","WAITING_USER"), timeout=90)
+        self.check("restored lesson reuses the same run and workspace",
+                   continued["id"] == admitted["id"] and continued["status"] == "COMPLETED"
+                   and restored.request("POST", API + personal_base + "/study", personal_input, expected=(202,), key=personal_key)["id"] == admitted["id"])
+        produced = next(step["outputRefs"][0] for step in continued["steps"] if step["key"] == "output-slides")
+        deck = restored.request("GET", API + f"/artifacts/{produced['id']}/revisions?revision={produced['revision']}")
+        leading = deck["content"]["slides"][0]
+        self.check("persisted editable slides keep the student's original example and its code",
+                   deck["contentHash"] == produced["contentHash"] and deck["reviewStatus"] == "DRAFT"
+                   and leading["elements"][0]["kind"] == "CODE" and lesson["scenes"][0]["body"].startswith(leading["elements"][0]["text"]))
         restored_evaluation_report, restored_evaluation_hash = evaluation_attachment(restored)
         self.check("private evaluation attachment bytes and frozen JSON survive actual process restart",
                    restored_evaluation_hash == extras["evaluationReportHash"] and restored_evaluation_report == evaluation_report)

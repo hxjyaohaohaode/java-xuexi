@@ -207,8 +207,10 @@ public final class TutorService {
             var checkpoint=roleContext==null?learningJournal.capture(row.owner(),row.workspace(),row.snapshot(),null)
                 :learningJournal.read(row.owner(),row.workspace(),roleContext.learningContextId());
             var learner=new ArrayList<Map<String,Object>>();
+            boolean personal=roleContext!=null && checkpoint.conceptId()!=null;
+            if(personal && turn.role().equals("PLANNER")) learner.add(Map.of("kind","PERSONAL_LESSON"));
             for(var fact:checkpoint.facts()) {
-                if(fact.kind().equals("GOAL") && roleContext==null) learner.add(Map.of("kind","GOAL","id",fact.sourceId(),"text",fact.text()));
+                if(fact.kind().equals("GOAL") && (roleContext==null || personal)) learner.add(Map.of("kind","GOAL","id",fact.sourceId(),"text",fact.text()));
                 if(fact.kind().equals("MEMORY")) learner.add(Map.of("kind","USER_STATED_MEMORY","id",fact.sourceId(),"text",fact.text()));
             }
             if(row.attempt()!=null) {

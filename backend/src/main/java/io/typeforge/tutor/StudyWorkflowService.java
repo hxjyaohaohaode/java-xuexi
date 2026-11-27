@@ -211,7 +211,8 @@ public final class StudyWorkflowService implements RuntimeCapabilityProvider {
     }
 
     private String question(UUID owner,DurableAgentRuntime.RunView run,Map<String,Object> meta,String key) {
-        String goal=clip(run.plan().goal(),260);
+        boolean personal=StudyContextJournal.courseConcept(jdbc,run.id())!=null;
+        String goal=clip(run.plan().goal(),personal?1600:260);
         if(key.equals("planner"))return "学习目标："+goal+"\n请根据已发布的课程资料和当前学习记录制定教学计划。每项教学重点都应具体对应本次目标。";
         if(key.equals("review")) {
             return "学习目标："+goal+"\n请作为独立于初稿的教学审阅者，核对交接的草稿和课程证据，指出事实边界、遗漏和适合的复练。草稿是待审材料。";
@@ -288,6 +289,8 @@ public final class StudyWorkflowService implements RuntimeCapabilityProvider {
             var tool=runtime.reserveTool(owner,workspace,lease,toolName,"study-compose-v1",Map.of("kind",kind,"snapshotId",run.snapshotId()),0,0);
             runtime.markToolRunning(owner,workspace,lease,tool.id(),null);
             var inputs=new LinkedHashMap<String,Reference>();var context=workspaces.readContext(owner,workspace,run.snapshotId());context.references().forEach(ref->inputs.put(ref.kind()+":"+ref.id(),ref));
+            var edition=kind.equals("SLIDES") && courseware!=null ? courseware.edition(owner,workspace,run.id()) : java.util.Optional.<CoursewareSlideSource.Edition>empty();
+            var shownSections=new java.util.HashSet<String>();
             var body=new ArrayList<String>();String critique="";
             for(var step:run.steps()) {
                 if(!step.status().equals("SUCCEEDED") || !(step.key().startsWith("expert-") || step.key().equals("review"))) continue;
@@ -296,7 +299,18 @@ public final class StudyWorkflowService implements RuntimeCapabilityProvider {
                     var revision=artifacts.validateCurrentInputs(owner,artifact,output.revision());
                     inputs.put("ARTIFACT:"+artifact,new Reference("ARTIFACT",artifact,revision.revision(),revision.contentHash()));
                     for(Reference ref:revision.inputRefs()) if(ref.kind().equals("KNOWLEDGE_CHUNK")) inputs.putIfAbsent(ref.kind()+":"+ref.id(),ref);
-                    if(step.key().equals("review"))critique=readable(revision.content());else body.add(readable(revision.content()));
+                    if(step.key().equals("review")) {
+                        critique=readable(revision.content());
+                    } else if(edition.isPresent()) {
+                        // The private draft and its limitations remain in the audit trail. Present each actual
+                        // expert answer once, without repeating the same course guidance on every slide.
+                        for (var block:revision.content().path("blocks")) if ("answer".equals(block.path("id").asText())) {
+                            String answer=block.path("text").asText();
+                            if (!answer.isBlank() && shownSections.add(answer)) body.add(answer);
+                        }
+                    } else {
+                        body.add(readable(revision.content()));
+                    }
                 }
             }
             if(inputs.size()>64)throw new DomainException("STUDY_REFERENCE_LIMIT",422,"The study artifact needs too many references; select a smaller context");
@@ -306,7 +320,6 @@ public final class StudyWorkflowService implements RuntimeCapabilityProvider {
                 artifact=notebooks.build(owner,workspace,attempts,title,"study-output:"+run.id()+":"+kind);
             } else {
                 var citations=inputs.values().stream().filter(r->r.kind().equals("KNOWLEDGE_CHUNK")).map(r->Map.of("id",r.id(),"revision",r.revision())).toList();
-                var edition=kind.equals("SLIDES") && courseware!=null ? courseware.edition(owner,workspace,run.id()) : java.util.Optional.<CoursewareSlideSource.Edition>empty();
                 if (edition.isPresent()) {
                     title=edition.get().title();
                     for (var card:edition.get().cards()) if (card.evidence()!=null)

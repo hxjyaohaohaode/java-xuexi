@@ -177,6 +177,24 @@ class TutorHttpProviderTest {
             assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM message_citation c JOIN tutor_message m ON m.id=c.message_id WHERE m.request_id=?",Integer.class,queued.id().toString()));
         }
     }
+    @Test void personalPlannerCannotDiagnoseAMistakeWithoutAnAdmittedAttempt() {
+        try(var harness=harness(5000,1_000_000)) {
+            var evidence=search.search(DemoContentInitializer.RELEASE_ID,"Java 泛型 PECS",null,1).items();
+            var learner=List.<Map<String,Object>>of(Map.of("kind","PERSONAL_LESSON"),Map.of("kind","GOAL","text","先看实例"));
+            var prompt=new io.typeforge.tutor.TutorAnswerProvider.Prompt(UUID.randomUUID(),"本节个人讲解",1,List.of(),
+                learner,evidence,io.typeforge.tutor.TutorAnswerProvider.Purpose.PLANNER,List.of());
+            byte[] bytes=harness.provider().body(prompt);
+            var body=json.tree(new String(bytes,StandardCharsets.UTF_8));
+            assertEquals(json.tree("[\"CONCEPT\",\"EXAMPLE\"]"),body.at("/response_format/json_schema/schema/properties/sections/items/properties/role/enum"));
+            assertEquals("先看实例",userContent(body).at("/learnerContext/0/learningGoal").asText());
+            behavior.set(request->new Reply(wire(json.write(Map.of("strategy","concept-first","sections",List.of(Map.of(
+                "role","REPAIR","title","修正已犯的错","focus","复练")),"citedChunkIds",List.of(evidence.get(0).chunkId()))),"stop",true)));
+            var failure=assertThrows(io.typeforge.tutor.TutorAnswerProvider.Failure.class,()->harness.provider().send(prompt,bytes));
+            assertEquals("STUDY_PLAN_LACKS_REPAIR_EVIDENCE",failure.code());
+            assertEquals(28,failure.usage().totalTokens());
+        }
+    }
+
     @Test void slowConfiguredProviderRetainsBoundedLeaseDeadlineAndUnknownDispatchFence() {
         assertThrows(IllegalArgumentException.class,()->harness(300001,1_000_000));
         try(var harness=harness(180000,1_000_000)) {

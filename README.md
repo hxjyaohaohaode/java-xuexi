@@ -26,7 +26,7 @@ python3 workers/compiler/start_workbench.py backend/target/typeforge-backend-0.6
 | 哪些接口能调用、完整请求和响应是什么 | [当前 API 索引](contracts/README.md) · [OpenAPI](contracts/openapi.json) |
 | 如何启动、配置模型和编辑角色 | [后端运行说明](backend/README.md) · [前端运行说明](frontend/README.md) |
 | 数据表、字段、锁序、发布与撤回 | [当前字段字典](database/data-dictionary.md) · [数据一致性](docs/03-data.md) |
-| 什么实际验证过、还有哪些限制 | [本轮验收记录](evidence/runtime-review.md) · [真实模型逐题复核](evidence/classroom-model-review.md) · [三轮审查](evidence/development-review-v06.md) |
+| 什么实际验证过、还有哪些限制 | [本轮验收记录](evidence/runtime-review.md) · [真实模型逐题复核](evidence/classroom-model-review.md) · [个人讲解课件实测](evidence/personal-courseware-model.md) · [三轮审查](evidence/development-review-v06.md) |
 | 两人如何继续做及课程最终交付 | [团队计划](docs/09-team-plan.md) · [课程交付](docs/16-course-delivery.md) |
 | 为什么这样设计、参考了什么 | [总体架构](docs/01-architecture.md) · [研究依据](docs/14-research-decisions.md) |
 

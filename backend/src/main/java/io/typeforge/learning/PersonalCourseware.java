@@ -58,21 +58,18 @@ public class PersonalCourseware implements RuntimeCapabilityProvider {
         if (replay != null) return get(owner,workspace,concept,replay);
 
         var previous=stored(workspace,concept,null);
-        // Reusing a valid current revision also avoids materializing another snapshot/checkpoint on reload.
-        if (selected==null && previous.isPresent()) {
+        WorkspaceService.Context snapshot=null;
+        if (selected!=null) {
+            snapshot=workspaces.readContext(owner,workspace,selected);
+        } else if (previous.isPresent() && previous.get().automatic()) {
             var saved=json.read(previous.get().plan(),Plan.class);
-            if (saved.contextSequence()==scope.eventSequence() && saved.requestedApproach().equals(approach)) {
-                try {
-                    var same=validate(owner,workspace,concept,release,previous.get());
-                    // Explicit selections are allowed to omit other attempts; only reuse an automatic capture.
-                    if (previous.get().automatic()) {
-                        workspaces.remember(owner,"personal.courseware",key,signature,same.id());
-                        return same;
-                    }
-                } catch (DomainException changed) { if (changed.status()!=409) throw changed; }
+            if (saved.contextSequence()==scope.eventSequence()) {
+                // Reuse the source, then recompute the outline: updated public guidance may need a new edition.
+                try { snapshot=workspaces.readContext(owner,workspace,saved.snapshotId()); }
+                catch (DomainException changed) { if (changed.status()!=409 && changed.status()!=404) throw changed; }
             }
         }
-        var snapshot=selected == null ? createSnapshot(owner,workspace,release,concept) : workspaces.readContext(owner,workspace,selected);
+        if (snapshot==null) snapshot=createSnapshot(owner,workspace,release,concept);
         var checkpoint=journal.capture(owner,workspace,snapshot.id(),concept);
         var attempts=new ArrayList<PersonalLessonOutline.Attempt>();
         for (var fact:checkpoint.facts()) if (fact.kind().equals("ATTEMPT")) {

@@ -87,7 +87,7 @@ public final class LearningContextJournal {
 
     private String sourceText(UUID workspace,Reference ref,UUID concept) {
         return switch(ref.kind()) {
-            case "GOAL" -> jdbc.queryForObject("SELECT goal_text FROM learning_goal WHERE id=? AND workspace_id=?",String.class,ref.id().toString(),workspace.toString());
+            case "GOAL" -> jdbc.query("SELECT goal_text FROM learning_goal WHERE id=? AND workspace_id=? AND origin_kind='LEARNER'",(rs,n)->rs.getString(1),ref.id().toString(),workspace.toString()).stream().findFirst().orElse(null);
             case "MEMORY" -> jdbc.query("SELECT content_json FROM learner_memory WHERE id=? AND workspace_id=? AND basis='USER_STATED' AND status='ACTIVE'",
                 (rs,n)->json.tree(rs.getObject(1)).path("summary").asText(),ref.id().toString(),workspace.toString()).stream().findFirst().orElse(null);
             case "ATTEMPT" -> {

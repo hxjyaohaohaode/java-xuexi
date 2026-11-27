@@ -82,8 +82,7 @@ final class PersonalLessonOutline {
             "先预测能否编译，再在实验中验证；把观察与知识卡对照。",null,null,example.id(),example.sha256(),null,null,null);
         if (strategy.equals("REPAIR")) {
             var origin = questions.stream().filter(q -> q.id().equals(latest.exercise()) && q.revision() == latest.revision()).findFirst().orElse(null);
-            if (origin != null) scenes.add(question("recall","PREDICT","重看这次作答",origin.prompt(),
-                "先独立指出需要检查的类型关系，再与原作答对照。",origin,latest.id()));
+            if (origin != null) scenes.add(repairRecall(topic,evidence,origin,latest.id()));
         }
         if (prerequisite != null && !prerequisite.evidence().isEmpty() && (strategy.equals("FOUNDATION") || strategy.equals("REPAIR")))
             scenes.add(read("prerequisite","先回顾 · "+prerequisite.title(),prerequisite.evidence().get(0)));
@@ -107,6 +106,32 @@ final class PersonalLessonOutline {
         };
         scenes.add(question("reflection","REFLECT","写下你的解释",reflection,null,null,null));
         return new Draft(strategy,pace,List.copyOf(reasons),List.copyOf(scenes));
+    }
+
+    /** The first repair scene can be exported. Use only the public exercise prompt and published teaching material. */
+    private static PersonalCourseware.Scene repairRecall(ConceptView topic, EvidenceView card, Question origin, UUID attemptId) {
+        var body = new StringBuilder(origin.prompt());
+        var supplement = topic.companion();
+        if (supplement != null && !supplement.reviews().isEmpty()) {
+            for (var rule : supplement.reviews()) {
+                body.append("\n\n课程包核对依据 · ").append(supplement.version()).append(" · ").append(rule.id())
+                    .append("\n").append(rule.criterion());
+                if (rule.correction() != null && !rule.correction().isBlank())
+                    body.append("\n课程包记录的模型勘误 · ").append(rule.correction());
+            }
+        } else if (card != null) {
+            String text = card.fullText() == null ? card.excerpt() : card.fullText();
+            String paragraph = Arrays.stream(text.strip().split("\\R\\s*\\R"))
+                .filter(part -> !part.isBlank() && !part.startsWith("演示预置学习内容"))
+                .findFirst().orElse(text.strip());
+            int end = paragraph.offsetByCodePoints(0, Math.min(180, paragraph.codePointCount(0, paragraph.length())));
+            body.append("\n\n发布知识卡 · ").append(card.title()).append(" · 修订 ").append(card.revision())
+                .append("\n").append(paragraph,0,end);
+            if (end < paragraph.length()) body.append("…");
+        }
+        return new PersonalCourseware.Scene("recall","PREDICT","重看这次作答",body.toString(),
+            "先指出原题要检查的类型关系，再用课程依据核对理由。",card == null ? null : card.chunkId(),
+            card == null ? null : card.revision(),null,null,origin.id(),origin.revision(),attemptId);
     }
 
     private static void append(List<PersonalCourseware.Scene> result, PersonalCourseware.Scene... scenes) {

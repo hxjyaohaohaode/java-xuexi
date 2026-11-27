@@ -739,7 +739,9 @@ public final class DurableAgentRuntime {
     }
 
     private List<StepRow> steps(RunRow run) {
-        List<StepRow> values = jdbc.query("SELECT * FROM agent_step WHERE run_id=? AND plan_revision=?", this::stepRow, run.id().toString(), run.revision());
+        // The enclosing transaction already holds the workspace and run row locks. A caller can
+        // have an older InnoDB RR snapshot, so steps must use the same current read as the run.
+        List<StepRow> values = jdbc.query("SELECT * FROM agent_step WHERE run_id=? AND plan_revision=? ORDER BY step_key FOR UPDATE", this::stepRow, run.id().toString(), run.revision());
         Map<String, StepRow> indexed = new HashMap<>();
         values.forEach(value -> indexed.put(value.key(), value));
         return run.plan().steps().stream().map(planned -> Objects.requireNonNull(indexed.get(planned.id()), "persisted plan/steps drift")).toList();

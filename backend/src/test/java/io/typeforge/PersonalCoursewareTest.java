@@ -79,18 +79,43 @@ class PersonalCoursewareTest {
         assertEquals("FOUNDATION",before.strategy());assertEquals(saved.eventSequence(),before.contextSequence());
         var choices=course.exercises(course.activeRelease(),concept.id(),null,100).items();
         var original=choices.stream().filter(q->q.kind().equals("SINGLE")).findFirst().orElseThrow();
-        JsonNode spec=json.tree(jdbc.queryForObject("SELECT answer_spec FROM exercise WHERE id=? AND revision=?",String.class,original.id().toString(),original.revision()));
-        String wrong=original.options().stream().filter(o->!o.id().equals(spec.path("optionIds").get(0).asText())).findFirst().orElseThrow().id();
-        var graded=grading.submit(owner,space,course.activeRelease(),original.id(),original.revision(),tree(Map.of("kind","CHOICE","optionIds",List.of(wrong))),key());
+        var graded=submitWrong(owner,space,original);
         var repair=courseware.generate(owner,space,concept.id(),null,"AUTO",key());
         assertEquals("REPAIR",repair.strategy());assertEquals("GUIDED",repair.pace());
-        var reminder=repair.scenes().get(0);assertEquals(graded.id(),reminder.attemptId());assertEquals(original.prompt(),reminder.body());
+        var reminder=repair.scenes().get(0);assertEquals(graded.id(),reminder.attemptId());assertEquals(original.prompt(),reminder.body().lines().findFirst().orElseThrow());
+        var rule=concept.companion().reviews().get(0);
+        assertTrue(reminder.body().contains(rule.criterion()));assertTrue(reminder.body().contains(rule.correction()));
+        assertTrue(reminder.body().contains(concept.companion().version()+" · "+rule.id()));
+        assertTrue(concept.evidence().stream().anyMatch(card->card.chunkId().equals(reminder.chunkId()) && card.revision()==reminder.chunkRevision()));
+        assertFalse(reminder.body().contains("optionIds"));assertFalse(reminder.body().contains("correctOptionIds"));
         var next=repair.scenes().stream().filter(s->s.kind().equals("PRACTICE")).findFirst().orElseThrow();
         assertNotEquals(original.id(),next.exerciseId());assertEquals(course.exercise(course.activeRelease(),next.exerciseId(),next.exerciseRevision()).prompt(),next.body());
         assertTrue(repair.scenes().stream().anyMatch(s->s.key().equals("scaffold")));
         assertEquals(before,courseware.get(owner,space,concept.id(),before.id()));
         var replay=courseware.generate(owner,space,concept.id(),saved.id(),"AUTO",key());
         assertEquals("FOUNDATION",replay.strategy());assertTrue(replay.scenes().stream().noneMatch(s->s.attemptId()!=null));
+    }
+
+    private LearningService.Attempt submitWrong(UUID owner,UUID space,CurriculumService.ExerciseView original) {
+        JsonNode spec=json.tree(jdbc.queryForObject("SELECT answer_spec FROM exercise WHERE id=? AND revision=?",String.class,original.id().toString(),original.revision()));
+        String wrong=original.options().stream().filter(o->!o.id().equals(spec.path("optionIds").get(0).asText())).findFirst().orElseThrow().id();
+        return grading.submit(owner,space,course.activeRelease(),original.id(),original.revision(),tree(Map.of("kind","CHOICE","optionIds",List.of(wrong))),key());
+    }
+
+    @Test void repairWithoutCompanionReviewQuotesTheActualPublishedKnowledgeRevision() {
+        UUID owner=user().userId(),space=room(owner),release=course.activeRelease();
+        var topic=course.concepts(release).stream().filter(c->!c.evidence().isEmpty() &&
+            (c.companion()==null || c.companion().reviews().isEmpty())).findFirst().orElseThrow();
+        var question=course.exercises(release,topic.id(),null,100).items().stream().filter(q->q.kind().equals("SINGLE")).findFirst().orElseThrow();
+        var attempt=submitWrong(owner,space,question);
+        var reminder=courseware.generate(owner,space,topic.id(),null,"AUTO",key()).scenes().get(0);
+        var card=course.concept(release,topic.id()).evidence().stream().filter(c->c.chunkId().equals(reminder.chunkId())).findFirst().orElseThrow();
+        assertEquals(attempt.id(),reminder.attemptId());assertEquals(question.prompt(),reminder.body().lines().findFirst().orElseThrow());
+        assertEquals(card.revision(),reminder.chunkRevision());
+        assertTrue(reminder.body().contains("发布知识卡 · "+card.title()+" · 修订 "+card.revision()));
+        String excerpt=reminder.body().lines().reduce((left,right)->right).orElseThrow().replaceFirst("…$","");
+        assertFalse(excerpt.isBlank());
+        assertTrue((card.fullText()==null?card.excerpt():card.fullText()).contains(excerpt));
     }
 
     @Test void actualHttpEntryPointsAdmitOnlyPublishedConceptsAndStrictInputs() throws Exception {

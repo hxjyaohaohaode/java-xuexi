@@ -36,6 +36,16 @@ beforeAll(() => {
   });
   if (!base) throw new Error('TYPEFORGE_BASE_URL must point to a real running demo backend.');
   vi.stubGlobal('crypto', webcrypto);
+  // jsdom has no box layout or resize notifications. Chromium exercises native observer callbacks.
+  if (typeof ResizeObserver === 'undefined')
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
   // jsdom has no viewport scroll; transport and business results remain real.
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
   // jsdom provides FileReader but omits Blob.arrayBuffer; preserve actual selected bytes.

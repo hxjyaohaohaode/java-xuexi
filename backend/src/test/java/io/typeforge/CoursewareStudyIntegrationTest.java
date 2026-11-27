@@ -55,6 +55,7 @@ class CoursewareStudyIntegrationTest {
     @Autowired JsonCodec json;
     @Autowired JdbcTemplate jdbc;
     @Autowired MockMvc mvc;
+    @Autowired org.springframework.transaction.PlatformTransactionManager transactions;
     UUID owner,workspace,concept,release;
     MockHttpSession session;
     @DynamicPropertySource static void database(DynamicPropertyRegistry properties) {
@@ -156,6 +157,49 @@ class CoursewareStudyIntegrationTest {
         workspaces.revokeMemory(owner,workspace,original.id(),original.revision());
         resume(workspace,plan.id(),"EVIDENCE_ONLY",409,session);
         assertThrows(DomainException.class,()->artifacts.validateCurrentInputs(owner,output.id(),output.revision()));
+    }
+
+    @Test void aPollingSnapshotOpenedBeforeCompletionReturnsTheCommittedSlideAndRunTogether() throws Exception {
+        var plan=lessons.generate(owner,workspace,concept,null,"EXAMPLE_FIRST",key());
+        UUID runId=UUID.fromString(start(workspace,plan.id(),"EVIDENCE_ONLY",key(),202,session).path("id").asText());
+        // Install the actual second graph but leave its final required slide step unfinished.
+        for(int i=0;i<4 && runtime.get(owner,workspace,runId).planRevision()==1;i++) workflow.advance(owner,workspace,runId);
+        var admitted=runtime.get(owner,workspace,runId);
+        assertEquals(2,admitted.planRevision());
+        assertTrue(admitted.steps().stream().anyMatch(step->step.key().equals("output-slides") && step.outputRefs().isEmpty()));
+        boolean mysql=Boolean.TRUE.equals(jdbc.execute((org.springframework.jdbc.core.ConnectionCallback<Boolean>)
+            c->"MySQL".equals(c.getMetaData().getDatabaseProductName())));
+        var read=new org.springframework.transaction.support.TransactionTemplate(transactions);
+        read.setIsolationLevel(mysql?org.springframework.transaction.TransactionDefinition.ISOLATION_REPEATABLE_READ
+            :org.springframework.transaction.TransactionDefinition.ISOLATION_READ_COMMITTED);
+        var opened=new java.util.concurrent.CountDownLatch(1);
+        var committed=new java.util.concurrent.CountDownLatch(1);
+        var pool=java.util.concurrent.Executors.newSingleThreadExecutor();
+        try {
+            var observed=pool.submit(()->read.execute(status->{
+                // This ordinary read pins the InnoDB view, as the initial lesson lookup in resume does.
+                String before=jdbc.queryForObject("SELECT output_refs FROM agent_step WHERE run_id=? AND plan_revision=2 AND step_key='output-slides'",
+                    String.class,runId.toString());
+                assertTrue(json.tree(before).isEmpty());
+                opened.countDown();
+                try { assertTrue(committed.await(25,java.util.concurrent.TimeUnit.SECONDS)); }
+                catch(InterruptedException error) {Thread.currentThread().interrupt();throw new IllegalStateException(error);}
+                return runtime.get(owner,workspace,runId);
+            }));
+            assertTrue(opened.await(10,java.util.concurrent.TimeUnit.SECONDS));
+            for(int pass=0;pass<20 && !runtime.get(owner,workspace,runId).status().equals("COMPLETED");pass++) {
+                workflow.advance(owner,workspace,runId);
+                while(worker.runOne()) { /* Complete real independent role requests on the writer connection. */ }
+            }
+            var finished=runtime.get(owner,workspace,runId);
+            assertEquals("COMPLETED",finished.status());
+            var slide=finished.steps().stream().filter(step->step.key().equals("output-slides")).findFirst().orElseThrow();
+            assertEquals(1,slide.outputRefs().size());
+            committed.countDown();
+            var sameRead=observed.get(10,java.util.concurrent.TimeUnit.SECONDS);
+            assertEquals(finished.status(),sameRead.status());
+            assertEquals(slide,sameRead.steps().stream().filter(step->step.key().equals("output-slides")).findFirst().orElseThrow());
+        } finally {committed.countDown();pool.shutdownNow();}
     }
 
     @Test void aForeignAccountAndAnotherOwnedWorkspaceCannotReadOrProduceThePlan() throws Exception {
