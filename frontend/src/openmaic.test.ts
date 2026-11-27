@@ -163,7 +163,12 @@ it('renders privately ordered evidence, questions and role actions without seria
     title: '私人兴趣标题',
     body: '自行定义的队名',
     prompt: '私人要求',
-    selfCheck: { options: ['私有选项', '另一项'], answerIndex: 0, explanation: '私有解析', javaSource: '私有源码专用标记' },
+    selfCheck: {
+      options: ['私有选项', '另一项'],
+      answerIndex: 0,
+      explanation: '私有解析',
+      javaSource: '私有源码专用标记',
+    },
     portable: { title: '课程应用', body: '已审核的共用示例', prompt: '哪种写法类型安全？' },
   };
   const adapted = {

@@ -499,6 +499,7 @@ export function Learning() {
                             setResumeExperiment(null);
                             open(chosen.id, 'lab');
                           }}
+                          onActivityResumed={() => setResumeExperiment(null)}
                           resumeActivity={
                             resumeExperiment?.conceptId === chosen.id
                               ? resumeExperiment.sceneKey

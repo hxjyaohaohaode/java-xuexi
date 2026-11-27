@@ -151,6 +151,75 @@ try {
   assert.match(question, /Python 实验（源码摘要 [0-9a-f]{12}）/);
   assert.match(question, /验证步骤/);
   report.openedTutorDraftFromReceipt = true;
+  await page.getByRole('button', { name: '关闭课堂导师' }).click();
+  await mode.selectOption('RUN_JAVA');
+  const independentDraft = '// 尚未提交的独立实验草稿\n' + raw.code;
+  await pane.getByLabel('Main.java').fill(independentDraft);
+  await page.getByRole('button', { name: '本节学练', exact: true }).click();
+  await page.getByRole('button', { name: '调整兴趣与要求' }).click();
+  await page.getByLabel('我的兴趣', { exact: true }).fill('篮球');
+  await page.getByLabel('本节学习要求', { exact: true }).fill('先独立预测一个编译反例');
+  const [prepared] = await Promise.all([
+    page.waitForResponse(
+      (r) => r.url().includes('/courseware/') && r.request().method() === 'POST',
+    ),
+    page.getByRole('button', { name: '按我的要求生成课件' }).click(),
+  ]);
+  assert.ok(prepared.ok());
+  const interestPlan = await prepared.json();
+  const prediction = interestPlan.scenes.find((s) => s.selfCheck);
+  const original = prediction.selfCheck.javaSource;
+  assert.match(original, /records\.add\(new Center\(\)\)/);
+  const sceneSelect = page.getByLabel('选择课件场景');
+  await sceneSelect.selectOption({
+    label: (await sceneSelect.locator('option').allTextContents()).find((t) =>
+      t.endsWith('. ' + prediction.title),
+    ),
+  });
+  const launch = page.getByRole('button', { name: '把这段代码放入本课实验' });
+  await launch.click();
+  const file = pane.getByLabel('Main.java');
+  assert.equal(await file.inputValue(), original);
+  assert.equal(await mode.inputValue(), 'RUN_JAVA');
+  async function runCase() {
+    const [reply] = await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().endsWith('/api/v1/compile-jobs') && r.request().method() === 'POST',
+      ),
+      pane.getByRole('button', { name: '运行代码', exact: true }).click(),
+    ]);
+    assert.equal(reply.status(), 202);
+    const submitted = await reply.json();
+    for (let i = 0; i < 100; i++) {
+      const observed = await (
+        await page.request.get(base + '/api/v1/compile-jobs/' + submitted.id)
+      ).json();
+      if (!['RUNNING', 'QUEUED', 'COMPILING'].includes(observed.status)) return observed;
+      await delay(300);
+    }
+    assert.fail('The classroom Java job did not finish');
+  }
+  const failed = await runCase();
+  assert.equal(failed.status, 'COMPILE_ERROR');
+  assert.ok(failed.diagnostics.some((d) => d.severity === 'ERROR'));
+  const fixed = original.replace('records.add(new Center())', 'records.add(new Guard())');
+  await file.fill(fixed);
+  await page.getByRole('button', { name: '返回这道判断题' }).click();
+  await launch.waitFor();
+  assert.ok(await launch.evaluate((el) => el === document.activeElement));
+  await launch.click();
+  assert.equal(await file.inputValue(), fixed);
+  const passed = await runCase();
+  assert.equal(passed.status, 'SUCCEEDED');
+  assert.equal(passed.output.trim(), '登记条目数：1');
+  await pane.locator('pre.compiler-output').filter({ hasText: '登记条目数：1' }).waitFor();
+  await page.getByRole('button', { name: '打开本节独立草稿' }).click();
+  assert.equal(await pane.getByLabel('Main.java').inputValue(), independentDraft);
+  report.interestPredictionExperiment = {
+    first: failed.status,
+    corrected: passed.status,
+    retainedBothDrafts: true,
+  };
   report.result = 'PASS';
 } finally {
   if (browser) await browser.close();

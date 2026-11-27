@@ -29,6 +29,7 @@ export function PersonalLesson({
   onActivity,
   onExperiment,
   resumeActivity,
+  onActivityResumed,
   onDiscuss,
   onAttempt,
   courseEvidence,
@@ -39,6 +40,7 @@ export function PersonalLesson({
   onActivity: (activity: CoursewareScene) => void;
   onExperiment?: (planId: string, sceneKey: string) => void;
   resumeActivity?: string;
+  onActivityResumed?: () => void;
   onDiscuss: (text: string, attemptId?: string) => void;
   onAttempt: (attempt: Attempt) => void;
   courseEvidence: Evidence[];
@@ -296,6 +298,7 @@ export function PersonalLesson({
               onDiscuss={onDiscuss}
               onExperiment={onExperiment}
               resumeActivity={resumeActivity}
+              onActivityResumed={onActivityResumed}
               onActivity={onActivity}
               onAttempt={onAttempt}
               onUpdate={() => regenerate()}

@@ -260,7 +260,8 @@ export function buildMaicArchive(
     brief: undefined,
     title: concept.title,
     scenes: personal.scenes.map((scene) => {
-      if (scene.portable) return { ...scene, ...scene.portable, selfCheck: undefined, portable: undefined };
+      if (scene.portable)
+        return { ...scene, ...scene.portable, selfCheck: undefined, portable: undefined };
       if (scene.key.startsWith('application') || scene.selfCheck)
         throw Error('这页缺少可分享的讲义，无法导出。请更新课件后重试。');
       return scene;

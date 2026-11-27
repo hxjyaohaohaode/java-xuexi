@@ -37,6 +37,10 @@ def digest(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
+def text_hash(value):
+    return hashlib.sha256(value.encode('utf-8')).hexdigest()
+
+
 def local_port():
     with socket.socket() as listener:
         listener.bind(('127.0.0.1', 0))
@@ -87,8 +91,16 @@ class Probe:
                 sent = json.loads(data)
                 combined = json.dumps(sent['messages'], ensure_ascii=False)
                 case = probe.case
+                user = json.loads(next(m['content'] for m in sent['messages'] if m['role'] == 'user'))
+                fmt = sent['response_format']['json_schema']
+                handoffs = user.get('handoffs', [])
                 turn = {
-                    'schema': sent.get('response_format', {}).get('json_schema', {}).get('name'),
+                    'requestId': self.headers.get('Idempotency-Key'),
+                    'model': sent['model'], 'schema': fmt['name'],
+                    'reviewSchema': 'revisions' in fmt['schema']['properties'],
+                    'questionSHA256': text_hash(user['question']),
+                    'handoffs': [{'step': h['step'], 'excerptSHA256': text_hash(h['excerpt'])} for h in handoffs],
+                    'publishedChunkIds': [e['chunkId'] for e in user['publishedEvidence']],
                     'maxOutputTokens': sent.get('max_tokens', sent.get('max_completion_tokens')),
                     'interestInPrompt': case['interest'] in combined,
                     'requirementsInPrompt': case['requirements'] in combined,
@@ -122,6 +134,9 @@ class Probe:
                         'usage': value.get('usage', {}),
                         'responseSha256': hashlib.sha256(message.encode()).hexdigest(),
                         'answerSample': str(answer.get('answer', answer.get('strategy', '')))[:600],
+                        'answerSHA256': text_hash(answer.get('answer', '')),
+                        'plan': {k: answer[k] for k in ('strategy', 'sections') if k in answer},
+                        'citedChunkIds': answer.get('citedChunkIds', []),
                         'reviewMoves': answer.get('revisions', {}),
                     })
                     self.send_response(code)
@@ -149,6 +164,75 @@ class Session:
         for secret in self.secrets:
             message = message.replace(secret, '[redacted]')
         return message
+
+
+def trace_model_roles(get, run, details, receipts, turns, case, plan):
+    # The identical request ID crosses the provider's HTTP header and the saved specialist's origin block.
+    by_request = {turn['requestId']: turn for turn in turns}
+    by_id = {r['id']: r for r in receipts}
+    assert len(by_id) == len(by_request) == len(turns) == len(receipts)
+    assert by_request.keys() == by_id.keys()
+    steps = {s['key']: s for s in run['steps']}
+    sections = details['teachingPlan']['sections']
+    experts = ['expert-' + str(i) for i in range(len(sections))]
+    assert 1 <= len(experts) <= 3 and set(steps) == {'planner','review','output-slides',*experts}
+    assert steps['planner']['role'] == 'conductor' and steps['review']['role'] == 'fact-checker'
+    assert steps['output-slides']['role'] == 'slide-designer'
+    for key, section in zip(experts, sections):
+        assert steps[key]['role'] == {'CONCEPT':'generics-expert','EXAMPLE':'learning-designer','REPAIR':'code-coach'}[section['role']]
+    checkpoints = {(c['stepKey'],c['role']) for c in details['contextCheckpoints']}
+    assert all((key,step['role']) in checkpoints for key,step in steps.items())
+    expected_edges = {('planner',k) for k in experts} | {(k,'review') for k in experts} | {('review','output-slides')}
+    assert expected_edges <= {(edge['fromStep'],edge['toStep']) for edge in details['handoffs']}
+
+    role_steps, expert_text, used = {}, {}, set()
+    case_terms = (('篮球','后卫','中锋','Player','Guard','Center') if case['identity']=='basketball'
+                  else ('天文','观测','凌日','星表','Observation','Transit','Eclipse'))
+    for key in ['planner',*experts,'review']:
+        step = steps[key]
+        ref, = step['outputRefs']
+        assert ref['kind'] == 'DRAFT_ARTIFACT'
+        version = get('/artifacts/'+ref['id']+'/revisions?revision='+str(ref['revision']))
+        assert (version['artifactId'],version['revision'],version['contentHash'],version['reviewStatus']) == (
+            ref['id'],ref['revision'],ref['contentHash'],'DRAFT')
+        blocks = {b['id']: b['text'] for b in version['content']['blocks']}
+        candidates = [rid for rid in by_id if rid in blocks['origin']]
+        rid, = candidates
+        assert rid not in used
+        used.add(rid)
+        receipt, turn = by_id[rid], by_request[rid]
+        assert receipt['status']=='COMPLETED' and receipt['sourceState']=='CURRENT'
+        assert receipt['workspaceId']==run['workspaceId'] and turn['model']==MODEL
+        assert blocks['answer']==receipt['answer'] and text_hash(receipt['question'])==turn['questionSHA256']
+        assert turn['schema']==('study_teaching_plan' if key=='planner' else 'study_expert_turn')
+        assert turn['reviewSchema']==(key=='review')
+        cited=set(turn['citedChunkIds'])
+        assert cited and cited <= set(turn['publishedChunkIds'])
+        # The tutor may also cite the published review-guidance anchors beside the model's citations.
+        assert cited <= {source['chunkId'] for source in receipt['evidenceRefs']}
+        assert all(source['conceptId']==plan['conceptId'] for source in receipt['evidenceRefs'])
+        actual=turn['usage']
+        assert actual['prompt_tokens']>0 and actual['completion_tokens']>0
+        assert actual['prompt_tokens']+actual['completion_tokens']==actual['total_tokens']==receipt['usage']['usedTokens']
+        assert actual['completion_tokens']<=turn['maxOutputTokens']
+        turn.update(step=key,role=step['role'],draftSHA256=ref['contentHash'])
+        if key=='planner':
+            assert json.loads(blocks['answer'])==details['teachingPlan']==turn['plan']
+        else:
+            assert turn['answerSHA256']==text_hash(blocks['answer'])
+        if key in experts:
+            expert_text[key]=blocks['answer']
+            turn['freeDraftTopicTerms']=[term for term in case_terms if term.lower() in blocks['answer'].lower()]
+        role_steps[key] = (turn,blocks,ref)
+    assert used==set(by_id)
+    assert sum(t['usage']['total_tokens'] for t in turns)==run['spentTokens']
+    assert any(role_steps[key][0]['maxOutputTokens']>1024 for key in experts)
+    reviewer, blocks, _ = role_steps['review']
+    received = {h['step']: h['excerptSHA256'] for h in reviewer['handoffs']}
+    assert len(received)==len(reviewer['handoffs']) and received=={k:text_hash(v) for k,v in expert_text.items()}
+    assert set(reviewer['reviewMoves'])==set(experts)
+    edits = {k:blocks['review-edit-'+k] for k in experts}
+    return role_steps, edits
 
 
 def run_student(base, probe, case):
@@ -194,30 +278,42 @@ def run_student(base, probe, case):
     assert receipts and all(r['mode']=='MODEL' and r['usage']['billingState']=='SETTLED' for r in receipts)
     assert len(receipts)==len(turns)>=3
     assert all(t['http']==200 and t['finishReason']=='stop' and not t['otherInterestInPrompt'] for t in turns)
-    assert any(t['maxOutputTokens']>1024 for t in turns)
     assert all(t['interestInPrompt'] and t['requirementsInPrompt'] for t in turns)
+    role_steps, edits = trace_model_roles(get,run,details,receipts,turns,case,plan)
     ref = next(s for s in run['steps'] if s['key']=='output-slides')['outputRefs'][0]
     artifact = get('/artifacts/'+ref['id']+'/revisions?revision='+str(ref['revision']))
     assert ref['contentHash']==artifact['contentHash'] and artifact['reviewStatus']=='DRAFT'
     pages = artifact['content']['slides']
-    moves = next(t['reviewMoves'] for t in turns if t.get('reviewMoves'))
-    labels = {'TRACE_TYPES':'类型推导','CHECK_COMPILE':'编译预测','COUNTEREXAMPLE':'对照反例','TRANSFER':'迁移练习'}
-    reviewed = [p for p in pages if p['id'].startswith('slide-')]
-    assert len(reviewed) == len(moves) > 0
-    first_reason = check['explanation'].split('。')[0]
-    output_checks = []
-    for index, page in enumerate(reviewed):
-        move = moves['expert-' + str(index)]
-        text = '\n'.join(e.get('text', '') for e in page['elements']) + '\n' + page.get('notes', '')
-        assert labels[move] in text and first_reason in text, (index, move, text[:800])
-        assert all(type_name in text for type_name in (
-            ('Player', 'Guard') if case['identity'] == 'basketball' else ('Observation', 'Transit')
-        ))
-        output_checks.append({'activity':move,'sourceReasonMatched':True,'sample':text[:600]})
+    assert artifact['artifactId']==ref['id'] and artifact['revision']==ref['revision']
+    source_refs={(r['id'],r['revision'],r['contentHash']) for r in artifact['inputRefs'] if r['kind']=='ARTIFACT'}
+    for key,(_,_,source) in role_steps.items():
+        if key!='planner': assert (source['id'],source['revision'],source['contentHash']) in source_refs
+    moves=role_steps['review'][0]['reviewMoves']
+    labels={'TRACE_TYPES':'类型推导','CHECK_COMPILE':'编译预测','COUNTEREXAMPLE':'对照反例','TRANSFER':'迁移练习'}
+    expert_keys=[s['key'] for s in run['steps'] if s['key'].startswith('expert-')]
+    # Composition deduplicates identical reviewed activities and may split a long passage over several pages.
+    visible=[p for p in pages if p['id'].startswith('slide-') and '学习要点' in p['title']]
+    verdict=[p for p in pages if p['id'].startswith('slide-') and '审阅与核验' in p['title']]
+    assert visible and verdict
+    def original_passage(page):
+        return page.get('notes') or page['elements'][0]['text']
+    assert ''.join(original_passage(p) for p in visible)==''.join(dict.fromkeys(edits[k] for k in expert_keys))
+    assert '本节按教学审阅者选择的活动编排' in ''.join(original_passage(p) for p in verdict)
+    first_reason=check['explanation'].split('。')[0]
+    output_checks=[]
+    for key in expert_keys:
+        move,text=moves[key],edits[key]
+        assert labels[move] in text and first_reason in text
+        assert all(name in text for name in (('Player','Guard') if case['identity']=='basketball' else ('Observation','Transit')))
+        output_checks.append({'expert':key,'modelSelectedActivity':move,'freeDraftTopicTerms':role_steps[key][0]['freeDraftTopicTerms'],
+                              'reviewReceivedExactDraft':True,'sourceBoundActivityInSlides':True,'sample':text[:600]})
     return {'student':case['identity'],'lesson':'G06','releaseId':release,'brief':brief,
             'lessonSHA256':plan['contentHash'],'exercise':activity['body'],'answer':check['options'][check['answerIndex']],
             'explanation':check['explanation'],'sceneCount':len(plan['scenes']),'slides':len(pages),'slidesSHA256':ref['contentHash'],
-            'studyStatus':run['status'],'accountedTokens':run['spentTokens'],'roles':[s['key'] for s in run['steps']],
+            'studyStatus':run['status'],'accountedTokens':run['spentTokens'],'roles':{s['key']:s['role'] for s in run['steps']},
+            'freeDraftsWithTopicTerm':sum(bool(x['freeDraftTopicTerms']) for x in output_checks),
+            'freeDraftCount':len(output_checks),
+            'interpretation':'Expert drafts are free-form model text. Topic terms measure lexical overlap only. Final activities are selected by the model reviewer and rendered from checked course material.',
             'providerTurns':turns,'reviewedActivities':output_checks}
 
 

@@ -270,6 +270,44 @@ export async function verifyPersonalCourseware(browser, base, monitor, screensho
         .waitFor();
       assert.equal(posts.length, 0);
       page.off('request', listen);
+      if (i === 0) {
+        const launch = page.getByRole('button', { name: '把这段代码放入本课实验' });
+        await launch.click();
+        const lab = page.getByRole('region', { name: '本题代码实验' });
+        const source = lab.getByLabel('Main.java');
+        assert.equal(await source.inputValue(), check.selfCheck.javaSource);
+        const edited = check.selfCheck.javaSource + '\n// 我想再验证一次';
+        await source.fill(edited);
+        await lab.getByRole('button', { name: '返回这道判断题' }).click();
+        await launch.waitFor();
+        assert.ok(await launch.evaluate((el) => el === document.activeElement));
+        assert.ok(await local.getByRole('radio').nth(check.selfCheck.answerIndex).isChecked());
+        await launch.click();
+        assert.equal(await source.inputValue(), edited);
+        await lab.getByRole('button', { name: '返回这道判断题' }).click();
+        await launch.waitFor();
+        await edit.click();
+        await page.getByLabel('教学方式').selectOption('GUIDED');
+        const [regenerated] = await Promise.all([
+          page.waitForResponse(
+            (r) => r.url() === learner.endpoint && r.request().method() === 'POST',
+          ),
+          page.getByRole('button', { name: '按我的要求生成课件' }).click(),
+        ]);
+        assert.ok(regenerated.ok());
+        const fresh = await regenerated.json();
+        assert.notEqual(fresh.id, plan.id);
+        await page.getByText('个人版本 ' + fresh.revision, { exact: true }).waitFor();
+        await page.evaluate(
+          () =>
+            new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+        );
+        assert.equal(
+          await player.getByLabel('选择课件场景').inputValue(),
+          '0',
+          'A consumed return request must not move a newly generated lesson back to the old experiment',
+        );
+      }
       await page.setViewportSize({ width: 1280, height: 900 });
       const share = await exported(page, true);
       const bytes = JSON.stringify(share);

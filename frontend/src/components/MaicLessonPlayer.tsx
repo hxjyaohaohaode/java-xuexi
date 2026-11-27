@@ -18,6 +18,7 @@ export default function MaicLessonPlayer({
   onActivity,
   onExperiment,
   resumeActivity,
+  onActivityResumed,
   onAttempt,
   onUpdate,
   updating = false,
@@ -29,6 +30,7 @@ export default function MaicLessonPlayer({
   personal?: PersonalCourseware;
   onExperiment?: (planId: string, sceneKey: string) => void;
   resumeActivity?: string;
+  onActivityResumed?: () => void;
   onAttempt?: (attempt: Attempt) => void;
   onUpdate?: () => void;
   updating?: boolean;
@@ -68,6 +70,7 @@ export default function MaicLessonPlayer({
     const position = lesson.activities.findIndex((a) => a?.key === resume);
     if (position < 0) {
       setResume(undefined);
+      onActivityResumed?.();
       return;
     }
     if (activity?.key !== resume) {
@@ -76,6 +79,7 @@ export default function MaicLessonPlayer({
     }
     experimentButton.current?.focus();
     setResume(undefined);
+    onActivityResumed?.();
   }, [resume, index]);
   const [feedbackId, showFeedback] = useState('');
   const feedback = useResource<Attempt>(
@@ -211,7 +215,13 @@ export default function MaicLessonPlayer({
               )}
             </>
           )}
-          {activity.selfCheck && <SelfCheck key={activity.key} draftKey={key + '.check.' + activity.key} check={activity.selfCheck} />}
+          {activity.selfCheck && (
+            <SelfCheck
+              key={activity.key}
+              draftKey={key + '.check.' + activity.key}
+              check={activity.selfCheck}
+            />
+          )}
           {personal && activity.selfCheck?.javaSource && onExperiment && (
             <button
               ref={experimentButton}

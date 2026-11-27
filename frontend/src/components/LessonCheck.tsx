@@ -4,15 +4,24 @@ import { Question } from '../pages/Practice';
 import type { Attempt, Concept, CoursewareScene, Exercise } from '../types';
 import { ErrorNotice, Loading } from './ui';
 
-export function SelfCheck({ check, draftKey }: { check: NonNullable<CoursewareScene['selfCheck']>; draftKey?: string }) {
-  const id=useId();
-  const [{chosen,confirmed}, setDecision]=useSessionDraft(draftKey || 'tf.selfcheck.' + id, {chosen:-1, confirmed:false});
+export function SelfCheck({
+  check,
+  draftKey,
+}: {
+  check: NonNullable<CoursewareScene['selfCheck']>;
+  draftKey?: string;
+}) {
+  const id = useId();
+  const [{ chosen, confirmed }, setDecision] = useSessionDraft(draftKey || 'tf.selfcheck.' + id, {
+    chosen: -1,
+    confirmed: false,
+  });
   return (
     <form
       className="scene-check"
       onSubmit={(event) => {
         event.preventDefault();
-        setDecision({chosen,confirmed:true});
+        setDecision({ chosen, confirmed: true });
       }}
     >
       <fieldset>
@@ -24,14 +33,16 @@ export function SelfCheck({ check, draftKey }: { check: NonNullable<CoursewareSc
               name={id}
               checked={chosen === i}
               onChange={() => {
-                setDecision({chosen:i,confirmed:false});
+                setDecision({ chosen: i, confirmed: false });
               }}
             />
             {option}
           </label>
         ))}
       </fieldset>
-      <button disabled={chosen < 0 || chosen >= check.options.length || confirmed}>核对我的判断</button>
+      <button disabled={chosen < 0 || chosen >= check.options.length || confirmed}>
+        核对我的判断
+      </button>
       {confirmed && (
         <div role="status" className="check-explanation">
           <strong>{chosen === check.answerIndex ? '判断正确' : '再看这个条件'}</strong>
