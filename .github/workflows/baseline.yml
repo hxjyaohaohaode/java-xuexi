@@ -60,6 +60,8 @@ jobs:
           retention-days: 14
   java-semantics-and-http:
     name: Java semantics, persistent HTTP and browser integration
+    outputs:
+      packaged: ${{ steps.classroom-artifact.outcome }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
@@ -117,6 +119,21 @@ jobs:
         run: python scripts/verify_course_examples.py
       - name: Verify Java semantics, transactions and package the runtime
         run: python scripts/verify_java.py
+      - name: Stage the tested JAR and launcher for independent runtime checks
+        id: classroom-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TypeForge-classroom
+          path: |
+            backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar
+            workers/compiler/start_workbench.py
+            workers/compiler/server.py
+            workers/compiler/runner.py
+            workers/compiler/Dockerfile
+            workers/compiler/README.md
+            README.md
+          if-no-files-found: error
+          retention-days: 14
       - name: Verify HTTP linkage and restart persistence on H2 files
         run: python scripts/smoke_runtime.py --profile h2
       - name: Ensure an independent MySQL client is available
@@ -164,20 +181,6 @@ jobs:
         run: |
           python scripts/record_verification.py
           python scripts/record_verification.py --check-snapshot
-      - name: Package the verified application and the local classroom launcher
-        uses: actions/upload-artifact@v4
-        with:
-          name: TypeForge-classroom
-          path: |
-            backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar
-            workers/compiler/start_workbench.py
-            workers/compiler/server.py
-            workers/compiler/runner.py
-            workers/compiler/Dockerfile
-            workers/compiler/README.md
-            README.md
-          if-no-files-found: error
-          retention-days: 14
       - name: Upload sanitized runtime and isolation reports only
         if: always()
         uses: actions/upload-artifact@v4
@@ -206,6 +209,7 @@ jobs:
   live-model-classroom:
     name: Personalized classroom with a real local model
     needs: java-semantics-and-http
+    if: ${{ !cancelled() && needs.java-semantics-and-http.outputs.packaged == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
