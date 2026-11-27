@@ -3,8 +3,8 @@
 
 Run after the documented Java, frontend, H2/MySQL HTTP and isolation commands.
 --check-snapshot only validates that the versioned report describes the exact source tree.
-Browser acceptance belongs to the exact pushed commit's independent GitHub Actions run;
-local DOM integration is explicitly recorded separately from a graphical browser.
+The packaged DOM and graphical Chromium runs are recorded independently. CI also runs the
+real isolated Java/Python worker and UI against Docker and publishes the complete receipts.
 """
 from __future__ import annotations
 import argparse
@@ -179,37 +179,53 @@ def main():
     frontend['integration']={'driver':dom_steps['driver'],'status':'PASS','jarSha256':jar_hash,
                             'steps':dom_steps['steps'],'limits':dom_steps['limits'],
                             'runtime':compact(dom)}
-    frontend['graphicalBrowser']={'localStatus':'BLOCKED_BY_ENVIRONMENT',
-        'reason':'Local Chromium cannot create required AF_UNIX sockets; no sandbox bypass was attempted.',
-        'remoteGate':'Real Chromium Playwright integration is required in .github/workflows/baseline.yml on the exact pushed commit.'}
+    graphics = read_bound('frontend/test-results/browser-runtime-report.json', 'frontend', ('scripts/browser_runtime.py',))
+    observations = read('frontend/test-results/browser-report.json')
+    require(graphics.get('status') == observations.get('status') == 'PASS'
+            and graphics.get('jarSha256') == jar_hash and graphics.get('jarUnchanged') is True
+            and graphics.get('driver') == 'browser' and graphics.get('exitCode') == 0,
+            'Graphical browser must use the same unchanged packaged JAR')
+    require(graphics.get('driverReportSha256') == hashlib.sha256(
+            (ROOT/'frontend/test-results/browser-report.json').read_bytes()).hexdigest(),
+            'Browser results do not match the driver receipt')
+    browser_cases = observations.get('results', [])
+    require(browser_cases and all(item.get('status') == 'PASS' for item in browser_cases),
+            'Graphical browser checks are incomplete')
+    frontend['graphicalBrowser'] = {'localStatus': 'PASS', 'results': browser_cases,
+                                    'runtime': compact(graphics)}
     require_unchanged(static['verificationInputs'], ROOT)
     require(hashlib.sha256(jar.read_bytes()).hexdigest()==jar_hash and capture_dist(ROOT)==dist,
             'Verified JAR or frontend dist changed while assembling evidence')
     report={'schemaVersion':'1.2','result':'PASS',
-        'scope':'v0.6 implemented runtime/local verification; graphical browser is an independent remote CI gate; not final course acceptance',
+        'scope':'Integrated classroom verification including the packaged browser journey; isolated code execution is separately verified in CI',
         'recordedAt':dt.datetime.now(dt.timezone.utc).isoformat(),
-        'baselineCommit':'0e9d1bce53e96bdd0e84fe0d5d8a55bf59fd3bec',
-        'environment':{'os':'Linux','maven':'3.9.11','jdk':'17.0.21','compilerRelease':17,
+        'baselineCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+        'environment':{'os':'Linux', 'maven':subprocess.check_output(['mvn','--version'],text=True).splitlines()[0],
+                       'jdk':subprocess.check_output(['javac','-version'],text=True).strip(),'compilerRelease':17,
                        'springBoot':pom.find('m:parent/m:version',ns).text,'mysql':mysql['engine'],
                        'node':subprocess.check_output(['node','--version'],text=True).strip(),
                        'python':subprocess.check_output(['python','--version'],text=True).strip(),
-                       'localMysqlMode':'official isolated server; not Docker'},
+                       'localMysqlMode':mysql.get('mode', 'see schema report')},
         'sourceSnapshot':current,
         'java':compact(java),
         'frontend':frontend,'contractsAndArchitecture':compact(static),'mysqlSchema':compact(mysql),'mysqlIsolation':compact(isolation),'mysqlEditorial':compact(editorial),'mysqlAccountsAndAssets':compact(private_modules),'mysqlV06Modules':compact(v06_modules),'compilerPython':compact(compiler_unit),'verificationGuards':compact(verification_guards),
         'httpAndRestart':{profile:{k:v for k,v in compact(value).items() if k in {'result','profile','engine','startedAt','finishedAt','jarSha256','scope','checks','unexpectedLogErrors','verificationInputs','inputsUnchanged'}}
                           | {'httpRequests':len(value['http']),'shutdown':'graceful process termination and restart against the same database'} for profile,value in smokes.items()},
         'remoteCi':{'status':'VERIFY_EXACT_COMMIT_IN_GITHUB_ACTIONS','workflow':'.github/workflows/baseline.yml',
-                    'note':'This report records local gates. The published commit Actions run independently verifies Java 17, Docker MySQL, the actual isolated javac worker and real Chromium.'},
+                    'note':'This report binds the current verification environment to the recorded source. The exact published commit is also tested in GitHub Actions, including Docker Java/Python execution from Chromium.'},
         'notVerified':['real supplier model teaching quality or billing invoices','unrestricted autonomous planner and full expert/media tool roster',
-                       'untrusted user-code execution sandbox','generative image/audio/video services and production deployment of the isolated compiler service',
+                       'production deployment of the Java/Python execution service','generative image/audio/video services and production deployment of the isolated compiler service',
                        'formal human review of the complete course corpus','production load/SLO/backup restore',
                        'hard-kill recovery of paid external effects with a real provider','final grading or individual student contributions']}
     write_report(ROOT/REPORT, report)
     test_table='\n'.join(f"| `{suite['name'].rsplit('.',1)[-1]}` | {suite['tests']} | 0 / 0 / 0 |" for suite in suites)
-    review=f'''# v0.6 当前运行验收记录
+    review=f'''# 联动课堂运行验收记录
 
 这是当前实现的实测记录，不是最终课程成绩或完整产品验收。生成时间：{report['recordedAt']}。机器证据见 [runtime-check-results.json](runtime-check-results.json)，由 [record_verification.py](../scripts/record_verification.py)读取实际测试输出生成；源码摘要变化必须重新核对相关门禁。
+
+## 课程组交付的来源
+
+同学的 11 月 18 日课程包对应 4a725a4，收录八类材料、可运行 JAR、答辩 PPT、实操视频、16 份原始 Java 样例及 5 道导师问答的历史复核。新课堂将原始代码和订正接入概念阅读与实验。[原始提交](https://github.com/hxjyaohaohaode/java-xuexi/pull/1) · [课程发布包与原始回执](https://github.com/wioo111/java-xuexi/releases/tag/typeforge-course-20261118) · [课堂需求与验收清单](../docs/25-integrated-classroom.md)
 
 ## 实际结果
 
@@ -228,9 +244,9 @@ def main():
 | MySQL 实际 HTTP/重启 | {len(smokes['mysql']['checks'])} 项；{len(smokes['mysql']['http'])} 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
 | 前端类型/构建/单元 | {unit['numTotalTests']} 项单元通过；TypeScript 与 Vite 构建成功 | 编译与组件/状态逻辑；不等于真实浏览器布局验收 |
 | 前端 DOM + 真实 HTTP | {len(dom_steps['steps'])} 条链通过 | 无服务端响应 mock；jsdom 驱动真实后端；不验证浏览器布局/原生下载 |
-| Chromium 浏览器 | 本地被环境阻止；精确提交由 GitHub Actions 运行 | 本地 AF_UNIX 创建受限，不记成通过；远端 Playwright失败会阻断CI |
+| Chromium 浏览器 | {len(browser_cases)} 个检查段通过 | 真实浏览器操作同一份 JAR；CI 另行验证推送的提交 |
 
-Java 各测试类的实际汇总：
+Java 测试类汇总
 
 | 测试类 | 测试数 | 失败 / 错误 / 跳过 |
 |---|---:|---|
@@ -242,7 +258,7 @@ Java 各测试类的实际汇总：
 
 真实作答经 outbox 和幂等 receipt 进入独立题目家族证据与复习；错题块调用同一判分服务。阅读/预测/作品生成只记活动，不给虚假的掌握分。
 
-导师会话绑定本人空间和固定课程；请求固定上下文、租约、epoch 与额度。MODEL协议使用本地真实 HTTP 服务夹具测试响应、超时、异常与引用，EVIDENCE_ONLY真实检索。夹具不是付费供应商教学质量证明。取消、账号禁用、归档、deadline、自然过期、来源撤回及未知计量均有独立边界。
+导师会话绑定本人空间和固定课程；请求固定上下文、租约、epoch 与额度。MODEL协议使用本地真实 HTTP 服务夹具测试响应、超时、异常与引用，EVIDENCE_ONLY真实检索。本地真实权重的逐题核对、错误实例及教学创作验收另见[模型实测](classroom-model-review.md)。取消、账号禁用、归档、deadline、自然过期、来源撤回及未知计量均有独立边界。
 
 回答转文档保存完整来源；作品保存、上下文读取、错题动作、导出与下载复核有界祖先图、实际内容hash和叶子来源。自然到期不依赖提前产生撤回事件。导出固定 renderer 与源 revision，真实字节与终态同事务；HTML/SVG转义、非法XML字符、失效来源和越权均不会变成可用下载。
 
@@ -287,7 +303,7 @@ python scripts/record_verification.py --check-snapshot
 
 ## 仍未完成和未验证
 
-真实供应商模型的教学效果、费用账单、通用任意工具调度、隔离编译服务的生产部署、生成式图像/音频/视频、全课程人工审核、生产负载与备份恢复、正式答辩和个人贡献均不在本轮PASS范围内。真实 Docker 编译检查由远端 CI 独立证明，不等于生产部署。逐模块剩余事项及代码入口见 [接手指南](../docs/02-modules.md)。最终40项课程验收保持独立，不因自动测试通过而自动升级。
+真实供应商模型的教学效果、费用账单、通用任意工具调度、隔离编译服务的生产部署、生成式图像/音频/视频、全课程人工审核、生产负载与备份恢复、正式答辩和个人贡献均不在本轮PASS范围内。Docker 上的 Java/Python 运行和浏览器提交结果由 GitHub Actions 独立记录。逐模块剩余事项及代码入口见 [接手指南](../docs/02-modules.md)。最终40项课程验收保持独立，不因自动测试通过而自动升级。
 
 旧基线报告和重复字段字典已清理；历史保留在Git。V001–V014为合法升级链，由 `database/migrations.lock.json`锁定，不能为清理旧版本而删除。
 '''

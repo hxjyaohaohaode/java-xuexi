@@ -29,6 +29,11 @@ public final class SchemaCatalog {
         if(node.isObject() && node.has("$ref") && !node.path("$ref").asText().startsWith("#/components/schemas/")) throw new IllegalStateException("Only bundled local schema references are allowed");
         if(node.isContainerNode()) node.forEach(this::scanReferences);
     }
+    /** A private copy for structured model decoding, from the same bundled contract used on admission. */
+    public ObjectNode definition(String name) {
+        if(!(components.path("schemas").path(name) instanceof ObjectNode schema)) throw new IllegalArgumentException("Unknown schema name");
+        return schema.deepCopy();
+    }
     public void validate(String name,Object value) {
         if(!components.path("schemas").has(name)) throw new IllegalArgumentException("Unknown schema name");
         JsonNode data=mapper.valueToTree(value);

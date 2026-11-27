@@ -1,0 +1,7 @@
+{
+  "id": "typeforge-dsh-classroom",
+  "version": "1.0.0",
+  "main": "./index.js",
+  "description": "Read the learner's explicitly exported classroom packet",
+  "contributes": { "tools": ["typeforge_lesson", "typeforge_next_step"] }
+}

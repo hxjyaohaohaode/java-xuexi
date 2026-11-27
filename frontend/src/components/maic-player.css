@@ -1,0 +1,74 @@
+@import 'tailwindcss/theme.css' layer(maic-theme);
+@import 'tailwindcss/utilities.css' layer(maic-utilities) source(none);
+@source '../../node_modules/@openmaic/renderer/dist';
+
+.maic-lesson {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+}
+.maic-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.maic-controls label {
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 11rem;
+}
+.maic-controls select {
+  max-width: 100%;
+  width: 100%;
+  text-overflow: ellipsis;
+}
+.maic-counter {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.maic-canvas {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  color-scheme: light;
+}
+.maic-canvas p {
+  line-height: inherit;
+}
+.maic-transcript {
+  min-width: 0;
+}
+.maic-transcript summary {
+  cursor: pointer;
+  color: var(--accent);
+  padding: 0.5rem 0;
+}
+.maic-transcript p,
+.maic-transcript small {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.maic-transcript p,
+.maic-transcript pre {
+  font-size: 1rem;
+  line-height: 1.65;
+}
+.maic-transcript pre {
+  overflow: auto;
+  max-width: 100%;
+}
+.maic-discussion {
+  display: grid;
+  gap: 0.4rem;
+}
+.maic-discussion label {
+  font-weight: 600;
+}
+.maic-discussion button {
+  justify-self: start;
+}

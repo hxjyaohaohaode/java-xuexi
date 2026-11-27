@@ -1,5 +1,6 @@
 package io.typeforge.curriculum;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.typeforge.exercise.TextRubric;
 import io.typeforge.shared.DomainException;
@@ -23,10 +24,10 @@ public final class CurriculumService {
     }
     public record EvidenceView(UUID chunkId, int revision, UUID releaseId, String title, String excerpt,
                                SourceView source, double rankScore, String contentHash, UUID conceptId,
-                               String sourceSection) {}
+                               String sourceSection, @JsonInclude(JsonInclude.Include.NON_NULL) String fullText) {}
     public record ConceptView(UUID id, String code, String title, UUID releaseId,
                               List<UUID> prerequisiteIds, List<EvidenceView> evidence,
-                              List<UUID> relatedExerciseIds) {}
+                              List<UUID> relatedExerciseIds, CourseCompanions.Supplement companion) {}
     public record OptionView(String id, String text) {}
     public record ExerciseView(UUID id, int revision, UUID releaseId, String kind, String prompt,
                                int difficulty, List<UUID> conceptIds, List<OptionView> options,String answerKind,TextRubric.Policy textPolicy) {}
@@ -34,7 +35,12 @@ public final class CurriculumService {
 
     private final JdbcTemplate jdbc;
     private final JsonCodec json;
-    public CurriculumService(JdbcTemplate jdbc, JsonCodec json) { this.jdbc = jdbc; this.json = json; }
+    private final CourseCompanions companions;
+    public CurriculumService(JdbcTemplate jdbc, JsonCodec json, CourseCompanions companions) {
+        this.jdbc = jdbc;
+        this.json = json;
+        this.companions = companions;
+    }
 
     public UUID activeRelease() {
         var values = jdbc.query("SELECT r.id FROM active_release a JOIN content_release r ON r.id=a.release_id WHERE a.singleton_id=1 AND r.status='PUBLISHED'",
@@ -50,19 +56,30 @@ public final class CurriculumService {
     }
 
     public List<ConceptView> concepts(UUID releaseId) {
-        requirePublished(releaseId);
-        var cards = chunks(releaseId, List.of());
-        return jdbc.query("SELECT c.id,c.code,rc.title,rc.prerequisite_ids FROM release_concept rc JOIN concept c ON c.id=rc.concept_id WHERE rc.release_id=? ORDER BY c.code",
+        return readConcepts(releaseId, null);
+    }
+
+    private List<ConceptView> readConcepts(UUID releaseId, UUID selected) {
+        List<UUID> conceptIds = selected == null ? List.of() : List.of(selected);
+        // A single lesson can return its complete, hash-verified text. The catalogue stays compact.
+        Map<UUID, List<EvidenceView>> evidenceByConcept = new LinkedHashMap<>();
+        for (var card : chunks(releaseId, conceptIds)) {
+            evidenceByConcept.computeIfAbsent(card.conceptId(), ignored -> new ArrayList<>()).add(evidence(card, 0, selected != null));
+        }
+        var exercises = relatedExercises(releaseId);
+        String filter = selected == null ? "" : " AND c.id=?";
+        Object[] args = selected == null ? new Object[] {releaseId.toString()} : new Object[] {releaseId.toString(), selected.toString()};
+        return jdbc.query("SELECT c.id,c.code,rc.title,rc.prerequisite_ids FROM release_concept rc JOIN concept c ON c.id=rc.concept_id WHERE rc.release_id=?" + filter + " ORDER BY c.code",
             (rs, n) -> {
                 UUID id = UUID.fromString(rs.getString("id"));
                 return new ConceptView(id, rs.getString("code"), rs.getString("title"), releaseId,
                     uuidList(json.tree(rs.getObject("prerequisite_ids"))),
-                    cards.stream().filter(c -> c.conceptId().equals(id)).map(c -> evidence(c, 0)).toList(), relatedExercises(releaseId, id));
-            }, releaseId.toString());
+                    evidenceByConcept.getOrDefault(id, List.of()), exercises.getOrDefault(id, List.of()), companions.forConcept(id));
+            }, args);
     }
 
     public ConceptView concept(UUID releaseId, UUID conceptId) {
-        return concepts(releaseId).stream().filter(c -> c.id().equals(conceptId)).findFirst().orElseThrow(DomainException::missing);
+        return readConcepts(releaseId, conceptId).stream().findFirst().orElseThrow(DomainException::missing);
     }
 
     public ExercisePage exercises(UUID releaseId, UUID conceptId, String cursor, int limit) {
@@ -140,15 +157,35 @@ public final class CurriculumService {
     }
 
     public static EvidenceView evidence(PublishedChunk card, double score) {
-        var source = card.sources().get(0);
-        String excerpt = card.body().length() <= 3000 ? card.body() : card.body().substring(0, 3000);
-        return new EvidenceView(card.chunkId(), card.revision(), card.releaseId(), card.title(), excerpt,
-            source.source(), score, card.contentHash(), card.conceptId(), source.section());
+        return evidence(card, score, false);
     }
 
-    private List<UUID> relatedExercises(UUID release, UUID concept) {
-        return jdbc.query("SELECT e.id FROM release_exercise re JOIN exercise e ON e.id=re.exercise_id AND e.revision=re.exercise_revision JOIN exercise_concept ec ON ec.exercise_id=e.id AND ec.exercise_revision=e.revision WHERE re.release_id=? AND ec.concept_id=? AND e.status='REVIEWED' ORDER BY e.id LIMIT 20",
-            (rs, n) -> UUID.fromString(rs.getString(1)), release.toString(), concept.toString());
+    private static EvidenceView evidence(PublishedChunk card, double score, boolean includeFullText) {
+        var source = card.sources().get(0);
+        String body = card.body();
+        int end = Math.min(body.length(), 3000);
+        if (end < body.length() && Character.isHighSurrogate(body.charAt(end - 1))) end--;
+        String excerpt = body.substring(0, end);
+        return new EvidenceView(card.chunkId(), card.revision(), card.releaseId(), card.title(), excerpt,
+            source.source(), score, card.contentHash(), card.conceptId(), source.section(), includeFullText && end < body.length() ? body : null);
+    }
+
+    private Map<UUID, List<UUID>> relatedExercises(UUID release) {
+        Map<UUID, List<UUID>> result = new LinkedHashMap<>();
+        jdbc.query("""
+            SELECT concept_id, id FROM (
+                SELECT ec.concept_id, e.id,
+                       ROW_NUMBER() OVER (PARTITION BY ec.concept_id ORDER BY e.id) AS position_in_concept
+                FROM release_exercise re
+                JOIN exercise e ON e.id = re.exercise_id AND e.revision = re.exercise_revision
+                JOIN exercise_concept ec ON ec.exercise_id = e.id AND ec.exercise_revision = e.revision
+                WHERE re.release_id = ? AND e.status = 'REVIEWED'
+            ) ranked WHERE position_in_concept <= 20 ORDER BY concept_id, id
+            """, rs -> {
+                UUID concept = UUID.fromString(rs.getString("concept_id"));
+                result.computeIfAbsent(concept, ignored -> new ArrayList<>()).add(UUID.fromString(rs.getString("id")));
+            }, release.toString());
+        return result;
     }
 
     private static List<UUID> uuidList(JsonNode value) {

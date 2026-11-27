@@ -49,6 +49,7 @@ class InteractiveLearningTest {
     @Autowired NotebookActions actions;
     @Autowired LabService labs;
     @Autowired ReadingService readings;
+    @Autowired io.typeforge.learning.PersonalLearningPath learningPath;
     @Autowired ArtifactService artifacts;
     @Autowired ArtifactExportService exports;
     @Autowired TextArtifactRenderer renderer;
@@ -90,6 +91,32 @@ class InteractiveLearningTest {
         var record=readings.record(owner,input,idem);schemas.validate("LearningEventReceipt",tree(record));assertEquals(record.id(),readings.record(owner,input,idem).id());
         while(outbox.dispatchBatch(100)>0) { /* drain committed events */ }
         assertTrue(learning.progress(owner).items().isEmpty());assertEquals("ACTIVITY_NOT_MASTERY",record.evidenceClass());
+    }
+    @Test void personalizedRouteChangesFromReadingToPracticeToRepairAndStaysInOneWorkspace() throws Exception {
+        var account=account();UUID owner=account.userId();var room=workspace(owner);
+        var before=learningPath.get(owner,room.id());
+        schemas.validate("PersonalLearningPath",before);
+        assertEquals("READ",before.steps().get(0).action());
+        var topic=curriculum.concepts(RELEASE).stream().filter(item->!item.relatedExerciseIds().isEmpty()).findFirst().orElseThrow();
+        readings.record(owner,tree(Map.of("workspaceId",room.id(),"releaseId",RELEASE,"conceptId",topic.id(),"eventType","READ_COMPLETED")),key());
+        var practice=learningPath.get(owner,room.id()).steps().get(0);
+        assertEquals(topic.id(),practice.conceptId());assertEquals("PRACTICE",practice.action());
+        assertTrue(topic.relatedExerciseIds().contains(practice.exerciseId()));assertEquals(0,practice.independentCorrectFamilies());
+        var exercise=curriculum.exercises(RELEASE,topic.id(),null,100).items().stream().filter(item->item.kind().equals("SINGLE")).findFirst().orElseThrow();
+        JsonNode spec=json.tree(jdbc.queryForObject("SELECT answer_spec FROM exercise WHERE id=? AND revision=?",String.class,exercise.id().toString(),exercise.revision()));
+        String wrong=exercise.options().stream().map(CurriculumService.OptionView::id).filter(id->!spec.path("optionIds").get(0).asText().equals(id)).findFirst().orElseThrow();
+        var attempt=learning.submit(owner,room.id(),RELEASE,exercise.id(),exercise.revision(),tree(Map.of("kind","CHOICE","optionIds",List.of(wrong))),key());
+        var repair=learningPath.get(owner,room.id()).steps().get(0);
+        assertEquals("REPAIR",repair.action());assertEquals(attempt.id(),repair.attemptId());assertEquals(1,repair.gradedAttempts());
+        while(outbox.dispatchBatch(100)>0) { /* project authoritative family/review evidence */ }
+        assertEquals("REPAIR",learningPath.get(owner,room.id()).steps().get(0).action());
+        for(var review:learning.reviews(owner)) if(review.originAttemptId().equals(attempt.id())) learning.dismissReview(owner,review.id());
+        assertTrue(learningPath.get(owner,room.id()).steps().stream().noneMatch(step->attempt.id().equals(step.attemptId())));
+        var second=workspace(owner);assertTrue(learningPath.get(owner,second.id()).steps().stream().allMatch(step->step.gradedAttempts()==0 && !step.readCompleted()));
+        assertThrows(DomainException.class,()->learningPath.get(account().userId(),room.id()));
+        var endpoint=mvc.perform(get("/api/v1/workspaces/"+room.id()+"/learning-path").session(HttpSessionFixture.login(mvc,json,account.username(),"fixture-password-strong-123"))).andReturn().getResponse();
+        assertEquals(200,endpoint.getStatus());
+        schemas.validate("PersonalLearningPath",json.tree(endpoint.getContentAsString(java.nio.charset.StandardCharsets.UTF_8)));
     }
     @Test void notebookBlockSubmissionGradesRealExerciseAndRepeatedFamilyDoesNotFarmMastery() {
         UUID owner=account().userId();var workspace=workspace(owner);var exercise=curriculum.exercises(RELEASE,null,null,100).items().get(0);

@@ -136,7 +136,7 @@ export function MemoryPage() {
     </>
   );
 }
-function GoalsPanel() {
+export function GoalsPanel() {
   const { workspace, session, tick, refresh } = useWorkspace();
   const goals = useResource<Goal[]>(`/workspaces/${workspace.id}/goals`, tick);
   const [text, setText] = useSessionDraft(`tf.goal-input.${session.userId}.${workspace.id}`, '');

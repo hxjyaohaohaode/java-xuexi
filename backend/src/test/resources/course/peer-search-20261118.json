@@ -1,0 +1,67 @@
+[
+  {
+    "id": "K01",
+    "query": "泛型 类型安全 List<String> 添加 Integer",
+    "expectedPrimaryConcept": "G01"
+  },
+  {
+    "id": "K02",
+    "query": "泛型类 Generic class Box<T>",
+    "expectedPrimaryConcept": "G02"
+  },
+  {
+    "id": "K03",
+    "query": "泛型接口 Generic interface Source<T>",
+    "expectedPrimaryConcept": "G03"
+  },
+  {
+    "id": "K04",
+    "query": "泛型方法 Generic method identity",
+    "expectedPrimaryConcept": "G04"
+  },
+  {
+    "id": "K05",
+    "query": "类型推断 type inference 菱形语法",
+    "expectedPrimaryConcept": "G05"
+  },
+  {
+    "id": "K06",
+    "query": "泛型不变性 invariance 容器赋值",
+    "expectedPrimaryConcept": "G06"
+  },
+  {
+    "id": "K07",
+    "query": "多重边界 intersection bounds 最左界",
+    "expectedPrimaryConcept": "G08"
+  },
+  {
+    "id": "K08",
+    "query": "无界通配符 unknown wildcard List<?>",
+    "expectedPrimaryConcept": "G09"
+  },
+  {
+    "id": "K09",
+    "query": "PECS Producer Extends Consumer Super",
+    "expectedPrimaryConcept": "G12"
+  },
+  {
+    "id": "K10",
+    "query": "通配符捕获 wildcard capture helper",
+    "expectedPrimaryConcept": "G13"
+  },
+  {
+    "id": "K11",
+    "query": "类型擦除 erasure 桥接方法",
+    "expectedPrimaryConcept": "G14"
+  },
+  {
+    "id": "K12",
+    "query": "原始类型 raw 堆污染 unchecked",
+    "expectedPrimaryConcept": "G16"
+  },
+  {
+    "id": "K13",
+    "query": "qzxvmlp9547",
+    "expectedPrimaryConcept": ""
+  }
+]

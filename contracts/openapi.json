@@ -3,7 +3,7 @@
   "info": {
     "title": "TypeForge connected learning studio API",
     "version": "0.6.0",
-    "description": "真实会话、课程与编辑审核发布、学习追踪、代码编译队列、学习任务图、可编辑作品、私有素材和DOCX/PPTX/PDF导出。执行能力由/api/v1/capabilities与显式配置共同决定：MODEL规划需要实际模型服务，编译需要独立worker；任意代码运行及生成图像/音频/视频未启用。所有私人资源以会话归属、固定版本、输入来源、预算与租约校验；JSON请求最多262144字节/64层，素材最大8MiB。 v0.6新增私有检索评测、有限TXT/MD/DOCX批量预览与原子采集、修订差异、独立审核的精确短文本判分，以及六类持久错题交互。评测不计入学习成绩；上传解析1MiB/文件、4MiB/批，2个并发准入，24小时预览。"
+    "description": "真实会话、课程与编辑审核发布、学习追踪、代码编译队列、学习任务图、可编辑作品、私有素材和DOCX/PPTX/PDF导出。执行能力由/api/v1/capabilities与显式配置共同决定：MODEL规划需要实际模型服务，编译需要独立worker；Java/Python 运行需另行启用隔离执行；生成图像/音频/视频未启用。所有私人资源以会话归属、固定版本、输入来源、预算与租约校验；JSON请求最多262144字节/64层，素材最大8MiB。 v0.6新增私有检索评测、有限TXT/MD/DOCX批量预览与原子采集、修订差异、独立审核的精确短文本判分，以及六类持久错题交互。评测不计入学习成绩；上传解析1MiB/文件、4MiB/批，2个并发准入，24小时预览。"
   },
   "servers": [
     {
@@ -1589,7 +1589,7 @@
           "M04"
         ],
         "x-status": "implemented",
-        "description": "持久隔离编译与固定版本学习联动；私有资源由会话鉴权。",
+        "description": "保存并隔离执行 Java 严格编译或显式启用的 Java/Python 自由运行；工作空间、身份和发布版本在服务端校验。",
         "responses": {
           "400": {
             "description": "受控错误，详见 docs/04-api.md",
@@ -1734,7 +1734,7 @@
           "M04"
         ],
         "x-status": "implemented",
-        "description": "持久隔离编译与固定版本学习联动；私有资源由会话鉴权。",
+        "description": "读取本人持久化代码任务、当前状态、工具链、公开诊断及程序输出。",
         "responses": {
           "400": {
             "description": "受控错误，详见 docs/04-api.md",
@@ -1858,7 +1858,7 @@
           "M04"
         ],
         "x-status": "implemented",
-        "description": "持久隔离编译与固定版本学习联动；私有资源由会话鉴权。",
+        "description": "取消本人队列中或运行中的代码任务；迟到结果不覆盖已取消状态。",
         "responses": {
           "400": {
             "description": "受控错误，详见 docs/04-api.md",
@@ -11162,7 +11162,7 @@
           "M04"
         ],
         "x-status": "implemented",
-        "description": "持久隔离编译与固定版本学习联动；私有资源由会话鉴权。",
+        "description": "读取本人当前工作空间的近期编译与运行记录；关闭运行服务不影响历史记录。",
         "responses": {
           "400": {
             "description": "受控错误，详见 docs/04-api.md",
@@ -15991,6 +15991,130 @@
           }
         }
       }
+    },
+    "/workspaces/{id}/learning-path": {
+      "get": {
+        "operationId": "getWorkspaceLearningPath",
+        "summary": "读取课程的个性化学习路径",
+        "tags": [
+          "M06"
+        ],
+        "x-status": "implemented",
+        "description": "结合固定发布、当前学习空间内阅读和作答、错题及目标，生成可解释的下一步。只读，不写入掌握度。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已执行的真实结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalLearningPath"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "受控失败，保留用户输入；429返回Retry-After。",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -16351,6 +16475,11 @@
             "minLength": 0,
             "maxLength": 3000
           },
+          "fullText": {
+            "type": "string",
+            "maxLength": 16000,
+            "description": "Complete verified published text when the selected concept detail exceeds the excerpt limit. Its original contentHash covers the whole text."
+          },
           "source": {
             "$ref": "#/components/schemas/Source"
           },
@@ -16428,6 +16557,16 @@
               "format": "uuid"
             },
             "maxItems": 20
+          },
+          "companion": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CourseCompanion"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -16752,7 +16891,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 32768,
-            "description": "最多32768 UTF-8字节，禁止空白/NUL；文件名为Main.java。"
+            "description": "有效 UTF-8 源码，不超过 32768 字节。"
           },
           "mode": {
             "type": "string",
@@ -16764,6 +16903,18 @@
           "workspaceId": {
             "type": "string",
             "format": "uuid"
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "JAVA",
+              "PYTHON"
+            ],
+            "default": "JAVA"
+          },
+          "stdin": {
+            "type": "string",
+            "maxLength": 8192
           }
         },
         "required": [
@@ -16772,7 +16923,7 @@
           "mode",
           "workspaceId"
         ],
-        "description": "COMPILE_AND_RUN保留契约枚举但当前503，只有COMPILE_ONLY可配置启用。"
+        "description": "COMPILE_ONLY 面向 Java；COMPILE_AND_RUN 需要已授权并配置的独立运行 worker。stdin 最多 8192 UTF-8 字节。"
       },
       "Diagnostic": {
         "type": "object",
@@ -16894,6 +17045,26 @@
               "null"
             ],
             "format": "date-time"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "COMPILE_ONLY",
+              "COMPILE_AND_RUN"
+            ]
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "JAVA",
+              "PYTHON"
+            ]
+          },
+          "runtimeVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -16909,7 +17080,10 @@
           "attemptId",
           "errorCode",
           "createdAt",
-          "finishedAt"
+          "finishedAt",
+          "mode",
+          "language",
+          "runtimeVersion"
         ]
       },
       "LabInput": {
@@ -23750,6 +23924,57 @@
             "items": {
               "type": "string"
             }
+          },
+          "handoffs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fromRole": {
+                  "type": "string"
+                },
+                "toRole": {
+                  "type": "string"
+                },
+                "fromStep": {
+                  "type": "string"
+                },
+                "toStep": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "QUESTION",
+                    "PROPOSAL",
+                    "VERDICT"
+                  ]
+                },
+                "references": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "planRevision": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "runEpoch": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "fromRole",
+                "toRole",
+                "fromStep",
+                "toStep",
+                "kind",
+                "references",
+                "planRevision",
+                "runEpoch"
+              ],
+              "additionalProperties": false
+            }
           }
         },
         "required": [
@@ -23759,7 +23984,8 @@
           "teachingPlan",
           "tutorRequestIds",
           "artifactIds",
-          "limitations"
+          "limitations",
+          "handoffs"
         ]
       },
       "RunOutputReference": {
@@ -26207,6 +26433,226 @@
           "targetType",
           "parameters",
           "operations"
+        ]
+      },
+      "PersonalLearningPath": {
+        "type": "object",
+        "properties": {
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "releaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "conceptId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "action": {
+                  "enum": [
+                    "READ",
+                    "PRACTICE",
+                    "REPAIR",
+                    "REVISIT"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "attemptId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "exerciseId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "readCompleted": {
+                  "type": "boolean"
+                },
+                "gradedAttempts": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "independentCorrectFamilies": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "conceptId",
+                "code",
+                "title",
+                "action",
+                "reason",
+                "attemptId",
+                "exerciseId",
+                "readCompleted",
+                "gradedAttempts",
+                "independentCorrectFamilies"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "strategyVersion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspaceId",
+          "releaseId",
+          "steps",
+          "strategyVersion"
+        ],
+        "additionalProperties": false
+      },
+      "CourseExample": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "conceptIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "maxItems": 16
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 32768
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "section": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "sourceUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "compiles": {
+            "type": "boolean"
+          },
+          "stdout": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "warning": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "conceptIds",
+          "code",
+          "sha256",
+          "section",
+          "sourceUrl",
+          "compiles",
+          "stdout",
+          "warning"
+        ]
+      },
+      "CoursePeerReview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "conceptId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "question": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "criterion": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "correction": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "conceptId",
+          "question",
+          "criterion",
+          "correction"
+        ]
+      },
+      "CourseCompanion": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "examples": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourseExample"
+            },
+            "maxItems": 16
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoursePeerReview"
+            },
+            "maxItems": 5
+          }
+        },
+        "required": [
+          "version",
+          "examples",
+          "reviews"
         ]
       }
     }

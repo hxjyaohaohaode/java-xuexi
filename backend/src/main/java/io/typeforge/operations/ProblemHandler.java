@@ -21,6 +21,9 @@ import org.springframework.web.multipart.MultipartException;
 @RestControllerAdvice
 public class ProblemHandler {
     private static final org.slf4j.Logger LOG=org.slf4j.LoggerFactory.getLogger(ProblemHandler.class);
+    // Spring has already marked the response unusable (for example after a student changes scenes).
+    @ExceptionHandler(org.springframework.web.context.request.async.AsyncRequestNotUsableException.class)
+    void responseClosed() { LOG.debug("Response closed before serialization completed"); }
     @ExceptionHandler(DomainException.class) ResponseEntity<ProblemDetail> domain(DomainException e) { return problem(e.status(),e.code(),e.getMessage()); }
     @ExceptionHandler({ServletRequestBindingException.class,MethodArgumentNotValidException.class,HttpMessageNotReadableException.class,MethodArgumentTypeMismatchException.class,IllegalArgumentException.class})
     ResponseEntity<ProblemDetail> input(Exception e) { return problem(400,"INVALID_INPUT","Request does not match the supported schema"); }

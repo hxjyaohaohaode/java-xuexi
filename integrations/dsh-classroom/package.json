@@ -1,0 +1,19 @@
+{
+  "name": "typeforge-dsh-classroom",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Read explicitly exported TypeForge lesson evidence and learning recommendations in DeepSeek Harness",
+  "exports": {
+    ".": "./index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "main": "./index.js",
+  "files": ["index.js", "classroom.js", "cordis.patch.yml", "dsh.plugin.json"],
+  "engines": { "node": ">=22" },
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } },
+  "peerDependencies": { "@deepseek-ai/dsh-tools": "0.2.2-rc.5 || 0.2.3-alpha.2" },
+  "scripts": { "test": "node --test classroom.test.js" },
+  "devDependencies": { "@deepseek-ai/dsh-tools": "0.2.3-alpha.2" }
+}

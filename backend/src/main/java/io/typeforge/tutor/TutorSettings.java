@@ -18,7 +18,13 @@ public final class TutorSettings {
     private final int dailyRequestLimit;
     private final int maxPending;
     private final boolean workerEnabled;
+    private final boolean workflowStructuredOutputs;
 
+    public TutorSettings(String endpoint,String apiKey,String model,int timeoutMillis,int maxOutputTokens,long dailyTokenLimit,
+                         int dailyRequestLimit,int maxPending,boolean workerEnabled) {
+        this(endpoint,apiKey,model,timeoutMillis,maxOutputTokens,dailyTokenLimit,dailyRequestLimit,maxPending,workerEnabled,true);
+    }
+    @org.springframework.beans.factory.annotation.Autowired
     public TutorSettings(@Value("${typeforge.tutor.provider-url:}") String endpoint,
                          @Value("${typeforge.tutor.api-key:}") String apiKey,
                          @Value("${typeforge.tutor.model:}") String model,
@@ -27,7 +33,9 @@ public final class TutorSettings {
                          @Value("${typeforge.tutor.daily-token-limit:1000000}") long dailyTokenLimit,
                          @Value("${typeforge.tutor.daily-request-limit:100}") int dailyRequestLimit,
                          @Value("${typeforge.tutor.max-pending:4}") int maxPending,
-                         @Value("${typeforge.tutor.worker-enabled:true}") boolean workerEnabled) {
+                         @Value("${typeforge.tutor.worker-enabled:true}") boolean workerEnabled,
+                         @Value("${typeforge.tutor.workflow-structured-outputs:true}") boolean workflowStructuredOutputs) {
+        this.workflowStructuredOutputs=workflowStructuredOutputs;
         this.endpoint=parseEndpoint(endpoint);
         this.apiKey=apiKey==null?"":apiKey;
         this.model=model==null?"":model;
@@ -37,7 +45,7 @@ public final class TutorSettings {
             throw new IllegalArgumentException("Tutor provider requires HTTPS or loopback HTTP and a /chat/completions path");
         }
         if(this.apiKey.length()>4096 || this.apiKey.chars().anyMatch(c->c<32 || c==127) || this.model.length()>128 || this.model.chars().anyMatch(c->c<32 || c==127)
-            || timeoutMillis<100 || timeoutMillis>60000 || maxOutputTokens<64 || maxOutputTokens>8192
+            || timeoutMillis<100 || timeoutMillis>300000 || maxOutputTokens<64 || maxOutputTokens>8192
             || dailyTokenLimit<1 || dailyTokenLimit>1_000_000_000L || dailyRequestLimit<1 || dailyRequestLimit>10000 || maxPending<1 || maxPending>16) {
             throw new IllegalArgumentException("Invalid bounded tutor configuration");
         }
@@ -54,6 +62,7 @@ public final class TutorSettings {
     public int dailyRequestLimit() { return dailyRequestLimit; }
     public int maxPending() { return maxPending; }
     public boolean workerEnabled() { return workerEnabled; }
+    public boolean workflowStructuredOutputs() { return workflowStructuredOutputs; }
     public boolean configured() { return endpoint!=null && !apiKey.isBlank() && !model.isBlank(); }
     private static URI parseEndpoint(String value) {
         if(value==null || value.isBlank()) return null;

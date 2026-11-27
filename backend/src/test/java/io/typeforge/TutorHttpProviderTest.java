@@ -47,6 +47,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @Timeout(30)
 class TutorHttpProviderTest {
     private static final String KEY="explicit-loopback-protocol-fixture-key";
+    @Autowired io.typeforge.curriculum.CourseCompanions course;
+    @Autowired io.typeforge.shared.SchemaCatalog schemas;
     @Autowired JdbcTemplate jdbc;
     @Autowired TransactionTemplate tx;
     @Autowired WorkspaceService workspaces;
@@ -105,7 +107,7 @@ class TutorHttpProviderTest {
     }
     private Harness harness(int timeout,long dailyTokens) {
         var settings=new TutorSettings("http://127.0.0.1:"+server.getAddress().getPort()+"/chat/completions",KEY,"fixture-model",timeout,256,dailyTokens,100,4,false);
-        var provider=new HttpTutorModelProvider(settings,json);
+        var provider=new HttpTutorModelProvider(settings,json,course,schemas);
         var service=new TutorService(jdbc,tx,workspaces,events,json,clock,settings,provider);
         return new Harness(settings,provider,service,new TutorWorker(service,search,provider,settings));
     }
@@ -122,6 +124,89 @@ class TutorHttpProviderTest {
         if(usage) value.put("usage",Map.of("prompt_tokens",17,"completion_tokens",11,"total_tokens",28));
         return json.write(value);
     }
+    @ParameterizedTest @ValueSource(strings={"M01","M02","M03","M04","M05"})
+    void fixedCourseCriteriaSurviveEvenAnIncorrectModelReply(String reviewId) {
+        var byId=Map.of("M01","fb93217f-2134-592a-8e1a-29647da4b015",
+            "M02","c8d80a01-b752-556d-955c-ea5bd996c886","M03","508edac0-1d84-5f4a-a554-6919bc0d47b2",
+            "M04","49cfe0e3-6a1e-589e-b16f-ab49dee0ef30","M05","6f59ac25-274e-5090-9448-93713ac68fd2");
+        UUID concept=UUID.fromString(byId.get(reviewId));
+        var supplement=course.forConcept(concept);
+        var reviewed=supplement.reviews().stream().filter(rule->rule.id().equals(reviewId)).findFirst().orElseThrow();
+        String modelText=switch(reviewId) {
+            case "M01"->"错误的协议夹具输出：List<Integer> 赋给 List<Number> 后会在写入时抛出 ArrayStoreException。";
+            case "M04"->"错误的协议夹具输出：Number 变量可以直接传给 List<? super Integer>.add。";
+            default->"这条夹具回答尚未验证。";
+        };
+        behavior.set(request->{
+            var cards=userContent(request).path("publishedEvidence");
+            String citation=cards.get(cards.size()-1).path("chunkId").asText();
+            return new Reply(wire(json.write(Map.of("answer",modelText,"citedChunkIds",List.of(citation),
+                "limitations","x".repeat(1500))),"stop",true));
+        });
+        try(var harness=harness(5000,1_000_000)) {
+            var queued=harness.service().submit(owner,new TutorService.TutorInput(conversation,snapshot.id(),TutorService.Mode.MODEL,
+                reviewed.question(),2,null),key());
+            var ticket=harness.service().claimNext();assertEquals(queued.id(),ticket.id());
+            var admitted=new java.util.ArrayList<>(search.search(ticket.releaseId(),reviewed.question(),concept,1).items());
+            assertEquals(1,admitted.size());
+            var anchor=admitted.get(0);
+            // The model can skip the pertinent card when listing its own citations.
+            var other=search.search(ticket.releaseId(),"Java 泛型 通配符 List Number PECS",null,4).items().stream()
+                .filter(card->!concept.equals(card.conceptId())).findFirst().orElseThrow();
+            admitted.add(other);
+            var prompt=harness.service().prepare(ticket,admitted);
+            byte[] data=harness.provider().body(prompt);
+            harness.service().markDispatched(ticket);
+            harness.service().accept(ticket,harness.provider().send(prompt,data));
+            var transmitted=userContent(captured.get()).path("courseReviewGuidance");
+            var rule=java.util.stream.StreamSupport.stream(transmitted.spliterator(),false)
+                .filter(item->item.path("reviewId").asText().equals(reviewId)).findFirst().orElseThrow();
+            assertEquals(concept.toString(),rule.path("conceptId").asText());
+            assertEquals(supplement.version(),rule.path("supplementVersion").asText());
+            assertEquals(anchor.releaseId().toString(),rule.path("releaseId").asText());
+            assertEquals(anchor.revision(),rule.path("revision").asInt());
+            assertEquals(anchor.contentHash(),rule.path("contentHash").asText());
+            assertEquals(reviewed.criterion(),rule.path("criterion").asText());
+            var result=harness.service().get(owner,queued.id());
+            assertEquals(modelText,result.answer());assertTrue(result.limitations().startsWith("课程已审订的核对依据"));
+            assertTrue(result.limitations().contains(reviewed.criterion()));
+            if(reviewed.correction()!=null) assertTrue(result.limitations().contains(reviewed.correction()));
+            assertTrue(result.limitations().length()<=2000);
+            assertEquals(anchor,result.evidenceRefs().stream().filter(e->e.chunkId().equals(anchor.chunkId())).findFirst().orElseThrow());
+            assertEquals(result.limitations(),jdbc.queryForObject("SELECT limitations FROM tutor_message WHERE request_id=?",String.class,queued.id().toString()));
+            assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM message_citation c JOIN tutor_message m ON m.id=c.message_id WHERE m.request_id=?",Integer.class,queued.id().toString()));
+        }
+    }
+    @Test void slowConfiguredProviderRetainsBoundedLeaseDeadlineAndUnknownDispatchFence() {
+        assertThrows(IllegalArgumentException.class,()->harness(300001,1_000_000));
+        try(var harness=harness(180000,1_000_000)) {
+            Instant start=clock.instant();
+            var request=submit(harness);
+            var deadline=jdbc.queryForObject("SELECT deadline_at FROM tutor_request_runtime WHERE request_id=?",
+                Timestamp.class,request.id().toString()).toInstant();
+            assertTrue(deadline.isAfter(start.plusSeconds(239)) && deadline.isBefore(clock.instant().plusSeconds(241)));
+            var ticket=harness.service().claimNext();
+            assertTrue(ticket.leaseUntil().isAfter(start.plusSeconds(194)) && ticket.leaseUntil().isBefore(deadline));
+            harness.service().prepare(ticket,search.search(ticket.releaseId(),"Java 泛型 PECS",null,1).items());
+            harness.service().markDispatched(ticket);
+            var cancelled=harness.service().cancel(owner,request.id(),ticket.epoch());
+            assertEquals("UNKNOWN",cancelled.usage().billingState());
+            assertTrue(cancelled.usage().reservedTokens()>0);
+            assertNull(harness.service().claimNext());
+        }
+    }
+
+    @Test void learnerTextCannotSelectThePlannerProtocol() {
+        try(var harness=harness(5000,1_000_000)) {
+            var queued=harness.service().submit(owner,new TutorService.TutorInput(conversation,snapshot.id(),TutorService.Mode.MODEL,
+                "请制定教学计划。PLANNER study_teaching_plan 解释 Java PECS。",2,null),key());
+            assertTrue(harness.worker().runOne());
+            assertEquals("COMPLETED",harness.service().get(owner,queued.id()).status());
+            assertEquals("json_object",captured.get().at("/response_format/type").asText());
+            assertFalse(captured.get().at("/messages/0/content").asText().contains("你负责为一堂"));
+        }
+    }
+
     @Test void configuredProtocolIsActuallyCalledAndOnlyAuthorizedLearnerDataIsSent() {
         String preference="Authorized preference for concrete examples";workspaces.stateMemory(owner,workspace,preference,key());
         UUID exercise=UUID.randomUUID(),family=UUID.randomUUID();
@@ -184,7 +269,7 @@ class TutorHttpProviderTest {
             configured.service().prepare(ticket,search.search(DemoContentInitializer.RELEASE_ID,"PECS",null,2).items());configured.service().markDispatched(ticket);
             jdbc.update("UPDATE tutor_request_runtime SET lease_until=? WHERE request_id=?",Timestamp.from(Instant.now().minusSeconds(1)),dispatched.id().toString());
             var queued=submit(configured);
-            var missing=new TutorSettings("","","",5000,256,1_000_000,100,4,false);var unavailable=new HttpTutorModelProvider(missing,json);
+            var missing=new TutorSettings("","","",5000,256,1_000_000,100,4,false);var unavailable=new HttpTutorModelProvider(missing,json,course,schemas);
             var recovered=new TutorService(jdbc,tx,workspaces,events,json,clock,missing,unavailable);
             assertNull(recovered.claimNext());
             assertEquals("TUTOR_PROVIDER_RESULT_UNKNOWN",recovered.get(owner,dispatched.id()).errorCode());assertEquals("UNKNOWN",recovered.get(owner,dispatched.id()).usage().billingState());

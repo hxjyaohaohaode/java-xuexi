@@ -15,7 +15,7 @@ import { useWorkspace } from '../context';
 import { useMutation, usePolling, useResource, useSessionDraft, useUnsavedChanges } from '../hooks';
 import { readSaved, removeSaved, writeSaved } from '../state';
 import { Badge, Empty, ErrorNotice, Field, Loading, SectionTitle, Status } from '../components/ui';
-import type { Artifact, Attempt, Context, Goal, Run, RunEvent } from '../types';
+import type { Artifact, Attempt, Concept, Context, Goal, Run, RunEvent } from '../types';
 
 const ended = ['COMPLETED', 'PARTIAL', 'FAILED', 'CANCELLED'];
 const outputs = [
@@ -41,6 +41,16 @@ type Details = {
     strategy: string;
     sections: { role: string; title: string; focus: string }[];
   };
+  handoffs?: {
+    fromRole: string;
+    toRole: string;
+    fromStep: string;
+    toStep: string;
+    kind: 'PROPOSAL' | 'QUESTION' | 'VERDICT';
+    references: number;
+    planRevision: number;
+    runEpoch: number;
+  }[];
   tutorRequestIds: string[];
   artifactIds: string[];
   limitations: string[];
@@ -56,20 +66,30 @@ type Draft = {
   attemptIds?: string[];
 };
 
-export function Agents() {
-  const { workspace, session, can, tick, refresh, navigate, selection } = useWorkspace();
-  const [draft, setDraft] = useSessionDraft<Draft>(
-    `tf.study-draft.${session.userId}.${workspace.id}`,
-    {
-      goalId: '',
-      text: '',
-      acceptance: '能够解释适用规则，并用正反代码例子检验自己的判断',
-      outputs: ['DOCUMENT', 'SLIDES'],
-      mode: 'EVIDENCE_ONLY',
-      tokens: 100000,
-      minutes: 10,
-    },
-  );
+export function Agents({
+  lesson,
+  associatedAttempt,
+}: { lesson?: Concept; associatedAttempt?: string } = {}) {
+  const {
+    workspace,
+    session,
+    can,
+    tick,
+    refresh,
+    navigate,
+    selection: routeSelection,
+  } = useWorkspace();
+  const selection = lesson ? associatedAttempt || '' : routeSelection;
+  const scope = [session.userId, workspace.id, ...(lesson ? [lesson.id] : [])].join('.');
+  const [draft, setDraft] = useSessionDraft<Draft>(`tf.study-draft.${scope}`, {
+    goalId: '',
+    text: lesson ? `结合${lesson.title}，用一个正例与一个反例解释它的适用边界。` : '',
+    acceptance: '能够解释适用规则，并用正反代码例子检验自己的判断',
+    outputs: ['DOCUMENT', 'SLIDES'],
+    mode: 'EVIDENCE_ONLY',
+    tokens: 100000,
+    minutes: 10,
+  });
   const attemptIds = draft.attemptIds || [];
   const attempts = useResource<Attempt[]>(
     draft.outputs.includes('NOTEBOOK') ? `/workspaces/${workspace.id}/attempts` : null,
@@ -107,9 +127,7 @@ export function Agents() {
         .map((item) => [item.id, item]),
     ).values(),
   ];
-  const [selected, select] = useState(() =>
-    readSaved<string>(`tf.study-selection.${session.userId}.${workspace.id}`, ''),
-  );
+  const [selected, select] = useState(() => readSaved<string>(`tf.study-selection.${scope}`, ''));
   const [poll, setPoll] = useState(0);
   const goals = useResource<Goal[]>(`/workspaces/${workspace.id}/goals`, tick);
   const runs = useResource<Run[]>(
@@ -133,10 +151,10 @@ export function Agents() {
   const mutation = useMutation();
   useUnsavedChanges(!!draft.text.trim());
   useEffect(() => {
-    if (selected) writeSaved(`tf.study-selection.${session.userId}.${workspace.id}`, selected);
+    if (selected) writeSaved(`tf.study-selection.${scope}`, selected);
   }, [selected, session.userId, workspace.id]);
   useEffect(() => {
-    if (!selected && runs.data?.[0]) select(runs.data[0].id);
+    if (!lesson && !selected && runs.data?.[0]) select(runs.data[0].id);
   }, [runs.data, selected]);
   usePolling(
     !!runs.data?.some((item) => !ended.includes(item.status)),
@@ -168,7 +186,7 @@ export function Agents() {
             acceptance.some((line) => line.length > 500))
         )
           throw new Error('验收标准需要 1 至 20 项，每项最多 500 字符。');
-        const storageKey = `tf.study-preparing.${session.userId}.${workspace.id}`;
+        const storageKey = `tf.study-preparing.${scope}`;
         const fingerprint = JSON.stringify(submitted);
         let prepared = readSaved<{ fingerprint: string; goalId?: string; snapshotId?: string }>(
           storageKey,
@@ -550,6 +568,32 @@ export function Agents() {
                     ))}
                   </div>
                 </div>
+              )}
+              {!!detail.data?.handoffs?.length && (
+                <section className="panel" aria-label="专家交接记录">
+                  <h2>专家交接</h2>
+                  <ol className="classroom-handoffs">
+                    {detail.data.handoffs.map((handoff, index) => (
+                      <li key={index}>
+                        <strong>
+                          {roleNames[handoff.fromRole] || handoff.fromRole} →{' '}
+                          {roleNames[handoff.toRole] || handoff.toRole}
+                        </strong>
+                        <span>
+                          {
+                            { PROPOSAL: '提交方案', QUESTION: '发起询问', VERDICT: '提交审阅结果' }[
+                              handoff.kind
+                            ]
+                          }{' '}
+                          · {handoff.references} 条引用
+                        </span>
+                        <small>
+                          计划 {handoff.planRevision} · 执行轮次 {handoff.runEpoch}
+                        </small>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
               )}
               <div className="panel">
                 <h2>每一步都可以追踪</h2>

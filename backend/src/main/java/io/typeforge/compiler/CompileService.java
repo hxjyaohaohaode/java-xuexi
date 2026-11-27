@@ -20,11 +20,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
-/** Durable, bounded compile-only queue. Trusted workers execute outside this application process. */
+/** Durable, bounded compilation and execution queue. Trusted workers execute outside this application process. */
 @Service
 public final class CompileService implements CompilationGateway {
     public record Job(UUID id,UUID workspaceId,UUID releaseId,UUID attemptId,String status,String sourceHash,String jdkVersion,
-                      List<Diagnostic> diagnostics,String output,boolean outputTruncated,String errorCode,Instant createdAt,Instant finishedAt) {}
+                      List<Diagnostic> diagnostics,String output,boolean outputTruncated,String errorCode,Instant createdAt,Instant finishedAt,String mode,String language,String runtimeVersion) {}
     public record Ticket(UUID id,UUID ownerId,UUID workspaceId,UUID leaseToken,CompileProtocol.Request request,String fingerprint) {}
     private record Scope(UUID owner,UUID workspace,String status,UUID lease,Instant leaseUntil) {}
     private static final Set<String> PENDING=Set.of("QUEUED","RUNNING");
@@ -40,42 +40,65 @@ public final class CompileService implements CompilationGateway {
         this.jdbc=jdbc;this.tx=tx;this.workspaces=workspaces;this.events=events;this.json=json;this.clock=clock;this.settings=settings;this.provider=provider;
     }
     public Job create(UUID owner,UUID workspace,UUID release,String source,String mode,String key) {
-        if(!"COMPILE_ONLY".equals(mode)) throw new DomainException("CAPABILITY_UNAVAILABLE",503,"Only isolated compilation is supported; running learner bytecode is not enabled");
-        return createForAttempt(owner,workspace,release,source,null,List.of(),key);
+        return create(owner,workspace,release,source,mode,"JAVA","",key);
     }
-    /** Internal domain entry point only; no HTTP request can supply attempt IDs or hidden checks. */
+    public Job create(UUID owner,UUID workspace,UUID release,String source,String mode,String language,String stdin,String key) {
+        if (!Set.of("JAVA","PYTHON").contains(language) || stdin==null || stdin.indexOf('\0')>=0 ||
+            !StandardCharsets.UTF_8.newEncoder().canEncode(stdin) || stdin.getBytes(StandardCharsets.UTF_8).length>8192)
+            throw DomainException.invalid("Unsupported language or standard input over 8192 UTF-8 bytes");
+        if ("COMPILE_ONLY".equals(mode)) {
+            if(!language.equals("JAVA") || !stdin.isEmpty()) throw DomainException.invalid("Compile-only jobs require Java source and no stdin");
+            return createForAttempt(owner,workspace,release,source,null,List.of(),key);
+        }
+        if (!"COMPILE_AND_RUN".equals(mode)) throw DomainException.invalid("Unknown code execution mode");
+        return enqueue(owner,workspace,release,source,null,List.of(),new CompileProtocol.Execution(language,stdin),key);
+    }
+    /** Hidden checks and grading are confined to the compile-only path. */
     public Job createForAttempt(UUID owner,UUID workspace,UUID release,String source,UUID attempt,List<CompileProtocol.Check> checks,String key) {
+        return enqueue(owner,workspace,release,source,attempt,checks,null,key);
+    }
+    private Job enqueue(UUID owner,UUID workspace,UUID release,String source,UUID attempt,List<CompileProtocol.Check> checks,CompileProtocol.Execution execution,String key) {
         WorkspaceService.requireKey(key);
-        if(source==null || source.isBlank() || source.getBytes(StandardCharsets.UTF_8).length>CompileSettings.MAX_SOURCE_BYTES || source.indexOf('\0')>=0 || !StandardCharsets.UTF_8.newEncoder().canEncode(source)) throw DomainException.invalid("Java source must contain 1..32768 valid UTF-8 bytes without NUL");
+        if(source==null || source.isBlank() || source.getBytes(StandardCharsets.UTF_8).length>CompileSettings.MAX_SOURCE_BYTES || source.indexOf('\0')>=0 || !StandardCharsets.UTF_8.newEncoder().canEncode(source)) throw DomainException.invalid("Source must contain 1..32768 valid UTF-8 bytes without NUL");
         if(checks==null || checks.size()>8 || attempt==null && !checks.isEmpty() || checks.stream().map(CompileProtocol.Check::id).distinct().count()!=checks.size()) throw DomainException.invalid("Invalid compiler check manifest");
         for(var check:checks) if(!check.id().matches("check[0-7]") || check.source()==null || check.source().isBlank() || check.source().getBytes(StandardCharsets.UTF_8).length>8192) throw DomainException.invalid("Invalid bounded compile check");
         return tx.execute(status->{
             var scope=workspaces.lockOwned(owner,workspace);
             if(!scope.releaseId().equals(release)) throw DomainException.invalid("Compilation must use its workspace release");
-            String hash=json.hash(Map.of("workspaceId",workspace,"releaseId",release,"source",source,"attemptId",attempt==null?"":attempt,"checks",checks));
+            String mode=execution==null?"COMPILE_ONLY":"COMPILE_AND_RUN";
+            var identity=new java.util.HashMap<String,Object>(Map.of("workspaceId",workspace,"releaseId",release,"source",source,"attemptId",attempt==null?"":attempt,"checks",checks));
+            if(execution!=null) identity.put("execution",execution);
+            String hash=json.hash(identity);
             UUID previous=workspaces.replay(owner,"submitCompile",key,hash);
             if(previous!=null) return get(owner,previous);
             provider.requireConfigured();
+            if(execution!=null && !settings.executionEnabled())
+                throw new DomainException("CAPABILITY_UNAVAILABLE",503,"Operator has not enabled the isolated runtime");
             if(attempt!=null && jdbc.queryForList("SELECT a.id FROM exercise_attempt a JOIN workspace_attempt wa ON wa.attempt_id=a.id WHERE a.id=? AND a.user_id=? AND a.release_id=? AND wa.workspace_id=? AND a.status='PENDING'",attempt.toString(),owner.toString(),release.toString(),workspace.toString()).isEmpty()) throw DomainException.missing();
             jdbc.queryForObject("SELECT singleton_id FROM compiler_admission WHERE singleton_id=1 FOR UPDATE",Integer.class);
             long pending=count("SELECT COUNT(*) FROM compile_job WHERE user_id=? AND status IN ('QUEUED','RUNNING')",owner.toString());
             long global=count("SELECT COUNT(*) FROM compile_job WHERE status IN ('QUEUED','RUNNING')");
             long today=count("SELECT COUNT(*) FROM compile_job WHERE user_id=? AND created_at>=?",owner.toString(),Timestamp.from(clock.instant().atZone(ZoneOffset.UTC).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant()));
             if(pending>=settings.maxPending() || global>=settings.globalPending() || today>=settings.dailyLimit()) throw new DomainException("COMPILE_QUEUE_LIMIT",429,"The compiler queue or daily limit is full; review existing jobs before retrying");
-            UUID id=UUID.randomUUID();String manifest=json.write(checks);
-            jdbc.update("INSERT INTO compile_job(id,user_id,release_id,attempt_id,mode,source_code,source_hash,status,compiler_flags,created_at) VALUES(?,?,?,?,'COMPILE_ONLY',?,?,'QUEUED',?,?)",id.toString(),owner.toString(),release.toString(),attempt==null?null:attempt.toString(),source,json.sha256(source),json.write(List.of("--release","17","-proc:none","-Xlint:all","-Werror")),Timestamp.from(clock.instant()));
-            jdbc.update("INSERT INTO workspace_compile(job_id,workspace_id,request_json,request_hash,worker_fingerprint) VALUES(?,?,?,?,?)",id.toString(),workspace.toString(),manifest,json.hash(checks),provider.fingerprint());
-            events.append(workspace,"COMPILE_QUEUED","SERVER",Map.of("jobId",id,"attemptId",attempt==null?"":attempt,"mode","COMPILE_ONLY","sourceHash",json.sha256(source)));
+            UUID id=UUID.randomUUID();
+            // Legacy compilation jobs retain their original list shape, identity and fingerprint.
+            Object manifest=execution==null?checks:execution;
+            List<String> flags=execution==null?List.of("--release","17","-proc:none","-Xlint:all","-Werror"):
+                execution.language().equals("PYTHON")?List.of("-I","-B","-u","-X","utf8"):List.of("--release","17","-proc:none","-implicit:none","-Xlint:all");
+            jdbc.update("INSERT INTO compile_job(id,user_id,release_id,attempt_id,mode,source_code,source_hash,status,compiler_flags,created_at) VALUES(?,?,?,?,?,?,?,'QUEUED',?,?)",
+                id.toString(),owner.toString(),release.toString(),attempt==null?null:attempt.toString(),mode,source,json.sha256(source),json.write(flags),Timestamp.from(clock.instant()));
+            jdbc.update("INSERT INTO workspace_compile(job_id,workspace_id,request_json,request_hash,worker_fingerprint) VALUES(?,?,?,?,?)",id.toString(),workspace.toString(),json.write(manifest),json.hash(manifest),provider.fingerprint());
+            events.append(workspace,"COMPILE_QUEUED","SERVER",Map.of("jobId",id,"attemptId",attempt==null?"":attempt,"mode",mode,"sourceHash",json.sha256(source)));
             workspaces.remember(owner,"submitCompile",key,hash,id);return get(owner,id);
         });
     }
     public Job get(UUID owner,UUID id) {
-        var rows=jdbc.query("SELECT j.*,w.workspace_id,w.error_code FROM compile_job j JOIN workspace_compile w ON w.job_id=j.id WHERE j.id=? AND j.user_id=?",this::job,id.toString(),owner.toString());
+        var rows=jdbc.query("SELECT j.*,w.workspace_id,w.error_code,w.request_json FROM compile_job j JOIN workspace_compile w ON w.job_id=j.id WHERE j.id=? AND j.user_id=?",this::job,id.toString(),owner.toString());
         if(rows.isEmpty()) throw DomainException.missing();workspaces.requireOwned(owner,rows.get(0).workspaceId());return rows.get(0);
     }
     public List<Job> list(UUID owner,UUID workspace) {
         workspaces.requireOwned(owner,workspace);
-        return jdbc.query("SELECT j.*,w.workspace_id,w.error_code FROM compile_job j JOIN workspace_compile w ON w.job_id=j.id WHERE j.user_id=? AND w.workspace_id=? ORDER BY j.created_at DESC,j.id LIMIT 100",this::job,owner.toString(),workspace.toString());
+        return jdbc.query("SELECT j.*,w.workspace_id,w.error_code,w.request_json FROM compile_job j JOIN workspace_compile w ON w.job_id=j.id WHERE j.user_id=? AND w.workspace_id=? ORDER BY j.created_at DESC,j.id LIMIT 100",this::job,owner.toString(),workspace.toString());
     }
     public Job cancel(UUID owner,UUID id,String key) {
         WorkspaceService.requireKey(key);
@@ -95,15 +118,19 @@ public final class CompileService implements CompilationGateway {
                 UUID id=UUID.fromString(candidate);Scope scope=lock(id);
                 if(scope==null || !scope.status().equals("QUEUED")) return null;
                 if(!scopeActive(scope)) {finish(id,scope,"CANCELLED","COMPILE_SCOPE_INACTIVE",null);return null;}
-                var stored=jdbc.queryForMap("SELECT j.source_code,j.source_hash,w.request_json,w.request_hash,w.worker_fingerprint FROM compile_job j JOIN workspace_compile w ON w.job_id=j.id WHERE j.id=?",id.toString());
-                var checks=List.of(json.read(json.tree(stored.get("request_json")).toString(),CompileProtocol.Check[].class));
-                if(!json.hash(checks).equals(stored.get("request_hash")) || !json.sha256(stored.get("source_code").toString()).equals(stored.get("source_hash"))) {finish(id,scope,"INFRA_ERROR","COMPILE_INPUT_INTEGRITY",null);return null;}
+                var stored=jdbc.queryForMap("SELECT j.source_code,j.source_hash,j.mode,w.request_json,w.request_hash,w.worker_fingerprint FROM compile_job j JOIN workspace_compile w ON w.job_id=j.id WHERE j.id=?",id.toString());
+                var manifest=json.tree(stored.get("request_json"));
+                boolean run="COMPILE_AND_RUN".equals(stored.get("mode"));
+                if(run!=manifest.isObject() || !json.hash(manifest).equals(stored.get("request_hash")) || !json.sha256(stored.get("source_code").toString()).equals(stored.get("source_hash"))) {finish(id,scope,"INFRA_ERROR","COMPILE_INPUT_INTEGRITY",null);return null;}
+                var execution=run?json.read(manifest.toString(),CompileProtocol.Execution.class):null;
+                List<CompileProtocol.Check> checks=run?List.of():List.of(json.read(manifest.toString(),CompileProtocol.Check[].class));
+                if(run && !settings.executionEnabled()) {finish(id,scope,"INFRA_ERROR","EXECUTION_DISABLED",null);return null;}
                 if(!provider.fingerprint().equals(stored.get("worker_fingerprint"))) {finish(id,scope,"INFRA_ERROR","COMPILER_CONFIGURATION_CHANGED",null);return null;}
                 UUID lease=UUID.randomUUID();
                 jdbc.update("UPDATE compile_job SET status='RUNNING',lease_token=?,lease_until=?,attempt_no=attempt_no+1 WHERE id=? AND status='QUEUED'",lease.toString(),Timestamp.from(clock.instant().plusMillis(settings.timeoutMillis()+10000L)),id.toString());
                 if(jdbc.queryForObject("SELECT attempt_id FROM compile_job WHERE id=?",String.class,id.toString())!=null) jdbc.update("UPDATE exercise_attempt SET status='GRADING' WHERE id=(SELECT attempt_id FROM compile_job WHERE id=?) AND status='PENDING'",id.toString());
                 events.append(scope.workspace(),"COMPILE_RUNNING","SERVER",Map.of("jobId",id));
-                return new Ticket(id,scope.owner(),scope.workspace(),lease,new CompileProtocol.Request(id,lease,stored.get("source_code").toString(),stored.get("source_hash").toString(),checks),provider.fingerprint());
+                return new Ticket(id,scope.owner(),scope.workspace(),lease,new CompileProtocol.Request(id,lease,stored.get("source_code").toString(),stored.get("source_hash").toString(),checks,execution),provider.fingerprint());
             });
             if(ticket!=null) return ticket;
         }
@@ -117,7 +144,7 @@ public final class CompileService implements CompilationGateway {
             Scope scope=lock(ticket.id());if(!valid(scope,ticket)) return false;
             if(!scopeActive(scope)) {finish(ticket.id(),scope,"CANCELLED","COMPILE_SCOPE_INACTIVE",null);return false;}
             if(!ticket.fingerprint().equals(provider.fingerprint()) || !result.sourceHash().equals(ticket.request().sourceHash())) {finish(ticket.id(),scope,"INFRA_ERROR","COMPILER_CONFIGURATION_CHANGED",null);return false;}
-            finish(ticket.id(),scope,result.status(),Set.of("SUCCEEDED","COMPILE_ERROR").contains(result.status())?null:"COMPILER_"+result.status(),result);return true;
+            finish(ticket.id(),scope,result.status(),Set.of("SUCCEEDED","COMPILE_ERROR","RUNTIME_ERROR").contains(result.status())?null:"COMPILER_"+result.status(),result);return true;
         }));
     }
     public void fail(Ticket ticket,String code) {
@@ -151,7 +178,9 @@ public final class CompileService implements CompilationGateway {
         JsonNode value=rs.getString("result")==null?json.tree("{}"):json.tree(rs.getString("result"));
         List<Diagnostic> diagnostics=value.has("diagnostics")?List.of(json.read(value.path("diagnostics").toString(),Diagnostic[].class)):List.of();
         // Hidden checks and their diagnostics are never returned. Only the learner's standalone source is diagnosable.
-        return new Job(UUID.fromString(rs.getString("id")),UUID.fromString(rs.getString("workspace_id")),UUID.fromString(rs.getString("release_id")),uuid(rs.getString("attempt_id")),rs.getString("status"),rs.getString("source_hash"),rs.getString("jdk_version"),diagnostics,"",value.path("outputTruncated").asBoolean(),rs.getString("error_code"),rs.getTimestamp("created_at").toInstant(),instant(rs.getTimestamp("finished_at")));
+        String mode=rs.getString("mode");
+        String language="COMPILE_AND_RUN".equals(mode)?json.tree(rs.getString("request_json")).path("language").asText():"JAVA";
+        return new Job(UUID.fromString(rs.getString("id")),UUID.fromString(rs.getString("workspace_id")),UUID.fromString(rs.getString("release_id")),uuid(rs.getString("attempt_id")),rs.getString("status"),rs.getString("source_hash"),"JAVA".equals(language)?rs.getString("jdk_version"):null,diagnostics,value.path("output").asText(""),value.path("outputTruncated").asBoolean(),rs.getString("error_code"),rs.getTimestamp("created_at").toInstant(),instant(rs.getTimestamp("finished_at")),mode,language,value.path("runtimeVersion").asText(rs.getString("jdk_version")));
     }
     private long count(String sql,Object...args){Long count=jdbc.queryForObject(sql,Long.class,args);return count==null?0:count;}
     private static UUID uuid(String value){return value==null?null:UUID.fromString(value);}

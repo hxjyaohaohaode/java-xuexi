@@ -424,12 +424,8 @@ it('connects the rendered workspace learning, notebook, artifact, tutor and inva
   });
   await step('wrong attempt -> notebook source -> real hints and assisted reattempt', async () => {
     await user.click(screen.getByRole('link', { name: '练习与反馈' }));
-    await waitFor(() =>
-      expect(
-        document.querySelectorAll('.question-card .answer-option input').length,
-      ).toBeGreaterThan(1),
-    );
-    await user.click(screen.getByLabelText(/new List<String>\[2\]/));
+    await user.click(await find('button', /Java17中哪种数组创建表达式合法/));
+    await user.click(await screen.findByLabelText(/new List<String>\[2\]/));
     expect(document.querySelectorAll('.question-card input:checked')).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: '提交作答' }));
     await find('heading', '服务端反馈');
@@ -486,10 +482,7 @@ it('connects the rendered workspace learning, notebook, artifact, tutor and inva
         await fetch(`/api/v1/workspaces/${workspaceA}/attempts`)
       ).json();
       await user.click(screen.getByRole('link', { name: '练习与反馈' }));
-      await waitFor(() =>
-        expect(document.querySelectorAll('.exercise-nav').length).toBeGreaterThan(1),
-      );
-      await user.click(document.querySelectorAll<HTMLButtonElement>('.exercise-nav')[1]);
+      await user.click(await find('button', /关于@SafeVarargs，下列哪项正确/));
       const receivedHints: Record<string, unknown>[] = [];
       for (const level of [1, 2, 3]) {
         const start = receipts.length;

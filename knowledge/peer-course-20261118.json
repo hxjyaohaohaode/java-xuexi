@@ -1,0 +1,278 @@
+{
+  "version": "typeforge-course-20261118",
+  "examples": [
+    {
+      "id": "01-string-box",
+      "title": "泛型类保留元素类型",
+      "conceptIds": [
+        "7959293c-89e3-5008-8558-ffb778019308",
+        "8984d988-6da6-5988-9a7a-0e47a6d056df"
+      ],
+      "code": "class Demo {\n    static class Box<T> {\n        private final T value;\n        Box(T value) { this.value = value; }\n        T get() { return value; }\n    }\n    public static void main(String[] args) {\n        Box<String> box = new Box<>(\"Java\");\n        String text = box.get();\n        System.out.println(text);\n    }\n}\n",
+      "sha256": "e264fbddee5fbe663e82494359ff4636a7712649b668197f567c80f30bc4d836",
+      "section": "JLS 17 §4.5",
+      "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html",
+      "compiles": true,
+      "stdout": "Java",
+      "warning": null
+    },
+    {
+      "id": "02-box-wrong-value",
+      "title": "类型不匹配在编译阶段被拒绝",
+      "conceptIds": [
+        "7959293c-89e3-5008-8558-ffb778019308",
+        "8984d988-6da6-5988-9a7a-0e47a6d056df"
+      ],
+      "code": "class Demo {\n    static class Box<T> {\n        Box(T value) {}\n    }\n    Box<String> box = new Box<String>(17);\n}\n",
+      "sha256": "46c30b528d6aba95282bfe8602d4b91cb60d1bf2015f4d39c2b7bbf845288ff4",
+      "section": "JLS 17 §4.5、§4.10.2",
+      "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html",
+      "compiles": false,
+      "stdout": null,
+      "warning": null
+    },
+    {
+      "id": "03-generic-source",
+      "title": "泛型接口让实现声明精确的返回类型",
+      "conceptIds": [
+        "415be795-6cb2-590a-a81a-29d7a6e67d10"
+      ],
+      "code": "class Demo {\n    interface Source<T> { T get(); }\n    static class TextSource implements Source<String> {\n        public String get() { return \"type-safe\"; }\n    }\n    public static void main(String[] args) {\n        Source<String> source = new TextSource();\n        System.out.println(source.get());\n    }\n}\n",
+      "sha256": "03ed02c73a2a65c3715f2d3d6b93e892d9ecefe81a046f1ed47c0ba5983c65f8",
+      "section": "JLS 17 §9.1.2",
+      "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-9.html",
+      "compiles": true,
+      "stdout": "type-safe",
+      "warning": null
+    },
+    {
+      "id": "04-bounded-inference",
+      "title": "根据实参推断同时满足上界的类型",
+      "conceptIds": [
+        "0b8a5da3-feca-5e99-85b5-1e5484f06ebe",
+        "827e8c6e-283d-5041-8c2e-ccaf137fda7e",
+        "a27578b2-0fd0-5b44-9872-2157b1c9919a"
+      ],
+      "code": "class Demo {\n    static <T extends Number> T identity(T value) { return value; }\n    public static void main(String[] args) {\n        Integer value = identity(42);\n        System.out.println(value);\n    }\n}\n",
+      "sha256": "6b827e2ae6616df68a6a961f90efd56838572272c02cdde94076c9bb31423d29",
+      "section": "JLS 17 §18.5.1",
+      "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-18.html",
+      "compiles": true,
+      "stdout": "42",
+      "warning": null
+    },
+    {
+      "id": "05-bound-rejects-text",
+      "title": "字符串无法满足 Number 上界",
+      "conceptIds": [
+        "827e8c6e-283d-5041-8c2e-ccaf137fda7e",
+        "a27578b2-0fd0-5b44-9872-2157b1c9919a"
+      ],
+      "code": "class Demo {\n    static <T extends Number> T identity(T value) { return value; }\n    String text = identity(\"42\");\n}\n",
+      "sha256": "92b472675f7cb4de3cee80ae464d7ac7e9c4c4821e314cc859d9c8015cb584df",
+      "section": "JLS 17 §4.4",
+      "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html",
+      "compiles": false,
+      "stdout": null,
+      "warning": null
+    },
+    {
+      "id": "06-invariant-lists",
+      "title": "不同的 List 类型实参不能直接替换",
+      "conceptIds": [
+        "fb93217f-2134-592a-8e1a-29647da4b015"
+      ],
+      "code": "import java.util.List;\n\nclass Demo {\n    List<Integer> integers = List.of(1, 2);\n    List<Number> numbers = integers;\n}\n",
+      "sha256": "ea1b64c61477d42473f484b1db36a3c229c95ce74c3733eab64155b80252c0f8",
+      "section": "JLS 17 §4.10.2",
+      "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html",
+      "compiles": false,
+      "stdout": null,
+      "warning": null
+    },
+    {
+      "id": "07-intersection-bound",
+      "title": "多重上界保留所需能力并按最左界擦除",
+      "conceptIds": [
+        "a27578b2-0fd0-5b44-9872-2157b1c9919a",
+        "6f59ac25-274e-5090-9448-93713ac68fd2",
+        "fe0f884f-e8d2-5198-b72e-291741076fe0"
+      ],
+      "code": "class Demo {\n    static <T extends Number & Comparable<T>> T largest(T a, T b) {\n        return a.compareTo(b) >= 0 ? a : b;\n    }\n    public static void main(String[] args) throws ReflectiveOperationException {\n        System.out.println(Demo.class.getDeclaredMethod(\n                \"largest\", Number.class, Number.class).getReturnType().getSimpleName());\n        System.out.println(largest(2.0, 1.0));\n    }\n}\n",
+      "sha256": "2c5ab30049a9af9c3979c80aa7969df5b7043d8ed15beb9478ca02e2f7027b8b",
+      "section": "JLS 17 §4.4、§4.6",
+      "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html",
+      "compiles": true,
+      "stdout": "Number\n2.0",
+      "warning": null
+    },
+    {
+      "id": "08-wildcard-unknown",
+      "title": "未知元素类型允许读取和清空可变集合",
+      "conceptIds": [
+        "6d6acb4c-93a7-582e-a4bb-b4863d847b7b",
+        "508edac0-1d84-5f4a-a554-6919bc0d47b2"
+      ],
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Demo {\n    public static void main(String[] args) {\n        List<?> items = new ArrayList<>(List.of(\"first\"));\n        Object read = items.get(0);\n        System.out.println(read);\n        items.clear();\n        System.out.println(items.size());\n    }\n}\n",
+      "sha256": "4df80749565c8e15b1a4083345bc1c1fa95f8c5fd5a9a8c9f8649eea05f876e1",
+      "section": "Wildcard Guidelines",
+      "sourceUrl": "https://docs.oracle.com/javase/tutorial/java/generics/wildcardGuidelines.html",
+      "compiles": true,
+      "stdout": "first\n0",
+      "warning": null
+    },
+    {
+      "id": "09-extends-write",
+      "title": "上界通配符拒绝写入任意非空数值",
+      "conceptIds": [
+        "508edac0-1d84-5f4a-a554-6919bc0d47b2"
+      ],
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Demo {\n    void add(List<? extends Number> numbers) {\n        numbers.add(1);\n    }\n}\n",
+      "sha256": "9ccf34246d1ee3549559e36f61228898a9e778ad2cd4638cc05baba30a748b49",
+      "section": "Wildcard Guidelines",
+      "sourceUrl": "https://docs.oracle.com/javase/tutorial/java/generics/wildcardGuidelines.html",
+      "compiles": false,
+      "stdout": null,
+      "warning": null
+    },
+    {
+      "id": "10-super-read",
+      "title": "下界通配符的读取结果需要进一步判断",
+      "conceptIds": [
+        "49cfe0e3-6a1e-589e-b16f-ab49dee0ef30"
+      ],
+      "code": "import java.util.List;\n\nclass Demo {\n    Integer read(List<? super Integer> numbers) {\n        return numbers.get(0);\n    }\n}\n",
+      "sha256": "d28ce342723a578eb75eb3f2cf3d2db3112f96ec1a9fb5e8751ab72e4203e629",
+      "section": "Wildcard Guidelines",
+      "sourceUrl": "https://docs.oracle.com/javase/tutorial/java/generics/wildcardGuidelines.html",
+      "compiles": false,
+      "stdout": null,
+      "warning": null
+    },
+    {
+      "id": "11-pecs-transfer",
+      "title": "从生产者读到消费者写入",
+      "conceptIds": [
+        "508edac0-1d84-5f4a-a554-6919bc0d47b2",
+        "49cfe0e3-6a1e-589e-b16f-ab49dee0ef30",
+        "c8d80a01-b752-556d-955c-ea5bd996c886"
+      ],
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Demo {\n    static <T> void append(List<? extends T> source, List<? super T> destination) {\n        for (T item : source) {\n            destination.add(item);\n        }\n    }\n    public static void main(String[] args) {\n        List<Number> output = new ArrayList<>();\n        append(List.of(1, 2), output);\n        System.out.println(output);\n    }\n}\n",
+      "sha256": "e34bdb965367a9d6c94c2dd79127616c4718bc4c647cc4ea7150254683863227",
+      "section": "Wildcard Guidelines",
+      "sourceUrl": "https://docs.oracle.com/javase/tutorial/java/generics/wildcardGuidelines.html",
+      "compiles": true,
+      "stdout": "[1, 2]",
+      "warning": null
+    },
+    {
+      "id": "12-capture-swap",
+      "title": "一个辅助方法捕获同一个列表的元素类型",
+      "conceptIds": [
+        "5991935f-1634-5222-a334-faeea0b65360"
+      ],
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Demo {\n    static void swapFirstPair(List<?> items) { swap(items); }\n    static <T> void swap(List<T> items) {\n        T first = items.get(0);\n        items.set(0, items.get(1));\n        items.set(1, first);\n    }\n    public static void main(String[] args) {\n        List<String> values = new ArrayList<>(List.of(\"a\", \"b\"));\n        swapFirstPair(values);\n        System.out.println(values);\n    }\n}\n",
+      "sha256": "c5ba005387785b72c24e8efda78bb714c6ba27ce45253a03871dcbeb1a071810",
+      "section": "Wildcard Capture and Helper Methods",
+      "sourceUrl": "https://docs.oracle.com/javase/tutorial/java/generics/capture.html",
+      "compiles": true,
+      "stdout": "[b, a]",
+      "warning": null
+    },
+    {
+      "id": "13-bridge-method",
+      "title": "桥接方法维持擦除后的多态调用",
+      "conceptIds": [
+        "415be795-6cb2-590a-a81a-29d7a6e67d10",
+        "fe0f884f-e8d2-5198-b72e-291741076fe0"
+      ],
+      "code": "import java.util.Arrays;\n\nclass Demo {\n    interface Source<T> { T get(); }\n    static class Text implements Source<String> {\n        public String get() { return \"Java\"; }\n    }\n    public static void main(String[] args) {\n        System.out.println(Arrays.stream(Text.class.getDeclaredMethods())\n                .anyMatch(method -> method.getName().equals(\"get\") && method.isBridge()));\n        Source<String> source = new Text();\n        System.out.println(source.get());\n    }\n}\n",
+      "sha256": "da847a5c92a648131ed0e8bc2a14c288b7af72bcd909d4ab17dce921c68e3eca",
+      "section": "Effects of Type Erasure and Bridge Methods",
+      "sourceUrl": "https://docs.oracle.com/javase/tutorial/java/generics/bridgeMethods.html",
+      "compiles": true,
+      "stdout": "true\nJava",
+      "warning": null
+    },
+    {
+      "id": "14-parameterized-array",
+      "title": "不可具体化的泛型数组元素类型被拒绝",
+      "conceptIds": [
+        "75aeda23-330c-5781-8c77-c2fd06cbd6cb"
+      ],
+      "code": "import java.util.List;\n\nclass Demo {\n    List<String>[] values = new List<String>[2];\n}\n",
+      "sha256": "aec4fde0a51f08914ccafb8c240e4b22168ec1b87f2d181fc9f534d6f3273f1e",
+      "section": "JLS 17 §15.10.1；§4.7",
+      "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-15.html",
+      "compiles": false,
+      "stdout": null,
+      "warning": null
+    },
+    {
+      "id": "15-reifiable-array",
+      "title": "无界通配符列表可以作为数组元素类型",
+      "conceptIds": [
+        "75aeda23-330c-5781-8c77-c2fd06cbd6cb"
+      ],
+      "code": "import java.util.List;\n\nclass Demo {\n    public static void main(String[] args) {\n        List<?>[] values = new List<?>[1];\n        values[0] = List.of(\"first\");\n        System.out.println(values[0].size());\n    }\n}\n",
+      "sha256": "b0b370bce07e4e729f29a1d88903177c9bb3fe8c36ef25e702dd3f670efcfefa",
+      "section": "JLS 17 §15.10.1；§4.7",
+      "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-15.html",
+      "compiles": true,
+      "stdout": "1",
+      "warning": null
+    },
+    {
+      "id": "16-raw-pollution",
+      "title": "原始类型让编译期警告变成运行期问题",
+      "conceptIds": [
+        "7959293c-89e3-5008-8558-ffb778019308",
+        "848bb2a6-12c2-509d-911b-483e16924551"
+      ],
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Demo {\n    public static void main(String[] args) {\n        List<String> strings = new ArrayList<>();\n        List raw = strings;\n        raw.add(42);\n        try {\n            String first = strings.get(0);\n            System.out.println(first);\n        } catch (ClassCastException error) {\n            System.out.println(\"ClassCastException\");\n        }\n    }\n}\n",
+      "sha256": "7779635b988bd9e784eede82644899e848d2159007f78dae5f076ce2e6b7f378",
+      "section": "JLS 17 §4.8、§4.12.2",
+      "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html",
+      "compiles": true,
+      "stdout": "ClassCastException",
+      "warning": "compiler.warn.unchecked.call.mbr.of.raw.type"
+    }
+  ],
+  "reviews": [
+    {
+      "id": "M01",
+      "conceptId": "fb93217f-2134-592a-8e1a-29647da4b015",
+      "question": "为什么 List<Integer> 不能赋值给 List<Number>？请用 Double 写入说明泛型不变性。",
+      "criterion": "说明 List 的类型参数不变，并用假设赋值后经 Number 视图添加 Double 破坏约束解释。",
+      "correction": "本次模型误把 ArrayStoreException 用在泛型列表上。反例中的赋值在编译期就被拒绝，程序不会运行到写入。"
+    },
+    {
+      "id": "M02",
+      "conceptId": "c8d80a01-b752-556d-955c-ea5bd996c886",
+      "question": "PECS producer extends consumer super。请给出把 List<Integer> 的元素追加到 List<Number> 的泛型方法签名，说明这两个参数各自做什么。",
+      "criterion": "签名或等价关系为 List<? extends T> 与 List<? super T>；从前者读 T，向后者写 T。",
+      "correction": null
+    },
+    {
+      "id": "M03",
+      "conceptId": "508edac0-1d84-5f4a-a554-6919bc0d47b2",
+      "question": "上界通配符 List<? extends Number> 是不可变的吗？ArrayList 的 clear 和 add(1) 各会怎样？",
+      "criterion": "说明可变 ArrayList 可 clear；静态类型不允许 add(1)；说明未知元素子类型。",
+      "correction": null
+    },
+    {
+      "id": "M04",
+      "conceptId": "49cfe0e3-6a1e-589e-b16f-ab49dee0ef30",
+      "question": "下界通配符 List<? super Integer> 里可以添加 Integer 吗？只凭这个声明能否将 get(0) 直接赋值给 Integer？",
+      "criterion": "可写 Integer；读取时静态安全类型是 Object，需要额外判断才能当 Integer。",
+      "correction": "本次模型误说可添加 Integer 的父类值。静态类型为 Number 的变量不能直接传给 List<? super Integer>.add，即使它当前引用 Integer。"
+    },
+    {
+      "id": "M05",
+      "conceptId": "6f59ac25-274e-5090-9448-93713ac68fd2",
+      "question": "泛型类型擦除时 T 总是 Object 吗？以 T extends Number & Comparable<T> 的最左边界为例。",
+      "criterion": "正确指出最左界的擦除 Number；无显式边界才默认为 Object。",
+      "correction": null
+    }
+  ]
+}

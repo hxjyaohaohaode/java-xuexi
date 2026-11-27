@@ -62,6 +62,7 @@ class StudyModelWorkflowTest {
     private static final String TOKEN="study-model-loopback-protocol-fixture-secret";
     private static final long USED_TOKENS=28;
     private static final Set<String> STOPPED=Set.of("COMPLETED","PARTIAL","FAILED","CANCELLED","WAITING_USER","PAUSED");
+    @Autowired io.typeforge.curriculum.CourseCompanions course;
     @Autowired JdbcTemplate jdbc;
     @Autowired TransactionTemplate tx;
     @Autowired WorkspaceService workspaces;
@@ -112,7 +113,7 @@ class StudyModelWorkflowTest {
         });
         server.start();
         settings=new TutorSettings("http://127.0.0.1:"+server.getAddress().getPort()+"/chat/completions",TOKEN,"study-protocol-fixture",5000,2048,1_000_000,100,4,false);
-        var provider=new HttpTutorModelProvider(settings,json);
+        var provider=new HttpTutorModelProvider(settings,json,course,schemas);
         tutors=new TutorService(jdbc,tx,workspaces,events,json,clock,settings,provider);
         worker=new TutorWorker(tutors,search,provider,settings);
         var documents=new TutorDocumentService(tutors,artifacts,workspaces,events,jdbc,tx,json);
@@ -146,7 +147,7 @@ class StudyModelWorkflowTest {
         Map.of("role","REPAIR","title","写入边界","focus","Java 泛型 PECS super List 的写入约束"))));}
     private String validResponse(JsonNode request) {
         String q=question(request),answer;
-        if(q.contains("制定教学计划"))answer=plan();
+        if("study_teaching_plan".equals(request.at("/response_format/json_schema/name").asText()))answer=plan();
         else if(q.contains("独立于初稿"))answer="REVIEW_BODY：这些是协议夹具中的教学草稿，只核对给定引用，不代表人工事实核验。";
         else if(q.contains("教学分工：REPAIR"))answer="EXPERT_REPAIR_BODY：PECS super 的写入边界需要保留类型关系；编译结果不保证运行时行为。";
         else answer="EXPERT_CONCEPT_BODY：PECS extends 的读取边界必须由已发布的 Java 泛型知识来源支持。";
@@ -154,7 +155,15 @@ class StudyModelWorkflowTest {
     }
     private String wire(JsonNode request,String answer,boolean usage) {
         String citation=user(request).path("publishedEvidence").get(0).path("chunkId").asText();
-        String content=json.write(Map.of("answer",answer,"citedChunkIds",List.of(citation),"limitations","Deterministic loopback HTTP fixture; not real-model quality evidence."));
+        ObjectNode payload;
+        if("study_teaching_plan".equals(request.at("/response_format/json_schema/name").asText()) && answer.startsWith("{")) {
+            payload=(ObjectNode)json.tree(answer);
+        } else {
+            // Also reproduces the observed failure: a normal tutor explanation returned to a planner.
+            payload=(ObjectNode)json.tree(json.write(Map.of("answer",answer,"limitations","Loopback protocol fixture.")));
+        }
+        payload.putArray("citedChunkIds").add(citation);
+        String content=json.write(payload);
         var body=new LinkedHashMap<String,Object>();
         body.put("model","study-fixture-model-revision");body.put("choices",List.of(Map.of("finish_reason","stop","message",Map.of("role","assistant","content",content))));
         if(usage)body.put("usage",Map.of("prompt_tokens",17,"completion_tokens",11,"total_tokens",USED_TOKENS));
@@ -172,6 +181,30 @@ class StudyModelWorkflowTest {
         assertEquals(4,calls.get());assertEquals(4,studies.details(owner,run.id()).tutorRequestIds().size());
         assertEquals(6,studies.details(owner,run.id()).artifactIds().size());assertLedger(4*USED_TOKENS,0,run.id());
         schemas.validate("AgentRun",run);schemas.validate("StudyWorkflowDetails",studies.details(owner,run.id()));
+        var first=captured.get(0);
+        var planner=first.at("/response_format/json_schema");
+        var planningInput=user(first);
+        assertFalse(planningInput.has("recentUserQuestions"));
+        assertFalse(planningInput.path("learnerContext").toString().contains("GOAL"));
+        for(var card:planningInput.path("publishedEvidence")) {
+            assertEquals(3,card.size());assertTrue(card.path("excerpt").asText().length()<=110);
+            assertTrue(card.has("chunkId") && card.has("title"));
+            assertFalse(card.has("releaseId") || card.has("contentHash"));
+        }
+        for(var rule:planningInput.path("courseReviewGuidance")) assertFalse(rule.has("contentHash") || rule.has("releaseId"));
+        assertEquals("json_schema",first.at("/response_format/type").asText());
+        assertTrue(planner.path("strict").asBoolean());
+        assertEquals("study_teaching_plan",planner.path("name").asText());
+        assertEquals(schemas.definition("StudyTeachingPlan").at("/properties/sections"),planner.at("/schema/properties/sections"));
+        assertFalse(planner.path("schema").path("properties").has("answer"));
+        assertTrue(planner.at("/schema/properties/citedChunkIds/items/enum").toString().contains(
+            user(first).path("publishedEvidence").get(0).path("chunkId").asText()));
+        assertEquals("study_expert_turn",captured.get(1).at("/response_format/json_schema/name").asText());
+        assertTrue(captured.get(captured.size()-1).at("/messages/0/content").asText().contains("你的本次分工是教学审阅"));
+        var savedPlan=tutors.get(owner,studies.details(owner,run.id()).tutorRequestIds().stream()
+            .filter(id->tutors.get(owner,id).question().contains("制定教学计划")).findFirst().orElseThrow());
+        assertTrue(json.tree(savedPlan.answer()).isObject());
+        schemas.validate("StudyTeachingPlan",json.tree(savedPlan.answer()));
         String review=captured.stream().map(this::question).filter(q->q.contains("独立于初稿")).findFirst().orElseThrow();
         assertTrue(review.contains("EXPERT_CONCEPT_BODY"));assertTrue(review.contains("EXPERT_REPAIR_BODY"));
         assertFalse(review.contains("导师请求 "),"Review must receive expert prose, not spend its excerpt budget on metadata");

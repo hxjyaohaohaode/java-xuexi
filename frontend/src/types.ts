@@ -51,13 +51,32 @@ export interface Evidence {
   releaseId: string;
   title: string;
   excerpt: string;
+  fullText?: string | null;
   source: { id: string; title: string; url: string; edition: string; usageNote: string };
   rankScore: number;
   contentHash: string;
   conceptId: string;
   sourceSection: string;
 }
+export interface CourseExample {
+  id: string;
+  title: string;
+  conceptIds: string[];
+  code: string;
+  sha256: string;
+  section: string;
+  sourceUrl: string;
+  compiles: boolean;
+  stdout: string | null;
+  warning: string | null;
+}
+export interface CourseCompanion {
+  version: string;
+  examples: CourseExample[];
+  reviews: { id: string; conceptId: string; question: string; criterion: string; correction: string | null }[];
+}
 export interface Concept {
+  companion?: CourseCompanion | null;
   id: string;
   code: string;
   title: string;
@@ -269,6 +288,9 @@ export interface LabResult {
 
 export interface CompileJob {
   id: string;
+  language?: 'JAVA' | 'PYTHON';
+  mode?: 'COMPILE_ONLY' | 'COMPILE_AND_RUN';
+  runtimeVersion?: string | null;
   workspaceId: string;
   releaseId: string;
   attemptId: string | null;

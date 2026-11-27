@@ -40,3 +40,47 @@ it('submits lower-bound writes with the container and value in the actual evalua
   );
   await screen.findByText('Integer 可写入声明下界为 Integer 的容器。');
 });
+
+it('submits the Python draft and stdin while retaining the Java lesson buffer', async () => {
+  vi.spyOn(api, 'get').mockImplementation(async (path) =>
+    path === '/compile-jobs/new-run'
+      ? {
+          id: 'new-run',
+          status: 'SUCCEEDED',
+          language: 'PYTHON',
+          mode: 'COMPILE_AND_RUN',
+          output: '42',
+          diagnostics: [],
+        }
+      : [],
+  );
+  const request = vi.spyOn(api, 'request').mockResolvedValue({ id: 'new-run' });
+  const user = userEvent.setup();
+  render(
+    <TestWorkspace value={testWorkspace(['COMPILE_ONLY', 'UNTRUSTED_CODE_EXECUTION'])}>
+      <Lab initialConceptCode="G10" />
+    </TestWorkspace>,
+  );
+  const java = (screen.getByLabelText(/Main.java/) as HTMLTextAreaElement).value;
+  await user.selectOptions(screen.getByLabelText('语言和任务'), 'RUN_PYTHON');
+  const editor = screen.getByLabelText(/main.py/);
+  await user.clear(editor);
+  await user.type(editor, 'print(input())');
+  await user.type(screen.getByLabelText(/标准输入/), '42');
+  await user.click(screen.getByRole('button', { name: '运行代码' }));
+  await waitFor(() =>
+    expect(request).toHaveBeenCalledWith(
+      '/compile-jobs',
+      'POST',
+      expect.objectContaining({
+        mode: 'COMPILE_AND_RUN',
+        language: 'PYTHON',
+        source: 'print(input())',
+        stdin: '42',
+      }),
+      { idempotent: true },
+    ),
+  );
+  await user.selectOptions(screen.getByLabelText('语言和任务'), 'RUN_JAVA');
+  expect(screen.getByLabelText(/Main.java/)).toHaveValue(java);
+});

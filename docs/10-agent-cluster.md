@@ -2,6 +2,10 @@
 
 这是以学生工作空间和目标为中心的完整专家集群设计。v0.6 已实现持久任务图、本地证据工作流、持久导师请求、显式配置的 HTTP 模型调用，以及受限的规划→专家→独立复核→可编辑草稿学习任务。课程、练习、记忆、私有素材、作品与原生文件导出通过版本化引用联动，用户代码编译由独立 worker 执行。十四角色通用自治、任意工具循环和媒体生产仍是后续目标。当前状态以 [契约](../contracts/README.md) 与运行 capabilities 为准，验证见 [本轮记录](../evidence/runtime-review.md)；当前工作流细节见 [学习任务与原生导出](23-study-and-exports.md)。
 
+课堂集成参考 OpenMAIC 调度器对当前场景证据的固定和向专家的显式交接，以及 DeepSeek Harness 的持久角色/工具注册和运行记录。具体实现沿用现有 Java 事务、任务图和学生的固定课堂版本。课外也可安装仓库内的 DSH bundle，由其官方工具注册表实际加载当前课的资料与下一步建议。复核与依赖的实现说明见 [课堂工作流](23-study-and-exports.md) 和 [Harness 插件](../integrations/dsh-classroom/README.md)。
+
+[OpenMAIC 导演与场景证据源码](https://github.com/THU-MAIC/OpenMAIC/blob/240e8228de8228f949ca90ab10c270f42729f2de/lib/chat/pi/director-loop.ts) · [DSH 会话角色配置投影](https://github.com/deepseek-ai/deepseek-harness/blob/4b399c39a6d1479cd84ca591b4d7c88e24d38a96/packages/preset/agent-preset-registry/src/session.ts)
+
 ### 当前执行边界
 
 | 实现入口 | 已执行的行为 | 尚未接入的目标 |
@@ -162,3 +166,12 @@ conductor 输入为目标、已有作品、学习证据、可用工具与预算�
 9. **退出条件**：全部必需验收通过→COMPLETED；仅部分通过→PARTIAL；问题/预算需要用户→WAITING_USER；重试耗尽→FAILED；取消→CANCELLED。完成目标还需检查实际产物清单，不能由某个专家一句“完成”改变状态。
 
 可机器读取的角色/能力/策略与示例见 [agent目录](../agent/README.md)。实施每一项时都应补充真实执行证据、负例与可测边界；当前已有受限学习任务执行链，尚无通用自治集群或真实供应商教学效果测量。
+
+
+### 模型教学步骤的输出契约
+
+调度器从持久化的任务关联确定规划、专家和审阅身份。规划调用在一个 JSON 对象内提交 `strategy`、`sections`、`citedChunkIds`。其中教学计划遵循仓库的 `StudyTeachingPlan`，可引用的知识卡标识来自本次固定发行版的检索。专家和审阅调用各有分工，提交讲解、引用与局限。接收方逐次检查字段、角色范围、引用归属和用量，随后保存不可变草稿及交接记录。
+
+默认工作流使用兼容 Chat Completions 的 `response_format.type=json_schema`。对只支持 JSON Object 的供应端，部署者可设置 `TYPEFORGE_TUTOR_WORKFLOW_STRUCTURED_OUTPUTS=false`。此时仍要求同一输出结构并在服务端校验，提供方生成错误的结构会使该步失败且保留用量记录。普通学习者导师会话始终使用原有 JSON Object 协议。跨角色传递的数据信息限定在被授予的目标、学习记录、版本化草稿和课程证据中。
+
+慢速本地模型可显式设置 `TYPEFORGE_TUTOR_TIMEOUT_MILLIS=180000`。默认 20 秒，支持 100 毫秒至 300 秒。模型任务保留超时后 15 秒的 worker 租约余量，并按配置延长持久请求期限以容纳入队与结算。工作流总时限、取消、幂等及未知用量预留继续独立生效。工作流提示只传本次目标、获准的相关学习信息、精简的已发布证据与所适用的课程规则。服务端仍使用完整的知识卡修订和内容摘要校验引用。

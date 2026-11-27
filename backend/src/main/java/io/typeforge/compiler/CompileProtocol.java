@@ -9,14 +9,21 @@ public final class CompileProtocol {
     public record Check(String id,String source,boolean expectedCompiled,List<String> expectedDiagnosticCodes) {
         public Check {expectedDiagnosticCodes=List.copyOf(expectedDiagnosticCodes);}
     }
-    public record Request(UUID jobId,UUID leaseToken,String source,String sourceHash,List<Check> checks) {
+    public record Request(UUID jobId,UUID leaseToken,String source,String sourceHash,List<Check> checks,Execution execution) {
+        public Request(UUID jobId,UUID leaseToken,String source,String sourceHash,List<Check> checks) {
+            this(jobId,leaseToken,source,sourceHash,checks,null);
+        }
         public Request {checks=List.copyOf(checks);}
     }
+    public record Execution(String language,String stdin) {}
     public record CheckResult(String id,String status,List<String> diagnosticCodes,boolean harnessOnly) {
         public CheckResult {diagnosticCodes=List.copyOf(diagnosticCodes);}
     }
     public record Result(String status,String sourceHash,String jdkVersion,List<CompilationGateway.Diagnostic> diagnostics,
-                         boolean outputTruncated,List<CheckResult> checks) {
+                         boolean outputTruncated,List<CheckResult> checks,String runtimeVersion,String output) {
+        public Result(String status,String sourceHash,String jdkVersion,List<CompilationGateway.Diagnostic> diagnostics,boolean outputTruncated,List<CheckResult> checks) {
+            this(status,sourceHash,jdkVersion,diagnostics,outputTruncated,checks,jdkVersion,"");
+        }
         public Result {diagnostics=List.copyOf(diagnostics);checks=List.copyOf(checks);}
     }
     public static final class Failure extends RuntimeException {

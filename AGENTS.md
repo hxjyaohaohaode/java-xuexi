@@ -1,9 +1,9 @@
 # 后续开发约定
 
 - 先读 README、docs/00-blueprint.md 与当前模块设计，再修改实现。
-- 当前为 v0.6 联动学习工作台，129 个公开操作有实际实现；接口数不等于完整产品完成率，businessReady 仍为 false。先读 docs/02-modules.md 的逐模块实际与剩余范围，以 OpenAPI x-status、运行 capabilities 及 evidence/runtime-review.md 为准。
+- 当前为 v0.6 联动学习工作台，130 个公开操作有实际实现；接口数不等于完整产品完成率，businessReady 仍为 false。先读 docs/02-modules.md 的逐模块实际与剩余范围，以 OpenAPI x-status、运行 capabilities 及 evidence/runtime-review.md 为准。
 - 已有账号/会话生命周期、私有素材、真实阅读统计、编译队列与CODE编译契约判分、多层提示、所选作答上下文、受限教学工作流和真实DOCX/PPTX/PDF及图片内嵌。MODEL需要显式配置；通用任意工具自治、真实外部模型教学/账单验收、生成式图像/TTS/视频、生产性能SLO与备份恢复仍有剩余。不能把接口、协议测试或草稿审阅冒充这些验收。
-- 不在 API JVM 编译或运行用户输入。独立编译broker只在受限Docker容器执行COMPILE_ONLY，无Docker时拒绝启动，不能降级为主机编译。测试中的JavaCompiler仅用于仓库内固定案例；无真实Docker宿主验收时不得声称隔离实测通过。
+- 不在 API JVM 编译或运行用户输入。独立 broker 的 COMPILE_ONLY 和显式启用的 COMPILE_AND_RUN 都在受限 Docker 容器中执行；没有 Docker 时拒绝启动，不能降级为主机编译或运行。代码评分保持只编译语义。测试中的JavaCompiler仅用于仓库内固定案例；无真实Docker宿主验收时不得声称隔离实测通过。
 - 知识、题目、判分与引用都保存版本；不得覆盖历史成绩或伪造来源/模型输出/个人贡献。
 - 用户身份来自会话；每个私人资源验证归属；公共 DTO 不返回标准答案、隐藏测试或密钥。
 - 修改接口同时更新 contracts、领域端口、数据库映射、消费者与测试。

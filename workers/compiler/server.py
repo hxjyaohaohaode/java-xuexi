@@ -2,7 +2,7 @@
 """Trusted compiler broker. Untrusted source is only passed to a fresh restricted Docker container.
 
 Run this on a dedicated worker host. Never place Docker socket access in the API service.
-There is deliberately no host-javac or execute-user-bytecode fallback.
+Both teaching languages run only inside the dedicated image.
 """
 from __future__ import annotations
 
@@ -27,6 +27,12 @@ ISOLATION = "container-per-job-v1"
 MAX_BODY = 131_072
 MAX_OUTPUT = 65_536
 MAX_SOURCE = 32_768
+MAX_STDIN = 8192
+MAX_RUN_OUTPUT = 16384
+MAX_RUN_HEADER = 32768
+RUN_PROTOCOL = "typeforge-run-v1"
+EXECUTION_ENABLED = False
+PYTHON_VERSION = ""
 SLOTS = threading.BoundedSemaphore(2)
 RUNNING: dict[tuple[str, str], threading.Event] = {}
 RUNNING_LOCK = threading.Lock()
@@ -78,13 +84,17 @@ def validate_request(value):
     return value
 
 
-def docker_command(name: str, directory: Path, files: list[str]) -> list[str]:
+def sandbox_command(name: str, directory: Path) -> list[str]:
     # The immutable image id is resolved once at startup. No command/flag/path comes from JSON.
-    return ["docker", "run", "--rm", "--pull=never", "--name", name, "--network=none", "--read-only", "--user=65534:65534",
+    return ["docker", "run", "--rm", "--pull=never", "--name", name, "--network=none", "--log-driver=none", "--read-only", "--user=65534:65534",
             "--cap-drop=ALL", "--security-opt=no-new-privileges", "--pids-limit=64", "--memory=192m", "--memory-swap=192m",
             "--cpus=0.5", "--ulimit=nofile=128:128", "--ulimit=fsize=16777216:16777216", "--ipc=none",
             "--tmpfs=/tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777", "--mount", f"type=bind,src={directory},dst=/input,readonly",
-            "--workdir=/tmp", IMAGE, "javac", "-J-Xmx96m", "-J-XX:ActiveProcessorCount=1", "-J-Duser.language=en",
+            "--workdir=/tmp", IMAGE]
+
+
+def docker_command(name: str, directory: Path, files: list[str]) -> list[str]:
+    return sandbox_command(name, directory) + ["javac", "-J-Xmx96m", "-J-XX:ActiveProcessorCount=1", "-J-Duser.language=en",
             "-J-Duser.country=US", "-J-Dfile.encoding=UTF-8", "--release", "17", "-encoding", "UTF-8", "-proc:none",
             "-Xlint:all", "-Werror", "-XDrawDiagnostics", "-Xmaxerrs", "50", "-Xmaxwarns", "50", "-implicit:none",
             "-sourcepath", "/input", "-classpath", "/input/empty", "-d", "/tmp", *["/input/" + name for name in files]]
@@ -104,11 +114,13 @@ def kill_process_group(process):
         pass  # Completion can race the cancellation request.
 
 
-def run_bounded(command: list[str], cancel: threading.Event, deadline: float, container: str):
+def run_bounded(command: list[str], cancel: threading.Event, deadline: float, container: str, output_limit=MAX_OUTPUT, framed=False):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
                                start_new_session=True, env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": os.environ.get("HOME", "/tmp")})
     output = bytearray()
     state = None
+    byte_limit = MAX_RUN_HEADER if framed else output_limit
+    reading_header = framed
     try:
         with selectors.DefaultSelector() as selector:
             selector.register(process.stdout, selectors.EVENT_READ)
@@ -123,12 +135,21 @@ def run_bounded(command: list[str], cancel: threading.Event, deadline: float, co
                     part = os.read(key.fd, 8192)
                     if not part:
                         selector.unregister(key.fileobj)
-                    elif len(output) + len(part) > MAX_OUTPUT:
-                        output.extend(part[:MAX_OUTPUT - len(output)])
-                        state = "RESOURCE_LIMIT"
+                        continue
+                    if reading_header:
+                        newline = part.find(b"\n")
+                        if newline >= 0:
+                            header_size = len(output) + newline + 1
+                            if header_size > MAX_RUN_HEADER:
+                                state = "INFRA_ERROR"
+                                break
+                            byte_limit = header_size + output_limit
+                            reading_header = False
+                    if len(output) + len(part) > byte_limit:
+                        output.extend(part[:byte_limit - len(output)])
+                        state = "INFRA_ERROR" if reading_header else "RESOURCE_LIMIT"
                         break
-                    else:
-                        output.extend(part)
+                    output.extend(part)
                 if state:
                     break
         if state:
@@ -220,6 +241,63 @@ def compile_request(request, cancelled: threading.Event):
     return result
 
 
+def validate_run(value):
+    if not isinstance(value, dict) or set(value) != {"protocol", "jobId", "leaseToken", "source", "sourceHash", "language", "stdin"}:
+        raise ValueError("invalid run request")
+    if value["protocol"] != RUN_PROTOCOL or value["language"] not in ("JAVA", "PYTHON"):
+        raise ValueError("unsupported runtime")
+    common = {key: value[key] for key in ("jobId", "leaseToken", "source", "sourceHash")}
+    validate_request(dict(common, protocol=PROTOCOL, checks=[]))
+    stdin = value["stdin"]
+    if not isinstance(stdin, str) or "\0" in stdin or len(stdin.encode("utf-8")) > MAX_STDIN:
+        raise ValueError("invalid stdin")
+    return value
+
+
+def execute_request(request, cancelled):
+    language = request["language"]
+    result = {"protocol": RUN_PROTOCOL, "isolation": ISOLATION, "jobId": request["jobId"],
+              "leaseToken": request["leaseToken"], "sourceHash": request["sourceHash"], "language": language,
+              "stdinHash": hashlib.sha256(request["stdin"].encode()).hexdigest(),
+              "jdkVersion": JDK_VERSION, "runtimeVersion": PYTHON_VERSION if language == "PYTHON" else JDK_VERSION,
+              "diagnostics": [], "checks": [], "output": "", "outputTruncated": False, "status": "INFRA_ERROR"}
+    with tempfile.TemporaryDirectory(prefix="typeforge-run-") as temporary:
+        folder = Path(temporary)
+        folder.chmod(0o755)
+        (folder / "empty").mkdir(mode=0o555)
+        for name, content in (("Main.java" if language == "JAVA" else "main.py", request["source"]),
+                              ("stdin.txt", request["stdin"])):
+            path = folder / name
+            path.write_bytes(content.encode("utf-8"))
+            path.chmod(0o444)
+        name = "typeforge-run-" + uuid.uuid4().hex
+        command = sandbox_command(name, folder) + ["timeout", "--signal=KILL", "18s", "python3", "-I", "-B", "/opt/typeforge/runner.py", language]
+        state, code, output = run_bounded(command, cancelled, time.monotonic() + 12, name, MAX_RUN_OUTPUT, framed=True)
+    result["status"] = state or {0: "SUCCEEDED", 10: "RUNTIME_ERROR", 11: "COMPILE_ERROR",
+                                12: "RESOURCE_LIMIT", 137: "RESOURCE_LIMIT"}.get(code, "INFRA_ERROR")
+    # Docker invocation errors can contain host information. Only public program output is exposed.
+    if result["status"] == "INFRA_ERROR":
+        return result
+    header, newline, body = output.partition("\n")
+    if not newline and result["status"] in {"TIMED_OUT", "CANCELLED", "RESOURCE_LIMIT"}:
+        return result  # The process may have been stopped before compilation completed.
+    try:
+        info = json.loads(header)
+        if not isinstance(info, dict) or set(info) != {"compiler"} or not isinstance(info["compiler"], str):
+            raise ValueError("invalid runtime header")
+    except (ValueError, TypeError):
+        result["status"] = "INFRA_ERROR"
+        return result
+    result["output"] = body
+    result["outputTruncated"] = state == "RESOURCE_LIMIT"
+    rows = diagnostics(info["compiler"])[0]
+    if result["status"] == "COMPILE_ERROR" and not any(row["severity"] == "ERROR" for row in rows):
+        rows.append({"code": "source.compile.error", "severity": "ERROR", "line": -1, "column": -1,
+                     "message": (info["compiler"] or "源码未通过编译，请查看解释器输出。")[:1000]})
+    result["diagnostics"] = rows
+    return result
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
@@ -260,7 +338,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(401, {"error": "UNAUTHORIZED"})
         if self.path != "/health":
             return self.reply(404, {"error": "NOT_FOUND"})
-        self.reply(200, {"protocol": PROTOCOL, "isolation": ISOLATION, "ready": True, "imageId": IMAGE, "jdkVersion": JDK_VERSION})
+        self.reply(200, {"protocol": PROTOCOL, "isolation": ISOLATION, "ready": True, "imageId": IMAGE, "jdkVersion": JDK_VERSION,
+                         "executionEnabled": EXECUTION_ENABLED, "pythonVersion": PYTHON_VERSION})
 
     def do_POST(self):
         if not self.authorized():
@@ -282,10 +361,13 @@ class Handler(BaseHTTPRequestHandler):
                 if event:
                     event.set()
             return self.reply(200, {"cancelRequested": bool(event)})
-        if self.path != "/v1/compile":
+        execution = self.path == "/v1/run"
+        if execution and not EXECUTION_ENABLED:
+            return self.reply(503, {"error": "EXECUTION_DISABLED"})
+        if not execution and self.path != "/v1/compile":
             return self.reply(404, {"error": "NOT_FOUND"})
         try:
-            request = validate_request(value)
+            request = validate_run(value) if execution else validate_request(value)
         except (ValueError, TypeError, AttributeError):
             return self.reply(400, {"error": "INVALID_REQUEST"})
         if not SLOTS.acquire(blocking=False):
@@ -297,7 +379,7 @@ class Handler(BaseHTTPRequestHandler):
                 if key in RUNNING:
                     return self.reply(409, {"error": "DUPLICATE_LEASE"})
                 RUNNING[key] = cancelled
-            self.reply(200, compile_request(request, cancelled))
+            self.reply(200, execute_request(request, cancelled) if execution else compile_request(request, cancelled))
         except Exception:
             self.reply(503, {"error": "WORKER_FAILURE"})
         finally:
@@ -330,13 +412,28 @@ class BoundedServer(ThreadingHTTPServer):
             self.connections.release()
 
 
+def require_runtime_host():
+    try:
+        raw = subprocess.check_output(["docker", "info", "--format", "{{json .}}"], timeout=10)
+        info = json.loads(raw)
+    except (OSError, subprocess.SubprocessError, ValueError):
+        raise SystemExit("Docker host readiness check failed") from None
+    limits = ("MemoryLimit", "SwapLimit", "CpuCfsQuota", "CpuCfsPeriod", "PidsLimit")
+    if (info.get("OSType") != "linux" or not all(info.get(key) is True for key in limits) or
+        not any(option.startswith("name=seccomp") for option in info.get("SecurityOptions", []))):
+        raise SystemExit("Program execution requires a Linux Docker host with cgroup limits and seccomp")
+
+
 def main():
-    global TOKEN, IMAGE, JDK_VERSION
+    global TOKEN, IMAGE, JDK_VERSION, PYTHON_VERSION, EXECUTION_ENABLED
+    EXECUTION_ENABLED = os.environ.get("TYPEFORGE_EXECUTION_ENABLED", "").lower() == "true"
     TOKEN = os.environ.get("TYPEFORGE_COMPILER_TOKEN", "")
     if len(TOKEN) < 32 or any(ord(char) < 32 or ord(char) == 127 for char in TOKEN):
         raise SystemExit("Set TYPEFORGE_COMPILER_TOKEN to at least 32 random characters")
     if not shutil.which("docker"):
         raise SystemExit("Docker is required; compiling on the broker host is forbidden")
+    if EXECUTION_ENABLED:
+        require_runtime_host()
     image = os.environ.get("TYPEFORGE_COMPILER_IMAGE", "typeforge-compiler:jdk17")
     try:
         IMAGE = subprocess.check_output(["docker", "image", "inspect", "--format", "{{.Id}}", image], text=True, timeout=10).strip()
@@ -354,10 +451,36 @@ def main():
         if state or code or not re.fullmatch(r"javac 17[.0-9+_a-zA-Z-]*\s*", version):
             raise SystemExit("Restricted JDK17 container readiness check failed")
         JDK_VERSION = version.strip()
+        if EXECUTION_ENABLED:
+            name = "typeforge-check-" + uuid.uuid4().hex
+            state, code, version = run_bounded(sandbox_command(name, path) + ["python3", "-I", "-B", "-c",
+                "import sys; import pathlib; assert pathlib.Path('/opt/typeforge/runner.py').is_file(); print('Python', sys.version.split()[0])"],
+                threading.Event(), time.monotonic() + 15, name)
+            if state or code or not re.fullmatch(r"Python 3[.][0-9.]+\s*", version):
+                raise SystemExit("Restricted Python container readiness check failed")
+            PYTHON_VERSION = version.strip()
     host = os.environ.get("TYPEFORGE_COMPILER_BIND", "127.0.0.1")
     port = int(os.environ.get("TYPEFORGE_COMPILER_PORT", "8091"))
     print(f"Compiler broker ready on {host}:{port}; {JDK_VERSION}; {IMAGE}", flush=True)
-    BoundedServer((host, port), Handler).serve_forever(poll_interval=0.25)
+    def shutdown(*_):
+        raise KeyboardInterrupt
+    signal.signal(signal.SIGTERM, shutdown)
+    with BoundedServer((host, port), Handler) as server:
+        try:
+            server.serve_forever(poll_interval=0.25)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            with RUNNING_LOCK:
+                for cancelled in RUNNING.values():
+                    cancelled.set()
+            # Let request handlers remove their own containers before leaving the broker process.
+            deadline = time.monotonic() + 6
+            while time.monotonic() < deadline:
+                with RUNNING_LOCK:
+                    if not RUNNING:
+                        break
+                time.sleep(0.05)
 
 
 if __name__ == "__main__":
