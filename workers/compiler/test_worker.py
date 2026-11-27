@@ -1,14 +1,17 @@
 """Protocol/command construction tests. These do not claim a running Docker isolation audit."""
 import copy
 import hashlib
+import io
 import json
 from pathlib import Path
+import subprocess
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 import threading
 import time
 import uuid
 import server
+import start_workbench
 
 
 class WorkerProtocolTest(unittest.TestCase):
@@ -102,12 +105,56 @@ class WorkerProtocolTest(unittest.TestCase):
     def test_program_host_requires_enforceable_limits_and_seccomp(self):
         baseline = dict.fromkeys(("MemoryLimit", "SwapLimit", "CpuCfsQuota", "CpuCfsPeriod", "PidsLimit"), True)
         baseline.update(OSType="linux", SecurityOptions=["name=seccomp,profile=builtin"])
-        with patch.object(server.subprocess, "check_output", return_value=json.dumps(baseline).encode()):
+        command = ["docker", "info", "--format", "{{json .}}"]
+        with patch.object(server.subprocess, "check_output", side_effect=[
+            subprocess.TimeoutExpired(command, 10), json.dumps(baseline).encode(),
+        ]) as check:
             server.require_runtime_host()
-        for change in ({"SecurityOptions": []}, {"MemoryLimit": False}, {"PidsLimit": False}, {"OSType": "windows"}):
+        self.assertEqual([call(command, timeout=10), call(command, timeout=20)], check.call_args_list)
+        for change in ({"SecurityOptions": []}, {"SecurityOptions": ["name=seccomp-disabled"]},
+                       {"MemoryLimit": False}, {"PidsLimit": False}, {"OSType": "windows"}):
             with self.subTest(change=change), patch.object(server.subprocess, "check_output",
-                    return_value=json.dumps(dict(baseline, **change)).encode()), self.assertRaises(SystemExit):
+                    return_value=json.dumps(dict(baseline, **change)).encode()) as check:
+                with self.assertRaisesRegex(SystemExit, "cgroup limits and seccomp"):
+                    server.require_runtime_host()
+                check.assert_called_once_with(command, timeout=10)
+
+    def test_program_host_readiness_reports_timeout_or_invalid_metadata(self):
+        command = ["docker", "info", "--format", "{{json .}}"]
+        with patch.object(server.subprocess, "check_output", side_effect=subprocess.TimeoutExpired(command, 20)) as check:
+            with self.assertRaisesRegex(SystemExit, "exceeded both 10s and 20s"):
                 server.require_runtime_host()
+            self.assertEqual([call(command, timeout=10), call(command, timeout=20)], check.call_args_list)
+        for result, message in ((subprocess.CalledProcessError(2, command), "status 2"),
+                                (b"invalid", "invalid JSON"), (b"[]", "metadata object")):
+            with self.subTest(result=result), patch.object(server.subprocess, "check_output", side_effect=[result]) as check:
+                with self.assertRaisesRegex(SystemExit, message):
+                    server.require_runtime_host()
+                check.assert_called_once_with(command, timeout=10)
+
+    def test_launcher_waits_for_slow_verified_worker_and_bounds_a_stalled_start(self):
+        for ready_at in (60, None):
+            now = 0
+            def advance(seconds):
+                nonlocal now
+                now += seconds
+            def health(request, timeout):
+                if ready_at is not None and now >= ready_at:
+                    return io.BytesIO(b'{"executionEnabled":true}')
+                raise start_workbench.urllib.error.URLError("worker is starting")
+            broker = Mock()
+            broker.poll.return_value = None
+            with self.subTest(ready_at=ready_at), patch.object(start_workbench.time, "monotonic", side_effect=lambda: now), \
+                    patch.object(start_workbench.time, "sleep", side_effect=advance), \
+                    patch.object(start_workbench.urllib.request, "build_opener") as opener:
+                opener.return_value.open.side_effect = health
+                if ready_at is None:
+                    with self.assertRaisesRegex(RuntimeError, "within 100s"):
+                        start_workbench.wait_for_worker(broker, "localhost")
+                    self.assertAlmostEqual(100, now, delta=.21)
+                else:
+                    start_workbench.wait_for_worker(broker, "localhost")
+                    self.assertAlmostEqual(ready_at, now, delta=.21)
 
     def test_empty_classpath_directory_exists_under_the_readonly_mount(self):
         # A nonexistent path emits a lint warning and -Werror would reject every otherwise valid answer.
