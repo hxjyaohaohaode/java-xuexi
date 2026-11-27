@@ -283,3 +283,54 @@ describe('real request boundary', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('private polling at logout', () => {
+  it.each([true, false])(
+    'aborts active reads before revocation and fences the next poll while logout is pending (success=%s)',
+    async (success) => {
+      let completeRead!: (value: Response) => void;
+      let completeLogout!: (value: Response) => void;
+      let oldSignal: AbortSignal | undefined;
+      const events = '/workspaces/private-space/events?after=2&limit=100';
+      const fetcher = vi.fn<typeof fetch>().mockImplementation(async (url, options) => {
+        if (String(url).endsWith('/auth/csrf'))
+          return response({ token: 'test', headerName: 'X-CSRF-TOKEN' });
+        if (options?.method === 'DELETE')
+          return new Promise((resolve) => {
+            completeLogout = resolve;
+          });
+        if (String(url).endsWith(events) && !oldSignal) {
+          oldSignal = options?.signal ?? undefined;
+          // Some transports can deliver a response after cancellation.
+          return new Promise((resolve) => {
+            completeRead = resolve;
+          });
+        }
+        return response([]);
+      });
+      const client = new ApiClient(fetcher, sessionStorage);
+      client.scope = 'first-owner';
+      client.onUnauthenticated = vi.fn();
+      await client.warmCsrf();
+      const oldRead = client.get(events);
+      const ending = client.signOut();
+      expect(oldSignal?.aborted).toBe(true);
+      await expect(client.get(events)).rejects.toMatchObject({ name: 'AbortError' });
+      expect(fetcher.mock.calls.filter(([url]) => String(url).endsWith(events))).toHaveLength(1);
+      completeRead(response({ detail: 'revoked' }, 401));
+      await expect(oldRead).rejects.toMatchObject({ name: 'AbortError' });
+      expect(client.onUnauthenticated).not.toHaveBeenCalled();
+      completeLogout(
+        success ? new Response(null, { status: 204 }) : response({ detail: 'try again' }, 503),
+      );
+      if (success) {
+        await ending;
+        client.clearPrivateState();
+        await expect(client.get(events)).rejects.toMatchObject({ name: 'AbortError' });
+        client.scope = 'second-owner';
+      } else await expect(ending).rejects.toMatchObject({ status: 503 });
+      await expect(client.get(events)).resolves.toEqual([]);
+      expect(fetcher.mock.calls.filter(([url]) => String(url).endsWith(events))).toHaveLength(2);
+    },
+  );
+});

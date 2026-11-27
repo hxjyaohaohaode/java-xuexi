@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, useMemo, type CSSProperties } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -23,6 +23,7 @@ import { useMutation, useResource, useSessionDraft } from '../hooks';
 import { Confirmed, Empty, ErrorNotice, EvidenceList, Loading } from '../components/ui';
 import { ConceptMap } from '../components/ConceptMap';
 import { ClassroomExport } from '../components/ClassroomExport';
+import { PersonalLesson } from '../components/PersonalLesson';
 import { CourseExamples } from '../components/CourseExamples';
 import { LessonPractice } from '../components/LessonPractice';
 import { ConversationPanel } from './Tutor';
@@ -80,10 +81,17 @@ export function Learning() {
   );
   const [width, setWidth] = useSessionDraft('tf.classroom.width.' + scope, 36);
   const [directory, setDirectory] = useState(false);
-  const [playingLesson, setPlayingLesson] = useState('');
+  const [surface, setSurface] = useState<{
+    id: string;
+    view: 'personal' | 'source' | 'public';
+  } | null>(null);
+  const [refreshAttempt, setRefreshAttempt] = useState<{ conceptId: string; id: string } | null>(
+    null,
+  );
   const [discussion, setDiscussion] = useState<{
     lessonId: string;
     text: string;
+    attemptId?: string;
     id: string;
   } | null>(null);
   const [recommendations, setRecommendations] = useState(false);
@@ -104,6 +112,10 @@ export function Learning() {
   const stage = useRef<HTMLDivElement>(null);
   const scene = context.classroomScene || 'read';
   const items = concepts.data?.items || [];
+  const courseEvidence = useMemo(
+    () => concepts.data?.items.flatMap((c) => c.evidence) || [],
+    [concepts.data],
+  );
   const listed = selection
     ? items.find((c) => c.id === selection)
     : items.find((c) => c.id === lastConcept) || items[0];
@@ -113,6 +125,17 @@ export function Learning() {
     needsDetail && listed ? `/concepts/${listed.id}?releaseId=${workspace.releaseId}` : null,
   );
   const chosen = needsDetail ? detail.data : listed;
+  const view =
+    surface?.id === chosen?.id && surface
+      ? surface.view
+      : can('PERSONAL_COURSEWARE')
+        ? 'personal'
+        : 'source';
+  const discuss = (text: string, attempt?: string) => {
+    if (!chosen) return;
+    setDiscussion({ lessonId: chosen.id, text, attemptId: attempt, id: crypto.randomUUID() });
+    setHelper(true);
+  };
   const activePath =
     path.data?.workspaceId === workspace.id && path.data.releaseId === workspace.releaseId
       ? path.data
@@ -423,31 +446,66 @@ export function Learning() {
                           ))}
                         </div>
                       )}
-                      <div className="segments" role="group" aria-label="本节学习方式">
+                      <div
+                        className="segments classroom-reading-modes"
+                        role="group"
+                        aria-label="本节学习方式"
+                      >
+                        {can('PERSONAL_COURSEWARE') && (
+                          <button
+                            aria-pressed={view === 'personal'}
+                            onClick={() => setSurface({ id: chosen.id, view: 'personal' })}
+                          >
+                            我的课件
+                          </button>
+                        )}
                         <button
-                          aria-pressed={playingLesson !== chosen.id}
-                          onClick={() => setPlayingLesson('')}
+                          aria-pressed={view === 'source'}
+                          onClick={() => setSurface({ id: chosen.id, view: 'source' })}
                         >
                           阅读原文
                         </button>
                         <button
-                          aria-pressed={playingLesson === chosen.id}
-                          onClick={() => setPlayingLesson(chosen.id)}
+                          aria-pressed={view === 'public'}
+                          onClick={() => setSurface({ id: chosen.id, view: 'public' })}
                         >
-                          播放课件
+                          公共课件
                         </button>
                       </div>
-                      {playingLesson === chosen.id ? (
+                      {view === 'personal' ? (
+                        <PersonalLesson
+                          key={scope + '.' + chosen.id}
+                          courseEvidence={courseEvidence}
+                          concept={chosen}
+                          scope={scope}
+                          onDiscuss={discuss}
+                          refreshAfterAttempt={
+                            refreshAttempt?.conceptId === chosen.id ? refreshAttempt.id : undefined
+                          }
+                          onActivity={(activity) => {
+                            if (activity.kind === 'READ') {
+                              const origin =
+                                courseEvidence.find(
+                                  (card) =>
+                                    card.chunkId === activity.chunkId &&
+                                    card.revision === activity.chunkRevision,
+                                )?.conceptId || chosen.id;
+                              setSurface({ id: origin, view: 'source' });
+                              if (origin !== chosen.id) open(origin, 'read');
+                            }
+                            if (activity.kind === 'PRACTICE' && activity.exerciseId)
+                              open(chosen.id, 'practice', activity.exerciseId);
+                            if (activity.kind === 'REFLECT') open(chosen.id, 'review');
+                          }}
+                        />
+                      ) : view === 'public' ? (
                         <Suspense fallback={<Loading label="正在打开课堂课件…" />}>
                           <LessonPlayer
                             key={chosen.id}
                             concept={chosen}
                             scope={scope}
                             discussionEnabled={can('TUTOR_EVIDENCE_ONLY')}
-                            onDiscuss={(text) => {
-                              setDiscussion({ lessonId: chosen.id, text, id: crypto.randomUUID() });
-                              setHelper(true);
-                            }}
+                            onDiscuss={discuss}
                           />
                         </Suspense>
                       ) : (
@@ -482,12 +540,28 @@ export function Learning() {
                     />
                   )}
                   {scene === 'practice' && (
-                    <LessonPractice
-                      key={context.classroomExercise || chosen.id}
-                      concept={chosen}
-                      requestedId={context.classroomExercise}
-                      onAttempt={(a) => setAttempt({ conceptId: chosen.id, id: a.id })}
-                    />
+                    <>
+                      <LessonPractice
+                        key={context.classroomExercise || chosen.id}
+                        concept={chosen}
+                        requestedId={context.classroomExercise}
+                        onAttempt={(a) => {
+                          setAttempt({ conceptId: chosen.id, id: a.id });
+                          if (a.status === 'GRADED')
+                            setRefreshAttempt({ conceptId: chosen.id, id: a.id });
+                        }}
+                      />
+                      {can('PERSONAL_COURSEWARE') && refreshAttempt?.conceptId === chosen.id && (
+                        <button
+                          onClick={() => {
+                            setSurface({ id: chosen.id, view: 'personal' });
+                            open(chosen.id, 'read');
+                          }}
+                        >
+                          依据这次反馈更新课件
+                        </button>
+                      )}
+                    </>
                   )}
                   {scene === 'lab' && <Lab initialConceptCode={chosen.code} />}
                   {scene === 'review' && <ProgressPage lesson={chosen} />}
@@ -501,24 +575,15 @@ export function Learning() {
               <details className="classroom-export">
                 <summary>导出本节课堂</summary>
                 <p className="muted small">
-                  OpenMAIC 课堂包含本节课程证据、配套 Java 示例和讨论活动。
+                  公开 OpenMAIC 课堂只包含已发布的讲义、Java 示例与讨论。Harness
+                  资料另含当前学习建议。
                 </p>
                 <button
                   disabled={archive.busy}
                   onClick={() =>
                     void archive.run(async () => {
-                      const { buildMaicArchive } = await import('../openmaic');
-                      const bytes = buildMaicArchive(chosen);
-                      const url = URL.createObjectURL(
-                        new Blob([new Uint8Array(bytes)], { type: 'application/zip' }),
-                      );
-                      const link = document.createElement('a');
-                      link.href = url;
-                      link.download = chosen.code.replace(/[^a-zA-Z0-9_-]/g, '_') + '.maic.zip';
-                      document.body.append(link);
-                      link.click();
-                      link.remove();
-                      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+                      const { downloadMaicArchive } = await import('../openmaic');
+                      downloadMaicArchive(chosen);
                     })
                   }
                 >
@@ -597,7 +662,11 @@ export function Learning() {
                   <ConversationPanel
                     key={chosen.id}
                     lesson={chosen}
-                    attemptId={attemptId}
+                    attemptId={
+                      discussion?.lessonId === chosen.id && discussion.attemptId
+                        ? discussion.attemptId
+                        : attemptId
+                    }
                     discussion={discussion?.lessonId === chosen.id ? discussion : undefined}
                     onDiscussionLoaded={() => setDiscussion(null)}
                   />

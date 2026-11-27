@@ -12,5 +12,8 @@
   "V011__private_assets.sql": "1bf9c34c1471ac54913308966c7caba13ae920493adc5b3d7e8738a03a6a7d28",
   "V012__evaluation_workbench.sql": "1fa820ff538f991c3120f31fd15028a70d921187226e4dae30ef8aa6034dcab7",
   "V013__text_and_notebook_interactions.sql": "00bf9f9299d92f2c59f2ace372edebfcfe8b84c6f992e8fc65e4e33d3bf0f32f",
-  "V014__batch_ingestion.sql": "6205d51a25f15fa41d60fb9e77069f0f4f9f3d8215940c438653aa31e32f8efe"
+  "V014__batch_ingestion.sql": "6205d51a25f15fa41d60fb9e77069f0f4f9f3d8215940c438653aa31e32f8efe",
+  "V015__learning_context_checkpoints.sql": "3614a625e2aa3dde2d4f66fe8a05e687cd85a2ca77efdd9cb7bd48e372bfa6a0",
+  "V016__personal_courseware.sql": "88c65a3d3e7510f3d5508b6920d66f10e460691eb1c2ea06a56f04f2d55d9dfd",
+  "V017__courseware_study_runs.sql": "7a9c7fd7efd284a7d49ed1a3f5bc38f97e99a497068e20112f6dde76d49b1288"
 }

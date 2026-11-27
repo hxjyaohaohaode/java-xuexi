@@ -1,6 +1,7 @@
 name: Integrated learning workbench verification
 on:
   push:
+    branches: [main]
   pull_request:
 permissions:
   contents: read
@@ -148,7 +149,7 @@ jobs:
         run: python scripts/verify_content_mysql.py
       - name: Verify account lifecycle and private assets against real MySQL
         run: python scripts/verify_private_modules_mysql.py
-      - name: Verify evaluation imports TEXT and Notebook interactions against real MySQL
+      - name: Verify evaluation, imports, Notebook and personal courseware against real MySQL
         run: python scripts/verify_v06_modules_mysql.py
       - name: Install Chromium for the real browser integration
         working-directory: frontend

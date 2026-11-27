@@ -35,6 +35,8 @@ class WorkspaceContextSelectionTest {
     private static final UUID RELEASE=DemoContentInitializer.RELEASE_ID;
     private static final String PASSWORD="context-selection-fixture-password-123";
     @Autowired WorkspaceService workspaces;
+    @Autowired io.typeforge.workspace.LearningContextJournal journal;
+    @Autowired org.springframework.transaction.support.TransactionTemplate tx;
     @Autowired LearningService learning;
     @Autowired IdentityService identities;
     @Autowired JdbcTemplate jdbc;
@@ -64,6 +66,36 @@ class WorkspaceContextSelectionTest {
         jdbc.update("INSERT INTO workspace_attempt(workspace_id,attempt_id) VALUES(?,?)",workspace.toString(),id.toString());return id;
     }
     private List<UUID> attemptIds(WorkspaceService.Context context){return context.references().stream().filter(ref->ref.kind().equals("ATTEMPT")).map(Reference::id).toList();}
+
+    @Test void journalReopensAfterRestartAndRehydratesOnlyPinnedSourcesIncludingAnOlderAttempt() {
+        UUID concept=UUID.fromString(jdbc.queryForObject("SELECT concept_id FROM exercise_concept WHERE exercise_id=? LIMIT 1",String.class,exercise.toString()));
+        var old=graded(owner,workspace);
+        for(int i=0;i<4;i++) graded(owner,workspace);
+        jdbc.update("UPDATE exercise_attempt SET created_at=? WHERE id=?",Timestamp.from(Instant.now().minusSeconds(300)),old.toString());
+        var memory=workspaces.stateMemory(owner,workspace,"先预测输出 "+"保持这一已声明偏好。".repeat(80)+" 最后独立验证",key());
+        var snapshot=workspaces.createContext(owner,workspace);
+        var checkpoint=journal.capture(owner,workspace,snapshot.id(),concept);
+        assertTrue(checkpoint.originalChars()>checkpoint.retainedChars());
+        assertTrue(checkpoint.omittedCount()>=2);
+        assertTrue(checkpoint.facts().stream().noneMatch(item->item.sourceId().equals(old)));
+        var reopened=new io.typeforge.workspace.LearningContextJournal(jdbc,tx,workspaces,json);
+        assertEquals(checkpoint,reopened.read(owner,workspace,checkpoint.id()));
+        assertEquals(checkpoint,reopened.capture(owner,workspace,snapshot.id(),concept));
+        var fact=reopened.recall(owner,workspace,checkpoint.id(),"ATTEMPT",old);
+        assertTrue(fact.text().contains("得分"));assertEquals(old,fact.sourceId());
+        assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM learning_context_checkpoint WHERE id=?",Integer.class,checkpoint.id().toString()));
+        var different=UUID.fromString(jdbc.queryForObject("SELECT concept_id FROM release_concept WHERE release_id=? AND concept_id NOT IN (SELECT concept_id FROM exercise_concept WHERE exercise_id=?) LIMIT 1",String.class,RELEASE.toString(),exercise.toString()));
+        var elsewhere=reopened.capture(owner,workspace,snapshot.id(),different);
+        assertTrue(elsewhere.facts().stream().noneMatch(item->item.kind().equals("ATTEMPT")));
+        assertThrows(DomainException.class,()->reopened.recall(owner,workspace,elsewhere.id(),"ATTEMPT",old));
+        UUID other=identities.register("journal-other-"+key(),PASSWORD).userId();
+        assertThrows(DomainException.class,()->reopened.read(other,workspace,checkpoint.id()));
+        workspaces.revokeMemory(owner,workspace,memory.id(),memory.revision());
+        assertThrows(DomainException.class,()->reopened.read(owner,workspace,checkpoint.id()));
+        assertThrows(DomainException.class,()->reopened.recall(owner,workspace,checkpoint.id(),"ATTEMPT",old));
+        var fresh=reopened.capture(owner,workspace,workspaces.createContext(owner,workspace).id(),concept);
+        assertTrue(fresh.facts().stream().noneMatch(item->item.sourceId().equals(memory.id())));
+    }
 
     @Test void explicitSelectionIncludesOlderGradedAttemptsInExactCallerOrder(){
         var history=new ArrayList<UUID>();Instant first=Instant.now().minusSeconds(30);

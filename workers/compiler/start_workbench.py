@@ -25,6 +25,23 @@ def stop(process):
             process.wait()
 
 
+def wait_for_worker(broker, request):
+    http = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    # Allow both metadata reads, pinned image inspection, and the two isolated toolchain probes and cleanup.
+    ready_by = time.monotonic() + 100
+    while (remaining := ready_by - time.monotonic()) > 0:
+        if broker.poll() is not None:
+            raise RuntimeError("Isolated code worker failed to start")
+        try:
+            with http.open(request, timeout=min(1, remaining)) as response:
+                if json.load(response).get("executionEnabled") is True:
+                    return
+        except (urllib.error.URLError, TimeoutError):
+            pass
+        time.sleep(max(0, min(.2, ready_by - time.monotonic())))
+    raise RuntimeError("Isolated code worker did not become ready within 100s")
+
+
 def serve(args):
     jar = args.jar.resolve(strict=True)
     subprocess.run(["docker", "build", "-t", IMAGE, str(WORKER)], check=True)
@@ -38,18 +55,7 @@ def serve(args):
     try:
         broker = subprocess.Popen([sys.executable, str(WORKER / "server.py")], env=env)
         request = urllib.request.Request(base + "/health", headers={"Authorization": "Bearer " + token})
-        http = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        for _ in range(200):
-            if broker.poll() is not None:
-                raise RuntimeError("Isolated code worker failed to start")
-            try:
-                with http.open(request, timeout=1) as response:
-                    if json.load(response).get("executionEnabled") is True:
-                        break
-            except (urllib.error.URLError, TimeoutError):
-                time.sleep(.2)
-        else:
-            raise RuntimeError("Isolated code worker did not become ready")
+        wait_for_worker(broker, request)
         env = dict(os.environ, TYPEFORGE_COMPILER_WORKER_TOKEN=token, TYPEFORGE_EXECUTION_ENABLED="true")
         app = subprocess.Popen(["java", "-jar", str(jar), "--spring.profiles.active=demo",
             "--server.address=127.0.0.1", f"--server.port={args.port}", "--typeforge.compiler.enabled=true",

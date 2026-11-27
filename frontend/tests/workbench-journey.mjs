@@ -395,6 +395,9 @@ export async function runWorkbenchJourney(d, check) {
       await d.captureResponsive('v06-concept-map', [320, 390]);
       await d.click('button', '层次列表');
       await d.click('button', '阅读这一概念', '#concept-path-detail');
+      await d.click('button', '阅读原文');
+      await d.text(names.childChunk, '.scene-read .evidence-card');
+      await d.text(/泛型读取边界：List<\? extends Number> 读取为 Number/, '.scene-read .evidence-card');
       await d.click('button', '记录已读');
       await d.text('服务端已记录本次阅读。');
       await d.click('link', '练习与反馈');

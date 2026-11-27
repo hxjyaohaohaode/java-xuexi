@@ -96,3 +96,65 @@ it('keeps author text verbatim and separates only the seeded edition’s exact i
     expect(raw.sha256).toBe(evidence.contentHash);
   }
 });
+
+it('renders privately ordered evidence, questions and role actions without serializing workspace references', () => {
+  const source = testConcept.evidence[0];
+  const activity = {
+    key: 'predict',
+    kind: 'PREDICT' as const,
+    title: '对照你的先前判断',
+    body: '为什么这里不能写入？',
+    prompt: '给出条件变化前后的两个结果。',
+    attemptId: 'private-attempt-reference',
+    exerciseId: 'public-exercise',
+    exerciseRevision: 1,
+    chunkId: source.chunkId,
+    chunkRevision: source.revision,
+    exampleId: null,
+    exampleSha256: null,
+  };
+  const plan = {
+    id: 'private-plan',
+    workspaceId: 'private-workspace',
+    releaseId: testConcept.releaseId,
+    conceptId: testConcept.id,
+    conceptCode: testConcept.code,
+    title: testConcept.title,
+    revision: 4,
+    createdAt: '2026-05-12T00:00:00Z',
+    snapshotId: 'private-snapshot',
+    contextSequence: 42,
+    checkpointId: 'private-checkpoint',
+    checkpointDigest: 'private-digest',
+    contentHash: 'private-content-hash',
+    requestedApproach: 'AUTO' as const,
+    strategy: 'REPAIR' as const,
+    pace: 'GUIDED' as const,
+    reasons: ['my secret note'],
+    scenes: [activity],
+  };
+  const personal = buildMaicLesson(testConcept, 1, plan);
+  expect(personal.transcripts).toEqual([activity.body]);
+  expect(personal.activities[0]?.attemptId).toBe(activity.attemptId);
+  const packed = unzipSync(buildMaicArchive(testConcept, 1, plan));
+  const bytes = Object.values(packed)
+    .map((value) => strFromU8(value))
+    .join('');
+  for (const privateValue of [
+    plan.id,
+    plan.snapshotId,
+    plan.checkpointDigest,
+    plan.workspaceId,
+    activity.attemptId,
+    plan.reasons[0],
+  ])
+    expect(bytes).not.toContain(privateValue);
+  const manifest = JSON.parse(strFromU8(packed['manifest.json']));
+  expect(manifest.scenes[0].actions[0]).toMatchObject({
+    type: 'discussion',
+    topic: activity.body,
+    prompt: activity.prompt,
+    agentIndex: 1,
+  });
+  expect(JSON.stringify(buildMaicLesson(testConcept, 1).scenes)).not.toContain(activity.title);
+});

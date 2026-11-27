@@ -129,6 +129,7 @@ public final class HttpTutorModelProvider implements TutorAnswerProvider,Runtime
             for(var item:prompt.learnerContext()) {
                 if("OWN_SUBMITTED_ATTEMPT".equals(item.get("kind"))) learner.add(Map.of("submittedAnswer",
                     clip(String.valueOf(item.get("submittedAnswer")),220),"score",item.get("score")));
+                if("GOAL".equals(item.get("kind"))) learner.add(Map.of("learningGoal",clip(String.valueOf(item.get("text")),160)));
                 if("USER_STATED_MEMORY".equals(item.get("kind"))) learner.add(Map.of("statedPreference",clip(String.valueOf(item.get("text")),100)));
             }
             var guidance=new ArrayList<Map<String,String>>();
@@ -138,9 +139,12 @@ public final class HttpTutorModelProvider implements TutorAnswerProvider,Runtime
                 if(rule.correction()!=null) entry.put("correction",rule.correction());
                 guidance.add(entry);
             }
-            user=Map.of("question",prompt.question(),"learnerContext",learner,"publishedEvidence",evidence,"courseReviewGuidance",guidance);
+            var handoffs=prompt.handoffs().stream().map(h->Map.of("step",h.stepKey(),"excerpt",h.excerpt())).toList();
+            user=Map.of("question",prompt.question(),"learnerContext",learner,"publishedEvidence",evidence,"courseReviewGuidance",guidance,"handoffs",handoffs);
         }
-        byte[] bytes=json.write(Map.of("model",settings.model(),"messages",List.of(Map.of("role","system","content",systemInstruction(prompt.purpose())),Map.of("role","user","content",json.write(user))),
+        String instruction=systemInstruction(prompt.purpose());
+        if (withoutRepairEvidence(prompt)) instruction+="\n本节没有纳入需订正的本人作答。可选计划为 concept-first 或 example-first，角色仅可为 CONCEPT 或 EXAMPLE。";
+        byte[] bytes=json.write(Map.of("model",settings.model(),"messages",List.of(Map.of("role","system","content",instruction),Map.of("role","user","content",json.write(user))),
             "response_format",responseFormat(prompt),"max_tokens",settings.maxOutputTokens(),"stream",false)).getBytes(StandardCharsets.UTF_8);
         if(bytes.length>TutorSettings.MAX_PROMPT_BYTES) throw new Failure("TUTOR_CONTEXT_TOO_LARGE");
         return bytes;
@@ -161,11 +165,23 @@ public final class HttpTutorModelProvider implements TutorAnswerProvider,Runtime
         };
     }
 
+    private static boolean withoutRepairEvidence(Prompt prompt) {
+        return prompt.purpose()==Purpose.PLANNER
+            && prompt.learnerContext().stream().anyMatch(item->"PERSONAL_LESSON".equals(item.get("kind")))
+            && prompt.learnerContext().stream().noneMatch(item->"OWN_SUBMITTED_ATTEMPT".equals(item.get("kind")));
+    }
+
     private Map<String,Object> responseFormat(Prompt prompt) {
         if(prompt.purpose()==Purpose.TUTOR || !settings.workflowStructuredOutputs()) return Map.of("type","json_object");
         boolean planner=prompt.purpose()==Purpose.PLANNER;
         ObjectNode schema;
-        if(planner) schema=schemas.definition("StudyTeachingPlan");
+        if(planner) {
+            schema=schemas.definition("StudyTeachingPlan");
+            if(withoutRepairEvidence(prompt)) {
+                ((ObjectNode)schema.at("/properties/strategy")).putArray("enum").add("concept-first").add("example-first");
+                ((ObjectNode)schema.at("/properties/sections/items/properties/role")).putArray("enum").add("CONCEPT").add("EXAMPLE");
+            }
+        }
         else {
             schema=outputParser.createObjectNode();
             schema.put("type","object").put("additionalProperties",false);
@@ -220,6 +236,11 @@ public final class HttpTutorModelProvider implements TutorAnswerProvider,Runtime
                 plan.remove("citedChunkIds");
                 try { schemas.validate("StudyTeachingPlan",plan); }
                 catch(DomainException invalid) { throw new Failure("STUDY_PLAN_FORMAT_INVALID",usage); }
+                if(withoutRepairEvidence(prompt)) {
+                    if("repair-first".equals(plan.path("strategy").asText())) throw new Failure("STUDY_PLAN_LACKS_REPAIR_EVIDENCE",usage);
+                    for(var section:plan.path("sections")) if("REPAIR".equals(section.path("role").asText()))
+                        throw new Failure("STUDY_PLAN_LACKS_REPAIR_EVIDENCE",usage);
+                }
                 answerText=json.write(plan);
                 limitations="教学计划是待验证的模型建议。";
             } else {

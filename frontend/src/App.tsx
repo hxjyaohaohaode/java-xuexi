@@ -229,7 +229,7 @@ function SignedIn({
   };
   const logout = () =>
     mutation.run(
-      () => api.request('/auth/session', 'DELETE'),
+      () => api.signOut(),
       () => onLogout(),
     );
   if ((workspaces.loading && !workspaces.data) || (capabilities.loading && !capabilities.data))

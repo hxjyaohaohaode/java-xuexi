@@ -9,8 +9,8 @@ import java.util.UUID;
 public interface TutorAnswerProvider {
     enum Purpose { TUTOR, PLANNER, CONCEPT, EXAMPLE, REPAIR, REVIEW }
     record Prompt(UUID requestId,String question,int hintLevel,List<String> recentQuestions,
-                  List<Map<String,Object>> learnerContext,List<EvidenceView> evidence,Purpose purpose) {
-        public Prompt { recentQuestions=List.copyOf(recentQuestions);learnerContext=List.copyOf(learnerContext);evidence=List.copyOf(evidence); }
+                  List<Map<String,Object>> learnerContext,List<EvidenceView> evidence,Purpose purpose,List<StudyContextJournal.Incoming> handoffs) {
+        public Prompt { recentQuestions=List.copyOf(recentQuestions);learnerContext=List.copyOf(learnerContext);evidence=List.copyOf(evidence);handoffs=List.copyOf(handoffs); }
     }
     record Usage(long promptTokens,long completionTokens,long totalTokens) {}
     record Answer(String text,List<UUID> citedChunkIds,String limitations,Usage usage,String providerModelId) {

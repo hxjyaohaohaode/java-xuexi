@@ -5,7 +5,7 @@ export async function verifyMaicPlayback(page, conceptId) {
   const lessonUrl = page.url();
   assert.equal(decodeURIComponent(new URL(lessonUrl).hash.split('/')[1].split('?')[0]), conceptId);
   const button = (name) => page.getByRole('button', { name, exact: true });
-  await button('播放课件').click();
+  await button('公共课件').click();
   const player = page.getByRole('region', { name: 'OpenMAIC 课堂播放器', exact: true });
   await player.locator('.maic-canvas .slide-renderer-prose').first().waitFor();
   const select = player.getByLabel('选择课件场景');

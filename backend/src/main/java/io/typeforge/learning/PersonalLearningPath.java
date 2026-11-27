@@ -47,7 +47,7 @@ public class PersonalLearningPath implements RuntimeCapabilityProvider {
             SELECT DISTINCT concept_id FROM workspace_reading WHERE workspace_id=? AND event_type='READ_COMPLETED'
             """, String.class, scope));
         List<String> goals = jdbc.queryForList("""
-            SELECT goal_text FROM learning_goal WHERE workspace_id=? AND status='ACTIVE' ORDER BY created_at DESC,id LIMIT 20
+            SELECT goal_text FROM learning_goal WHERE workspace_id=? AND origin_kind='LEARNER' AND status='ACTIVE' ORDER BY created_at DESC,id LIMIT 20
             """, String.class, scope);
         Map<UUID,Last> recent = new HashMap<>();
         jdbc.query("""

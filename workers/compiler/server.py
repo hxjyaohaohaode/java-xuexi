@@ -16,6 +16,7 @@ import selectors
 import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -413,14 +414,31 @@ class BoundedServer(ThreadingHTTPServer):
 
 
 def require_runtime_host():
+    command = ["docker", "info", "--format", "{{json .}}"]
+    # Retrying a metadata read cannot launch or duplicate a learner's job.
+    for timeout in (10, 20):
+        try:
+            raw = subprocess.check_output(command, timeout=timeout)
+            break
+        except subprocess.TimeoutExpired:
+            if timeout == 20:
+                raise SystemExit("Docker host readiness timed out: docker info exceeded both 10s and 20s") from None
+            print("Docker host readiness: docker info exceeded 10s; retrying once for 20s", file=sys.stderr, flush=True)
+        except subprocess.CalledProcessError as error:
+            raise SystemExit(f"Docker host readiness: docker info exited with status {error.returncode}") from None
+        except OSError as error:
+            raise SystemExit(f"Docker host readiness: cannot run docker info ({type(error).__name__})") from None
     try:
-        raw = subprocess.check_output(["docker", "info", "--format", "{{json .}}"], timeout=10)
         info = json.loads(raw)
-    except (OSError, subprocess.SubprocessError, ValueError):
-        raise SystemExit("Docker host readiness check failed") from None
+    except ValueError:
+        raise SystemExit("Docker host readiness: docker info returned invalid JSON") from None
+    if not isinstance(info, dict):
+        raise SystemExit("Docker host readiness: docker info did not return a metadata object")
     limits = ("MemoryLimit", "SwapLimit", "CpuCfsQuota", "CpuCfsPeriod", "PidsLimit")
+    security = info.get("SecurityOptions")
     if (info.get("OSType") != "linux" or not all(info.get(key) is True for key in limits) or
-        not any(option.startswith("name=seccomp") for option in info.get("SecurityOptions", []))):
+        not isinstance(security, list) or not any(isinstance(option, str) and option.split(",", 1)[0] == "name=seccomp"
+                                                  for option in security)):
         raise SystemExit("Program execution requires a Linux Docker host with cgroup limits and seccomp")
 
 

@@ -191,6 +191,12 @@ def main():
     browser_cases = observations.get('results', [])
     require(browser_cases and all(item.get('status') == 'PASS' for item in browser_cases),
             'Graphical browser checks are incomplete')
+    personal = observations.get('personalCourseware', {})
+    require(personal.get('ordinary') == 'FOUNDATION' and personal.get('preference') == 'EXAMPLE_FIRST'
+            and personal.get('feedback') == 'REPAIR' and personal.get('studyOutput') == 'SLIDES'
+            and all(personal.get(key) is True for key in ('readableFeedback','publicExportIsolated','privateExportAuthorized')),
+            'Graphical browser did not demonstrate differentiated lessons, private export and linked slide production')
+    frontend['personalCourseware'] = personal
     frontend['graphicalBrowser'] = {'localStatus': 'PASS', 'results': browser_cases,
                                     'runtime': compact(graphics)}
     require_unchanged(static['verificationInputs'], ROOT)
@@ -237,13 +243,14 @@ def main():
 | MySQL 隔离 | {isolation['tests']} 项 | 实际 READ COMMITTED、锁后可见已提交写入，并有 REPEATABLE READ 对照 |
 | MySQL 内容服务 | {editorial['tests']} 项 | 实际 JDBC 引擎证明；人工录入、审核hash、发布/激活及并发服务在真实 MySQL 上复跑 |
 | MySQL 账户与素材 | {private_modules['tests']} 项 | 实际 JDBC 引擎证明；账户关闭/会话/并发身份、UTC统计、上传/撤回/配额及下载隔离 |
-| MySQL v0.6 业务链 | {v06_modules['tests']} 项 | 实际 JDBC 引擎证明；批量导入/原子回滚、修订对比、私有评测/容量/取消、TEXT独立审核判分、六类错题块与管理统计 |
+| MySQL v0.6 业务链 | {v06_modules['tests']} 项 | 实际 JDBC 引擎证明；批量导入/原子回滚、修订对比、私有评测/容量/取消、TEXT独立审核判分、六类错题块、管理统计及个人课件生成和恢复 |
 | 编译 broker Python | {compiler_unit['tests']} 项 | 离线协议/边界/清理归属；真实容器隔离在远端 CI 独立执行 |
 | 验收脚本回归 | {verification_guards['tests']} 项 | 临时 Git/进程夹具验证旧 PASS 复用、缺失测试、源码/JAR变化与驱动失败；不是实际 Maven、浏览器或数据库执行 |
 | H2 实际 HTTP/重启 | {len(smokes['h2']['checks'])} 项；{len(smokes['h2']['http'])} 次请求 | 单独进程、真实会话/CSRF、业务链、真实下载、重启保留与撤回后失效 |
 | MySQL 实际 HTTP/重启 | {len(smokes['mysql']['checks'])} 项；{len(smokes['mysql']['http'])} 次请求 | 同一应用包在真实 MySQL 上运行，独立 SQL 查询验证已写入事实 |
 | 前端类型/构建/单元 | {unit['numTotalTests']} 项单元通过；TypeScript 与 Vite 构建成功 | 编译与组件/状态逻辑；不等于真实浏览器布局验收 |
 | 前端 DOM + 真实 HTTP | {len(dom_steps['steps'])} 条链通过 | 无服务端响应 mock；jsdom 驱动真实后端；不验证浏览器布局/原生下载 |
+| 双账户同课 | {personal['concept']} · {personal['ordinary']} / {personal['preference']} / {personal['feedback']} | 浏览器观测的首学、偏好及错因分镜，打开原判分，从课程恢复本人讲解幻灯片；私人导出独立授权 |
 | Chromium 浏览器 | {len(browser_cases)} 个检查段通过 | 真实浏览器操作同一份 JAR；CI 另行验证推送的提交 |
 
 Java 测试类汇总
@@ -305,7 +312,7 @@ python scripts/record_verification.py --check-snapshot
 
 真实供应商模型的教学效果、费用账单、通用任意工具调度、隔离编译服务的生产部署、生成式图像/音频/视频、全课程人工审核、生产负载与备份恢复、正式答辩和个人贡献均不在本轮PASS范围内。Docker 上的 Java/Python 运行和浏览器提交结果由 GitHub Actions 独立记录。逐模块剩余事项及代码入口见 [接手指南](../docs/02-modules.md)。最终40项课程验收保持独立，不因自动测试通过而自动升级。
 
-旧基线报告和重复字段字典已清理；历史保留在Git。V001–V014为合法升级链，由 `database/migrations.lock.json`锁定，不能为清理旧版本而删除。
+旧基线报告和重复字段字典已清理；历史保留在Git。V001–V017为合法升级链，由 `database/migrations.lock.json`锁定，不能为清理旧版本而删除。
 '''
     (ROOT/REVIEW).write_text(review,encoding='utf-8')
     print(json.dumps({'result':'PASS','javaTests':totals['tests'],'frontendTests':unit['numTotalTests'],'sourceFiles':current['fileCount'],'sourceDigest':current['digest']},indent=2))

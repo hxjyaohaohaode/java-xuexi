@@ -447,3 +447,61 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+.classroom-reading-modes {
+  flex-wrap: wrap;
+}
+.personal-lesson {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+.personal-lesson-head,
+.personal-plan-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.1rem;
+  justify-content: space-between;
+  align-items: center;
+}
+.personal-lesson-head h3 {
+  margin: 0.2rem 0 0;
+  font-size: 1.2rem;
+}
+.personal-plan-controls {
+  justify-content: flex-start;
+  align-items: flex-end;
+}
+.personal-plan-controls label {
+  display: grid;
+  gap: 0.3rem;
+}
+.personal-reasons summary,
+.personal-export summary {
+  cursor: pointer;
+}
+.personal-activity {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.personal-activity > button {
+  justify-self: start;
+}
+.personal-activity p {
+  margin: 0;
+  line-height: 1.65;
+}
+.personal-export,
+.courseware-study {
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+  min-width: 0;
+}
+.courseware-study h4 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.courseware-study .slides-preview {
+  min-width: 0;
+}

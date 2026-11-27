@@ -116,7 +116,7 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
     }
     public List<Goal> goals(UUID owner,UUID workspace) {
         requireOwned(owner,workspace);
-        return jdbc.queryForList("SELECT id FROM learning_goal WHERE workspace_id=? ORDER BY created_at DESC,id LIMIT 100",String.class,workspace.toString()).stream().map(id->goal(owner,workspace,UUID.fromString(id))).toList();
+        return jdbc.queryForList("SELECT id FROM learning_goal WHERE workspace_id=? AND origin_kind='LEARNER' ORDER BY created_at DESC,id LIMIT 100",String.class,workspace.toString()).stream().map(id->goal(owner,workspace,UUID.fromString(id))).toList();
     }
     public Goal updateGoal(UUID owner,UUID id,int expectedRevision,String text,List<String> acceptance,String state) {
         requireText(text,4000);
@@ -125,6 +125,7 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
         return tx.execute(status->{
             UUID workspace=workspaceFor(owner,"GOAL",id);lockOwned(owner,workspace);
             if(goal(owner,workspace,id).revision()!=expectedRevision) throw DomainException.conflict("Goal changed; preserve your draft and merge with the current goal");
+            if (!"LEARNER".equals(jdbc.queryForObject("SELECT origin_kind FROM learning_goal WHERE id=?",String.class,id.toString()))) throw DomainException.conflict("A frozen teaching brief cannot be edited");
             jdbc.update("UPDATE learning_goal SET goal_text=?,acceptance=?,status=?,revision=revision+1 WHERE id=?",text,json.write(acceptance),state,id.toString());
             events.append(workspace,"GOAL_UPDATED","CLIENT",Map.of("goalId",id,"revision",expectedRevision+1,"status",state));
             invalidation.invalidate(workspace,"GOAL",id,expectedRevision+1);
@@ -166,7 +167,7 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
         return tx.execute(status -> {
             var current=lockOwned(owner,workspace);
             var refs=new ArrayList<Reference>();
-            jdbc.query("SELECT id,revision,goal_text,acceptance,status FROM learning_goal WHERE workspace_id=? AND status='ACTIVE' ORDER BY created_at,id LIMIT 20",rs -> {
+            jdbc.query("SELECT id,revision,goal_text,acceptance,status FROM learning_goal WHERE workspace_id=? AND origin_kind='LEARNER' AND status='ACTIVE' ORDER BY created_at,id LIMIT 20",rs -> {
                 refs.add(new Reference("GOAL",UUID.fromString(rs.getString("id")),rs.getInt("revision"),json.hash(Map.of("text",rs.getString("goal_text"),"acceptance",json.tree(rs.getString("acceptance"))))));
             },workspace.toString());
             jdbc.query("SELECT id,revision,content_json FROM learner_memory WHERE workspace_id=? AND status='ACTIVE' AND (expires_at IS NULL OR expires_at>?) ORDER BY created_at,id LIMIT 20",rs -> {
@@ -187,6 +188,25 @@ public class WorkspaceService implements WorkspaceAccess, WorkspaceContextStore 
                 selected.forEach(id->refs.add(byId.get(id)));
             }
             return saveSnapshot(current,refs);
+        });
+    }
+
+    public record TeachingContext(UUID goalId, Context snapshot) {}
+
+    /** Freeze only the learner facts admitted to this particular lesson, together with its teaching brief. */
+    public TeachingContext createTeachingContext(UUID owner, UUID workspace, UUID source, List<Reference> admitted,
+            String brief, List<String> acceptance) {
+        requireText(brief,4000);
+        return tx.execute(status -> {
+            var current=lockOwned(owner,workspace);
+            var base=readContext(owner,workspace,source);
+            if (!base.references().containsAll(admitted)) throw DomainException.conflict("The lesson context changed");
+            UUID goal=UUID.randomUUID();
+            jdbc.update("INSERT INTO learning_goal(id,workspace_id,goal_text,acceptance,origin_kind) VALUES(?,?,?,?,'COURSEWARE')",
+                goal.toString(),workspace.toString(),brief,json.write(acceptance));
+            var refs=new ArrayList<>(admitted);
+            refs.add(new Reference("GOAL",goal,1,json.hash(Map.of("text",brief,"acceptance",acceptance))));
+            return new TeachingContext(goal,saveSnapshot(current,refs));
         });
     }
 

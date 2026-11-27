@@ -21,7 +21,29 @@ export class ApiClient {
   private csrfPromise: Promise<void> | null = null;
   private sessionEpoch = 0;
   private pendingKeys = new Map<string, string>();
-  public scope = 'anonymous';
+  private owner = 'anonymous';
+  private privateReads = new AbortController();
+  get scope() {
+    return this.owner;
+  }
+  set scope(owner: string) {
+    if (this.owner === owner) return;
+    this.privateReads.abort();
+    this.privateReads = new AbortController();
+    this.owner = owner;
+  }
+  async signOut() {
+    const reads = this.privateReads;
+    // The server can revoke the cookie before the DELETE response reaches the UI.
+    reads.abort();
+    try {
+      await this.request('/auth/session', 'DELETE');
+    } catch (error) {
+      if (this.privateReads === reads && this.owner !== 'anonymous')
+        this.privateReads = new AbortController();
+      throw error;
+    }
+  }
   public onUnauthenticated: (() => void) | null = null;
   constructor(
     private readonly fetcher: typeof fetch = (...args) => fetch(...args),
@@ -63,7 +85,14 @@ export class ApiClient {
         'OFFLINE',
         '当前处于离线状态。内容已留在当前页面，恢复连接后可继续提交。',
       );
+    const sessionReads =
+      !mutation && options.authExpected !== false && !path.startsWith('/auth/')
+        ? this.privateReads.signal
+        : undefined;
+    if (sessionReads?.aborted) throw new DOMException('会话正在结束。', 'AbortError');
     const controller = new AbortController();
+    const stopReading = () => controller.abort();
+    sessionReads?.addEventListener('abort', stopReading, { once: true });
     let timedOut = false;
     const abort = () => controller.abort(options.signal?.reason);
     if (options.signal?.aborted) abort();
@@ -87,6 +116,7 @@ export class ApiClient {
     } finally {
       clearTimeout(timeout);
       options.signal?.removeEventListener('abort', abort);
+      sessionReads?.removeEventListener('abort', stopReading);
     }
   }
   private async dispatch<T>(
@@ -99,7 +129,7 @@ export class ApiClient {
     const requestEpoch = this.sessionEpoch;
     const currentSession = () => this.scope === requestScope && this.sessionEpoch === requestEpoch;
     const ensureCurrent = () => {
-      if (!currentSession())
+      if (options.signal?.aborted || !currentSession())
         throw new DOMException('会话已切换，旧请求不会继续发送。', 'AbortError');
     };
     const mutation = !['GET', 'HEAD'].includes(method);
@@ -169,6 +199,7 @@ export class ApiClient {
     }
     if (!response.ok) {
       const problem = await response.json().catch(() => ({}));
+      if (options.signal?.aborted && currentSession()) ensureCurrent();
       if (response.status === 401 && options.authExpected !== false && currentSession())
         this.onUnauthenticated?.();
       if (response.status === 403 && problem.code === 'CSRF_INVALID' && currentSession())
@@ -222,7 +253,8 @@ export class ApiClient {
       /* A blocked browser store must never prevent logout. */
     }
     this.pendingKeys.clear();
-    this.scope = 'anonymous';
+    this.privateReads.abort();
+    this.owner = 'anonymous';
     this.resetCsrf();
   }
 }

@@ -1,8 +1,8 @@
 # 数据模型、数据库与一致性边界
 
-## 1. 当前结构：v0.6，14 次迁移，88 张业务表
+## 1. 当前结构：v0.6，14 次迁移，92 张业务表
 
-当前后端通过 Spring JDBC 和 Flyway 读写真实数据库；默认使用持久 H2 文件，MySQL Profile 执行原始 MySQL SQL。**V001–V014 累积 88 张业务表，不含 Flyway 元数据表。** 表结构与字段以[唯一字段字典](../database/data-dictionary.md)为准，业务完成度以[模块指南](02-modules.md)、[接口状态](../contracts/README.md)和实际服务为准。账号生命周期、私有素材、编译队列、受限教学工作流及原生文件导出已有业务实现；这不等于任意执行、全部媒体生成或生产容量已验收。
+当前后端通过 Spring JDBC 和 Flyway 读写真实数据库；默认使用持久 H2 文件，MySQL Profile 执行原始 MySQL SQL。**V001–V017 累积 92 张业务表，不含 Flyway 元数据表。** 表结构与字段以[唯一字段字典](../database/data-dictionary.md)为准，业务完成度以[模块指南](02-modules.md)、[接口状态](../contracts/README.md)和实际服务为准。账号生命周期、私有素材、编译队列、受限教学工作流及原生文件导出已有业务实现；这不等于任意执行、全部媒体生成或生产容量已验收。
 
 | 迁移 | 新表数 | 当前作用 |
 |---|---:|---|
@@ -137,7 +137,7 @@ M14 当前真实文件范围包括 Markdown、HTML、SVG、DOCX、PPTX、PDF，�
 
 ## 8. 迁移、保留、删除与测试数据
 
-独立 SQL 验证只使用专用测试数据库；MySQL 服务回归需要显式命名的 loopback 测试连接，不能连接用户的现有业务库。`verify_mysql.py` 检查原始迁移与约束；`verify_transaction_isolation.py` 检查实际隔离语义；`verify_content_mysql.py` 复跑内容事务；`verify_private_modules_mysql.py` 复跑账户/素材；`verify_v06_modules_mysql.py` 复跑新增评测、导入、版本比较、TEXT 与 Notebook，均要求实际 JDBC 引擎证据。HTTP smoke 检查文件库和 MySQL 的真实重启持久化。模式门禁验证 V001–V014 的完整升级链，精确的表数、检查数和各服务结果由真实运行报告生成。最终运行结果和环境统一记录在[验收记录](../evidence/runtime-review.md)，测试源码或报告文件名不等于执行通过。
+独立 SQL 验证只使用专用测试数据库；MySQL 服务回归需要显式命名的 loopback 测试连接，不能连接用户的现有业务库。`verify_mysql.py` 检查原始迁移与约束；`verify_transaction_isolation.py` 检查实际隔离语义；`verify_content_mysql.py` 复跑内容事务；`verify_private_modules_mysql.py` 复跑账户/素材；`verify_v06_modules_mysql.py` 复跑新增评测、导入、版本比较、TEXT 与 Notebook，均要求实际 JDBC 引擎证据。HTTP smoke 检查文件库和 MySQL 的真实重启持久化。模式门禁验证 V001–V017 的完整升级链，精确的表数、检查数和各服务结果由真实运行报告生成。最终运行结果和环境统一记录在[验收记录](../evidence/runtime-review.md)，测试源码或报告文件名不等于执行通过。
 
 `seed-demo.sql` 用于独立结构检查，只含禁用占位作者、来源索引、概念与草稿，active_release 为空。显式 `demo` Profile 则保存 16 个概念、16 张原创卡、12 道客观题与演示发布，作者不可登录、无默认口令、无学生成绩、无伪造 `content_review`。其 `REVIEWED` 标签不满足正式审核证据；正式构建会拒绝直接把 demo 装成真人审核发布。demo 初始化只在活动指针为空时设置它，不覆盖已有正式课程。
 

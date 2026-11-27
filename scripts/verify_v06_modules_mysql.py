@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the v0.6 ingestion, evaluation, TEXT and Notebook service/HTTP regressions on real MySQL 8.4.
+"""Run the v0.6 ingestion, evaluation, TEXT, Notebook and personal courseware study service/HTTP regressions on real MySQL 8.4.
 
 Requires MYSQL_TEST_CONNECTION to explicitly mark a disposable named loopback database.
 Fresh XML reports must contain every current @Test case and actual JDBC engine proof.
@@ -20,7 +20,8 @@ from verification_inputs import (VerificationFailure, capture_inputs, java_test_
 
 ROOT = Path(__file__).resolve().parents[1]
 SUITES = ("BatchImportIntegrationTest", "ContentComparisonIntegrationTest",
-          "EvaluationWorkbenchIntegrationTest", "TextLearningIntegrationTest", "NotebookInteractionIntegrationTest")
+          "EvaluationWorkbenchIntegrationTest", "TextLearningIntegrationTest", "NotebookInteractionIntegrationTest",
+          "CoursewareStudyIntegrationTest")
 PREFIX = "TYPEFORGE_PRIVATE_MODULE_EVIDENCE "
 REPORT = ROOT / ".work/mysql-v06-modules-verification.json"
 
@@ -31,7 +32,7 @@ def main():
     args = parser.parse_args()
     started = time.monotonic()
     report = {"result": "FAIL", "generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-              "scope": "Actual MySQL 8.4 service, SQL and authenticated HTTP regression for bounded imports, revision diffs, private evaluations, TEXT grading, six Notebook blocks and admin aggregates; compiler replies in this gate are protocol fixtures, not Docker execution evidence"}
+              "scope": "Actual MySQL 8.4 service, SQL and authenticated HTTP regression for bounded imports, revision diffs, private evaluations, TEXT grading, six Notebook blocks, personal courseware-to-slide production and admin aggregates; compiler replies in this gate are protocol fixtures, not Docker execution evidence"}
     write_report(REPORT, report)
     try:
         before = capture_inputs("backend", ("scripts/verify_v06_modules_mysql.py", "scripts/verify_transaction_isolation.py"))
