@@ -46,16 +46,16 @@ try {
   let ready = false;
   const deadline = Date.now() + 240_000;
   while (Date.now() < deadline && service.exitCode === null) {
-    const capabilities = await fetch(base + '/api/v1/capabilities')
+    const health = await fetch(base + '/api/v1/health')
       .then((r) => r.json())
       .catch(() => null);
-    if (capabilities?.enabled?.includes('UNTRUSTED_CODE_EXECUTION')) {
+    if (health?.status === 'UP') {
       ready = true;
       break;
     }
     await delay(500);
   }
-  assert.ok(ready, 'packaged learning service and isolated language workers must be ready');
+  assert.ok(ready, 'packaged learning service must be ready');
   browser = await chromium.launch({
     executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined,
   });
@@ -68,7 +68,11 @@ try {
   await page.getByRole('button', { name: '注册并进入' }).click();
   await page.getByLabel('工作空间名称').fill('程序运行验收');
   await page.getByRole('button', { name: '创建工作空间' }).click();
-  await page.getByRole('link', { name: '类型实验', exact: true }).click();
+  const capabilities = await page.request.get(base + '/api/v1/capabilities');
+  assert.equal(capabilities.status(), 200);
+  assert.ok((await capabilities.json()).enabled.includes('UNTRUSTED_CODE_EXECUTION'));
+  await page.locator('.classroom-stage').getByRole('button', { name: '代码实验', exact: true }).click();
+  assert.match(page.url(), /scene=lab/);
   const pane = page.getByRole('region', { name: '代码工作台' });
   const mode = pane.getByLabel('语言和任务');
   const course = JSON.parse(

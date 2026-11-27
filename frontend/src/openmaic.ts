@@ -50,7 +50,8 @@ function textBox(
   };
 }
 
-export function buildMaicArchive(concept: Concept, now = Date.now()) {
+export function buildMaicLesson(concept: Concept, now = Date.now()) {
+  const transcripts: string[] = [];
   const scenes: PortableScene[] = [];
   const sources = concept.evidence.map((item) => ({
     title: item.source.title,
@@ -70,6 +71,9 @@ export function buildMaicArchive(concept: Concept, now = Date.now()) {
     question?: string,
   ) {
     const order = scenes.length;
+    transcripts.push(
+      typeof body === 'string' ? body : body.lines.map((line) => line.content).join('\n'),
+    );
     const canvas: Slide = {
       id: 'canvas-' + order,
       viewportSize: 1000,
@@ -181,6 +185,11 @@ export function buildMaicArchive(concept: Concept, now = Date.now()) {
     };
     if (!validateScene(runtime).valid) throw Error('OpenMAIC 场景校验失败：' + scene.title);
   }
+  return { stage, scenes, sources, examples, transcripts };
+}
+
+export function buildMaicArchive(concept: Concept, now = Date.now()) {
+  const { stage, scenes, sources, examples } = buildMaicLesson(concept, now);
   const manifest = {
     formatVersion: 1,
     exportedAt: new Date(now).toISOString(),

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { verifyPublishedClassrooms } from './classroom-archives.mjs';
 import { verifyClassroom } from './classroom-journey.mjs';
 import { runWorkbenchJourney } from './workbench-journey.mjs';
 
@@ -45,6 +46,7 @@ const pageErrors = [];
 const consoleErrors = [];
 const results = [];
 const visualChecks = [];
+let classroomArchives = [];
 let failurePages = [];
 const expectedConflict = { url: '', active: false, responses: 0, consoleMessages: 0 };
 function monitor(p) {
@@ -528,10 +530,19 @@ try {
     async () => verifyClassroom(page, capturePage),
   );
   await check(
+    'all 16 published lessons export exact Java sources and official OpenMAIC schemas at 320px; the embedded player renders and presents discussion',
+    async () => {
+      classroomArchives = await verifyPublishedClassrooms(page, workspaceA);
+    },
+  );
+  await check(
     'wrong answer creates evidence notebook, real hints and an assisted new attempt',
     async () => {
       await page.getByRole('link', { name: '练习与反馈', exact: true }).click();
-      await page.locator('.question-card .answer-option input').first().waitFor();
+      await page
+        .locator('.exercise-nav')
+        .filter({ hasText: 'Java17中哪种数组创建表达式合法？' })
+        .click();
       await page
         .locator('.question-card .answer-option')
         .filter({ hasText: 'new List<String>[2]' })
@@ -625,7 +636,10 @@ try {
         await context.request.get(`${base}/api/v1/workspaces/${workspaceA}/attempts`)
       ).json();
       await page.getByRole('link', { name: '练习与反馈', exact: true }).click();
-      await page.locator('.exercise-nav').nth(1).click();
+      await page
+        .locator('.exercise-nav')
+        .filter({ hasText: '关于@SafeVarargs，下列哪项正确？' })
+        .click();
       const hints = [];
       for (const level of [1, 2, 3]) {
         const [response] = await Promise.all([
@@ -843,6 +857,19 @@ try {
     'evidence-only tutor is explicit, persistent and converts to a source document',
     async () => {
       await page.getByRole('link', { name: '导师与证据任务', exact: true }).click();
+      const [created] = await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.request().method() === 'POST' &&
+            response.url() === base + '/api/v1/tutor/conversations',
+        ),
+        page.getByRole('button', { name: '新建对话', exact: true }).click(),
+      ]);
+      assert.equal(created.status(), 201);
+      await page
+        .locator('.conversation-main')
+        .getByRole('heading', { name: '从一个具体疑问开始', exact: true })
+        .waitFor();
       await page.getByLabel('输入你的问题', { exact: true }).fill('PECS 读取与写入的规则是什么？');
       await page.getByRole('button', { name: '发送问题', exact: true }).click();
       await page
@@ -858,7 +885,7 @@ try {
     'all enabled learner pages fit desktop and 390/320px layouts with keyboard-complete mobile navigation',
     async () => {
       const routes = [
-        ['learn', '.reading-main'],
+        ['learn', '.classroom-stage .scene-read .evidence-card'],
         ['practice', '.question-card'],
         ['progress', '.analytics-totals'],
         ['lab', '.compiler-layout'],
@@ -1007,6 +1034,7 @@ try {
     pageErrors,
     consoleErrors,
     visualChecks,
+    classroomArchives,
     expectedConflict: {
       url: expectedConflict.url,
       responses: expectedConflict.responses,

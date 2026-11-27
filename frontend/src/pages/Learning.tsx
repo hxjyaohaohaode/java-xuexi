@@ -31,6 +31,7 @@ import { ProgressPage } from './Progress';
 import { GoalsPanel } from './Personal';
 import type { Concept, Evidence } from '../types';
 
+const LessonPlayer = lazy(() => import('../components/MaicLessonPlayer'));
 const Workshop = lazy(() => import('./Agents').then(({ Agents }) => ({ default: Agents })));
 const scenes = [
   ['read', '课程阅读', BookOpen],
@@ -79,6 +80,12 @@ export function Learning() {
   );
   const [width, setWidth] = useSessionDraft('tf.classroom.width.' + scope, 36);
   const [directory, setDirectory] = useState(false);
+  const [playingLesson, setPlayingLesson] = useState('');
+  const [discussion, setDiscussion] = useState<{
+    lessonId: string;
+    text: string;
+    id: string;
+  } | null>(null);
   const [recommendations, setRecommendations] = useState(false);
   const [confirmedIds, setConfirmed] = useState<string[]>([]);
   const [lastAttempt, setAttempt] = useState<{ conceptId: string; id: string } | null>(null);
@@ -408,8 +415,39 @@ export function Learning() {
                           ))}
                         </div>
                       )}
-                      <EvidenceList items={chosen.evidence} />
-                      <CourseExamples concept={chosen} />
+                      <div className="segments" role="group" aria-label="本节学习方式">
+                        <button
+                          aria-pressed={playingLesson !== chosen.id}
+                          onClick={() => setPlayingLesson('')}
+                        >
+                          阅读原文
+                        </button>
+                        <button
+                          aria-pressed={playingLesson === chosen.id}
+                          onClick={() => setPlayingLesson(chosen.id)}
+                        >
+                          播放课件
+                        </button>
+                      </div>
+                      {playingLesson === chosen.id ? (
+                        <Suspense fallback={<Loading label="正在打开课堂课件…" />}>
+                          <LessonPlayer
+                            key={chosen.id}
+                            concept={chosen}
+                            scope={scope}
+                            discussionEnabled={can('TUTOR_EVIDENCE_ONLY')}
+                            onDiscuss={(text) => {
+                              setDiscussion({ lessonId: chosen.id, text, id: crypto.randomUUID() });
+                              setHelper(true);
+                            }}
+                          />
+                        </Suspense>
+                      ) : (
+                        <>
+                          <EvidenceList items={chosen.evidence} />
+                          <CourseExamples concept={chosen} />
+                        </>
+                      )}
                       <div className="classroom-read-actions">
                         <button
                           onClick={() => void recordRead(chosen.id)}
@@ -548,7 +586,13 @@ export function Learning() {
                       <PanelRightClose size={18} />
                     </button>
                   </div>
-                  <ConversationPanel key={chosen.id} lesson={chosen} attemptId={attemptId} />
+                  <ConversationPanel
+                    key={chosen.id}
+                    lesson={chosen}
+                    attemptId={attemptId}
+                    discussion={discussion?.lessonId === chosen.id ? discussion : undefined}
+                    onDiscussionLoaded={() => setDiscussion(null)}
+                  />
                 </aside>
               </>
             )}

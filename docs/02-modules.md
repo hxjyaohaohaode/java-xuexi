@@ -1,6 +1,6 @@
 # 模块接手指南：已实现、未实现与下一步
 
-本轮课堂改造、两份发布与上游互通详见[逐项需求与验收清单](25-integrated-classroom.md)。新增的本人学习路径、课堂现场、OpenMAIC 可移植场景、Harness 插件、Java/Python 隔离运行和课内样例分别覆盖 M02/M04/M05/M06/M09/M13/M14/M15。本页的 v0.6 基线用于追溯。
+本轮课堂改造、两份发布与上游互通详见[逐项需求与验收清单](25-integrated-classroom.md)。新增的本人学习路径、课堂现场、OpenMAIC 站内播放与可移植场景、Harness 插件、Java/Python 隔离运行和课内样例分别覆盖 M02/M04/M05/M06/M09/M13/M14/M15。本页的 v0.6 基线用于追溯。
 
 
 本文件是继续开发的主入口。**当前为 v0.6 联动学习工作台：130 个公开操作都有实际路由实现，当前没有仅占位的 planned 操作。** 具体请求、响应和操作状态由[契约索引](../contracts/README.md)生成；最后一次真实运行结果见[验收记录](../evidence/runtime-review.md)。接口实现数量不等于完整产品完成率，运行时仍明确 `businessReady=false`。
@@ -12,20 +12,20 @@
 | 模块 | 当前实际能力 | 仍需完成的具体范围 | 首先读的实现 |
 | --- | --- | --- | --- |
 | M01 身份、权限、偏好 | 注册登录、CSRF、UUID/epoch 会话绑定；显示资料 CAS、改密、设备会话撤销、账号关闭；数据库原子认证限流、ETag 偏好；关闭经领域端口撤销任务与素材 | 邮件等可核验找回流程、面向运维的角色撤权界面、完整隐私擦除策略与多实例 Servlet 会话部署 | `identity/AccountService`、`AccountClosureService`、`AuthenticationLimit`、`PreferenceService` |
-| M02 知识地图与阅读 | 固定 release 的概念、前置、知识卡、练习关联；阅读事件与按空间的历史恢复，真实前置分层图与可访问文本路径、上下游导航 | 大规模图编辑、完整人工审核语料与教学可用性评测 | `curriculum/CurriculumService`、`learning/ReadingService` |
-| M03 类型实验 | ASSIGNMENT/READ_WRITE 有限类型推演；边界、推断、捕获、擦除、原始类型改造、API 设计六组可编辑正反例；配置编译 worker 后运行真实编译检查与诊断 | 更广泛类型系统建模、反编译/桥接字节码与运行时实验、实际教学效果验证 | `lab/FiniteTypeEvaluator`、`CodeLabCatalog`、`LabService` |
+| M02 知识地图与阅读 | 固定 release 的概念、前置、知识卡、练习关联；阅读事件与按空间的历史恢复，真实前置分层图与可访问文本路径、上下游导航；课程中的当前概念连接 16 份同学的 Java 样例、复核题和规范定位；课堂场景保持同一章节 | 大规模图编辑、完整人工审核语料与教学可用性评测 | `curriculum/CurriculumService`、`learning/ReadingService` |
+| M03 类型实验 | ASSIGNMENT/READ_WRITE 有限类型推演；边界、推断、捕获、擦除、原始类型改造、API 设计六组可编辑正反例；配置编译 worker 后运行真实编译检查与诊断；16 个原始课例可进入同概念的代码草稿，查看真实编译诊断和运行输出 | 更广泛类型系统建模、反编译/桥接字节码与运行时实验、实际教学效果验证 | `lab/FiniteTypeEvaluator`、`CodeLabCatalog`、`LabService` |
 | M04 编译诊断与沙箱 | 持久编译队列、配额、源码 hash、租约/超时/取消、公开诊断；独立 HTTP broker 每次任务用受限 Docker 容器执行固定 Java 17 编译，API JVM 不编译用户代码；独立开关支持 Java 17 与 Python 3 真实运行，标准输入、输出和运行错误关联同一工作空间；原编译链有八项历史容器检查 | 当前运行链在目标宿主的验收、持续容量与生产运维；算法输出自动评分与运行时性能判定 | `compiler/CompileService`、`CompileWorker`、`HttpCompileProvider`、`workers/compiler/` |
-| M05 练习与判分 | 客观选项集合精确判分、版本及幂等、作答历史；CODE 题经审核的正向/反向编译契约检查后异步判分；多层提示及同题族受助记录；独立审核收据约束的 TEXT 精确规范化判分 | 开放自然语言语义判分、运行时算法题、完整综合重构题集与人工校准 | `exercise/LearningService`、`CodeGradeConsumer`、`compiler/CodeRubric` |
-| M06 学习证据与复习 | 独立题族证据、复习项、阅读活动、投影新鲜度；UTC 每日真实统计、相邻时间窗比较，空数据不伪造时长或掌握度 | 校准学习模型、个性化复习间隔和有实验证据的推荐策略 | `learning/LearningEvidenceProjection`、`operations/LearningAnalyticsService` |
+| M05 练习与判分 | 客观选项集合精确判分、版本及幂等、作答历史；CODE 题经审核的正向/反向编译契约检查后异步判分；多层提示及同题族受助记录；独立审核收据约束的 TEXT 精确规范化判分；新演示发布含 33 道客观题，每个概念至少有两道可判分的练习 | 开放自然语言语义判分、运行时算法题、完整综合重构题集与人工校准 | `exercise/LearningService`、`CodeGradeConsumer`、`compiler/CodeRubric` |
+| M06 学习证据与复习 | 独立题族证据、复习项、阅读活动、投影新鲜度；UTC 每日真实统计、相邻时间窗比较，空数据不伪造时长或掌握度；PersonalLearningPath 使用本空间作答、阅读、前置、复习及目标生成有理由的下一步 | 校准学习模型、个性化复习间隔和有实验证据的推荐策略 | `learning/LearningEvidenceProjection`、`operations/LearningAnalyticsService` |
 | M07 数据集与加工 | 实际来源登记、原稿/清洗稿、规范化 hash 去重、采集详情与知识来源链；1–8 个 TXT/MD/DOCX 有界解析、私有预览/原子采集/取消/过期，前端逐项清洗 | PDF/OCR、经过授权的自动抓取、相似去重评测及失败恢复工具 | `ingestion/ManualIngestionService`、`BatchImportService`、`BoundedDocumentText` |
 | M08 检索与证据 | 中英文边界 BM25、发布与概念过滤、实际片段/来源/hash、导师引用复验；M11 运行实际检索指标与固定语料报告 | 向量混合检索、大语料索引维护、独立人工 gold set 与教学效果评估 | `retrieval/LocalKnowledgeSearch` |
-| M09 教学专家 | 持久会话/请求、EVIDENCE_ONLY 整理、显式配置 HTTP 模型；快照/租约/取消/配额/未知用量；回答转 DRAFT；教学工作流复用独立专家与审阅请求 | 真实外部模型教学质量、供应商兼容性与账单验收；任意工具调用和独立人工事实核验 | `tutor/TutorService`、`TutorWorker`、`StudyWorkflowService`、`TutorDocumentService` |
+| M09 教学专家 | 持久会话/请求、EVIDENCE_ONLY 整理、显式配置 HTTP 模型；快照/租约/取消/配额/未知用量；回答转 DRAFT；教学工作流复用独立专家与审阅请求；模型提示与回答保留同概念的课程审订依据，供学生对照；原始回答与固定课证分别显示 | 真实外部模型教学质量、供应商兼容性与账单验收；任意工具调用和独立人工事实核验 | `tutor/TutorService`、`TutorWorker`、`StudyWorkflowService`、`TutorDocumentService` |
 | M10 编辑审核与发布 | 图形内容工作台贯通来源、知识/题目草稿、编译题 rubric、独立审核、固定 hash、发布 CAS、历史激活与审计；知识/练习私有规则修订对比 | 批量审阅、完整人工课程覆盖、发布前自动教学评测集 | `publishing/ContentDraftService`、`ReleaseWorkbenchService`、前端 `Content` |
 | M11 协作评测与答辩 | 私有评测套件与不可变修订、持久队列/取消/租约；真实 BM25 Recall/MRR/Precision/空结果指标、逐项证据及 JSON 报告；文件型运行证据与 AI 协作说明 | 多人协作评测、独立人工 gold set、真实教学对照、两位成员可核验贡献和最终答辩材料 | Java `evidence/EvaluationService`、`EvaluationWorker`；前端 `Evaluation` |
 | M12 运行与安全 | V001–V014 升级链、错误与跟踪号边界、真实 health/capabilities、顺序 outbox、认证限流；管理员聚合队列与当前进程延时直方图；独立 MySQL 和 HTTP 重启验证入口 | 生产负载/SLO、告警、备份与恢复演练、完整隐私保留/擦除与运营流程 | `operations/`、`scripts/`、GitHub Actions |
-| M13 专家编排与运行 | 持久 DAG、24 节点/3 并行、epoch/lease、预算和暂停/恢复/取消；EVIDENCE_ONLY 或已配置 MODEL 的受限 planner → 1–3 项 expert → review → DRAFT 链 | 任意工具的通用自治、动态权限与跨媒介调度、独立多专家质量对照、外部计费对账 | `orchestration/DurableAgentRuntime`、`PlanValidator`、`tutor/StudyWorkflowService` |
-| M14 多模态作品工坊 | DSL 版本和传递来源；文档编辑、幻灯片画布/尺寸/键盘与预览；真实 MD/HTML/SVG/DOCX/PPTX/PDF；PNG/JPEG 内嵌；私有 PNG/JPEG/WAV/MP3/MP4 上传、预览、范围下载、配额和撤回 | 对象存储和 AV 扫描部署、生成式图像/TTS/视频、完整时间线渲染、局部智能重做与跨设备版式验收 | `artifacts/ArtifactService`、`ArtifactFileRenderer`、`ArtifactExportService`、`AssetService` |
-| M15 工作空间与上下文 | 固定 release、目标编辑/归档、记忆撤回、顺序事件和跨页同步；显式选取较早的 1–8 个本人作答加入固定上下文 | 自动上下文策略、可检索长期记忆、多人协作、SSE/推送与大规模同步 | `workspace/WorkspaceService`、前端工作空间状态 |
+| M13 专家编排与运行 | 持久 DAG、24 节点/3 并行、epoch/lease、预算和暂停/恢复/取消；EVIDENCE_ONLY 或已配置 MODEL 的受限 planner → 1–3 项 expert → review → DRAFT 链；按目标及已准入的作答选择专家，接收方与交接依赖同时记录；Harness 插件在官方工具服务中注册两个课内只读能力 | 任意工具的通用自治、动态权限与跨媒介调度、独立多专家质量对照、外部计费对账 | `orchestration/DurableAgentRuntime`、`PlanValidator`、`tutor/StudyWorkflowService` |
+| M14 多模态作品工坊 | DSL 版本和传递来源；文档编辑、幻灯片画布/尺寸/键盘与预览；真实 MD/HTML/SVG/DOCX/PPTX/PDF；PNG/JPEG 内嵌；私有 PNG/JPEG/WAV/MP3/MP4 上传、预览、范围下载、配额和撤回；使用官方 OpenMAIC 播放器展示本节课文、代码、来源，讨论可进入导师；同一组场景通过官方 DSL 导出课堂包 | 对象存储和 AV 扫描部署、生成式图像/TTS/视频、完整时间线渲染、局部智能重做与跨设备版式验收 | `artifacts/ArtifactService`、`ArtifactFileRenderer`、`ArtifactExportService`、`AssetService` |
+| M15 工作空间与上下文 | 固定 release、目标编辑/归档、记忆撤回、顺序事件和跨页同步；显式选取较早的 1–8 个本人作答加入固定上下文；课堂场景与本节上下文共用工作空间，学生可主动导出当前课及三项建议交给 Harness | 自动上下文策略、可检索长期记忆、多人协作、SSE/推送与大规模同步 | `workspace/WorkspaceService`、前端工作空间状态 |
 | M16 交互错题与复练 | 从真实错误/辅助作答构建；服务端块版本检查；预测、引用、复练判分、多层提示与编译请求；可通过受限教学工作流生成复练草稿；静态 HTML；六类块追加、真实类型规则、双编译修复、同发布同题族已审核变式、逐级提示与复习导航，状态 CAS 持久恢复 | 新反事实题目的人工编写审核、任意程序运行验证和自由专家块编排；离线文件不记录平台成绩 | `notebook/NotebookService`、`NotebookActions`、`NotebookInteractionService` |
 
 Java 路径相对于 `backend/src/main/java/io/typeforge/`，前端位于 `frontend/src/`。`/api/v1/capabilities` 的 `enabled`/`unavailable` 进一步报告当前部署配置；端点存在不能代替 worker、模型或静态前端资源真正可用。

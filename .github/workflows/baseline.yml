@@ -85,6 +85,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install published classroom schema validator
+        run: python -m pip install -r requirements-dev.txt
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -151,6 +153,20 @@ jobs:
         run: node frontend/tests/program-runtime.mjs
       - name: Verify the real browser against the packaged application
         run: python scripts/browser_runtime.py --jar backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar
+      - name: Package the verified application and the local classroom launcher
+        uses: actions/upload-artifact@v4
+        with:
+          name: TypeForge-classroom
+          path: |
+            backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar
+            workers/compiler/start_workbench.py
+            workers/compiler/server.py
+            workers/compiler/runner.py
+            workers/compiler/Dockerfile
+            workers/compiler/README.md
+            README.md
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload sanitized runtime and isolation reports only
         if: always()
         uses: actions/upload-artifact@v4

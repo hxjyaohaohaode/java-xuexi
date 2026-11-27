@@ -6,12 +6,12 @@
 
 默认入口是同一间课堂。学生在当前章节完成阅读、做题、代码实验和复盘，右侧导师保留本节上下文。新空间采用 16 个知识点、33 道客观题的新演示发布，每个知识点至少有两道练习。原有空间和已发布成绩继续绑定创建时的版本。
 
-同学 11 月 18 日课程包中的 16 份 Java 源码已按概念接入编辑器。阅读页还可查看 5 个模型问答的语义判据与两条订正。课堂提供 OpenMAIC 课程包导出，并可把主动选中的课程上下文交给 DeepSeek Harness 插件。学习路径、教学任务、作品与判分共享当前课程、空间及版本。**完整功能、实现入口和验收要求见 [课堂清单](docs/25-integrated-classroom.md)**。
+同学 11 月 18 日课程包中的 16 份 Java 源码已按概念接入编辑器。阅读页还可查看 5 个模型问答的语义判据与两条订正。学生可在课内用 OpenMAIC 官方播放器翻阅本节讲义与代码，把自己的判断带入导师讨论，也可下载同一组场景的课程包。DeepSeek Harness 插件能读取学生主动选中的课程上下文。学习路径、教学任务、作品与判分共享当前课程、空间及版本。**完整功能、实现入口和验收要求见 [课堂清单](docs/25-integrated-classroom.md)**。
 
-网页和后端打包后，在装有 Docker Engine 的环境运行以下命令。启动器构建专用运行镜像，核实 Java 17 和 Python 就绪，再同时启动隔离 worker 与演示应用。如何配置证据导师或模型服务见 [后端说明](backend/README.md)。
+从源码构建后，或在通过的 [GitHub Actions](https://github.com/hxjyaohaohaode/java-xuexi/actions/workflows/baseline.yml) 下载并解压 `TypeForge-classroom`，在装有 Java 17、Python 3 和 Docker Engine 的 Linux 或 WSL2 环境，从解压根目录运行以下命令。启动器构建专用运行镜像，核实 Java 17 和 Python 就绪，再同时启动隔离 worker 与演示应用。如何配置证据导师或模型服务见 [后端说明](backend/README.md)。
 
 ```sh
-python workers/compiler/start_workbench.py backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar
+python3 workers/compiler/start_workbench.py backend/target/typeforge-backend-0.6.0-SNAPSHOT.jar
 ```
 
 ## 同学拉取后先看这里

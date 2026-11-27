@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { ArrowUp, CirclePause, Play, Plus, Square, Workflow } from 'lucide-react';
 import { api } from '../api';
 import { useWorkspace } from '../context';
@@ -50,7 +50,14 @@ export function Tutor() {
 export function ConversationPanel({
   lesson,
   attemptId,
-}: { lesson?: Concept; attemptId?: string } = {}) {
+  discussion,
+  onDiscussionLoaded,
+}: {
+  lesson?: Concept;
+  attemptId?: string;
+  discussion?: { id: string; text: string };
+  onDiscussionLoaded?: () => void;
+} = {}) {
   const { workspace, session, can, tick, refresh } = useWorkspace();
   const scope = [session.userId, workspace.id, ...(lesson ? [lesson.id] : [])].join('.');
   const prefix = lesson ? `【${lesson.code} · ${lesson.title}】\n` : '';
@@ -71,6 +78,22 @@ export function ConversationPanel({
   const [hintLevel, setHintLevel] = useState(1);
   const [poll, setPoll] = useState(0);
   const mutation = useMutation();
+  const composer = useRef<HTMLTextAreaElement>(null);
+  const consumed = useRef('');
+  const [discussionNotice, setDiscussionNotice] = useState('');
+  useEffect(() => {
+    if (!discussion || consumed.current === discussion.id || mutation.busy) return;
+    const combined = [question.trimEnd(), discussion.text].filter(Boolean).join('\n\n');
+    if (combined.length > maxLength) {
+      setDiscussionNotice('现有草稿与课堂讨论合并后超过字数上限。请先缩短草稿。');
+      return;
+    }
+    consumed.current = discussion.id;
+    setDiscussionNotice('');
+    setQuestion(combined);
+    onDiscussionLoaded?.();
+    composer.current?.focus();
+  }, [discussion, mutation.busy, question, maxLength, onDiscussionLoaded, setQuestion]);
   const detail = useResource<
     Conversation & { messages: TutorRequest[]; nextCursor: string | null }
   >(conversationId ? `/tutor/conversations/${conversationId}?limit=100` : null, poll + tick);
@@ -292,7 +315,9 @@ export function ConversationPanel({
           <label className="sr-only" htmlFor="tutor-question">
             输入你的问题
           </label>
+          {discussionNotice && <p role="status">{discussionNotice}</p>}
           <textarea
+            ref={composer}
             id="tutor-question"
             disabled={mutation.busy}
             rows={3}
@@ -347,7 +372,14 @@ function TutorMessage({ request, onChange }: { request: TutorRequest; onChange: 
             关联快照或来源已失效，旧回答已隐藏。请用当前上下文重新提问。
           </div>
         ) : request.answer ? (
-          <p className="preserve-text">{request.answer}</p>
+          <>
+            {request.limitations?.startsWith('课程已审订的核对依据') && (
+              <aside className="notice preserve-text" aria-label="课程核对依据">
+                {request.limitations}
+              </aside>
+            )}
+            <p className="preserve-text">{request.answer}</p>
+          </>
         ) : !terminalTutor.includes(request.status) ? (
           <Loading label="请求已持久化，正在等待服务端处理…" />
         ) : request.status === 'INSUFFICIENT_EVIDENCE' ? (
@@ -363,7 +395,9 @@ function TutorMessage({ request, onChange }: { request: TutorRequest; onChange: 
             <EvidenceList items={request.evidenceRefs} compact />
           </details>
         )}
-        {request.limitations && <p className="muted small">{request.limitations}</p>}
+        {request.limitations && !request.limitations.startsWith('课程已审订的核对依据') && (
+          <p className="muted small">{request.limitations}</p>
+        )}
         {request.usage.billingState === 'UNKNOWN' && (
           <div className="notice warning">
             供应商是否已消耗额度尚不确定，保留预留额度。系统不会自动重试此模型请求。
