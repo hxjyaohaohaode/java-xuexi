@@ -28,3 +28,9 @@ Apple HIG 的布局建议强调不同尺寸上保持操作关系，动效应传�
 
 - 在 [GitHub Actions](https://github.com/hxjyaohaohaode/java-xuexi/actions/workflows/baseline.yml) 选择 main 对应的运行。下载 TypeForge-classroom 可取得已通过 HTTP 和浏览器检查的应用。real-model-personal-classroom 记录两位合成学生的编程题、解释、角色、分配上限、实际 token、调用终止原因、成品哈希和模型权重哈希。
 - 模型门禁使用本地 Qwen3-0.6B Q8_0，固定权重、推理引擎和随机种子。报告证明所测模型、课程、环境和任务组合确实执行。课堂准确性仍由实际源码、编译器和教师复审逐项确认。研究参考的供应商与实际执行的模型分别记录。[模型门禁](../scripts/verify_live_classroom.py) · [课内浏览器验收](../frontend/tests/personal-courseware.mjs) · [编程实测](../frontend/tests/program-runtime.mjs)
+
+## 同一节 G06 的实测与修正
+
+第一轮在 GitHub 的真实模型任务中，篮球学生和天文学生各有两份专家初稿用到了各自的领域词。两人的总用量分别是 6,079 和 6,129 token，包含输入与输出。四个审阅动作却全部选择了类型推导。由此发现，只把“请预测”或“给我反例与迁移题”放进模型上下文，学生最终拿到的活动仍可能相同。本轮新增验收会直接检查成品中是否包含本人明确要求的活动，并分别记录学生指定的活动和模型可自行选择的活动。[首轮 GitHub 模型任务](https://github.com/hxjyaohaohaode/java-xuexi/actions/runs/45979634992/job/140445833366)
+
+真实 Docker 课堂在浏览器中运行了带标准输入的 Java 与 Python、同学的原始类型警告案例，以及课件生成的完整 Java 预测题。篮球题的错误写入先返回编译失败，学生把写入对象改成正确的类型后成功运行。返回题面时，课堂保留了判断和题目草稿，独立实验的未提交编辑也保留。工作进程回执报告的工具链为 javac 17.0.21.1 和 Python 3.10.12。[浏览器与隔离工作进程实测](https://github.com/hxjyaohaohaode/java-xuexi/actions/runs/45979634992/job/140439943666)

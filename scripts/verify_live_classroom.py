@@ -25,9 +25,9 @@ WEIGHT_HASH = '9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031'
 MODEL = 'Qwen3-0.6B-Q8_0'
 CASES = (
     {'interest': '篮球比赛统计', 'requirements': '用通俗例子说明一次传参和一次写入，再让我预测。',
-     'identity': 'basketball'},
+     'identity': 'basketball','expectedActivities': ('CHECK_COMPILE',)},
     {'interest': '天文观测星表', 'requirements': '深入解释编译期拒绝的反例，给我一个可以迁移的变式。',
-     'identity': 'astronomy'},
+     'identity': 'astronomy','expectedActivities': ('COUNTEREXAMPLE','TRANSFER')},
 )
 HTTP = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
@@ -98,6 +98,8 @@ class Probe:
                     'requestId': self.headers.get('Idempotency-Key'),
                     'model': sent['model'], 'schema': fmt['name'],
                     'reviewSchema': 'revisions' in fmt['schema']['properties'],
+                    'allowedReviewMoves': {key: rule['enum'] for key, rule in
+                        fmt['schema']['properties'].get('revisions',{}).get('properties',{}).items()},
                     'questionSHA256': text_hash(user['question']),
                     'handoffs': [{'step': h['step'], 'excerptSHA256': text_hash(h['excerpt'])} for h in handoffs],
                     'publishedChunkIds': [e['chunkId'] for e in user['publishedEvidence']],
@@ -235,6 +237,61 @@ def trace_model_roles(get, run, details, receipts, turns, case, plan):
     return role_steps, edits
 
 
+def verify_requested_activity(case,plan,move,text):
+    """Test the published G06 task itself, beyond finding an activity title or echoed request."""
+    prediction=next(s for s in plan['scenes'] if s['key']=='application-check')
+    check=prediction['selfCheck']
+    base, value, other=(('Player','Guard','Center') if case['identity']=='basketball'
+                        else ('Observation','Transit','Eclipse'))
+    setup='List<'+value+'> records = new ArrayList<>();'
+    rejected='List<'+base+'> view = records;'
+    allowed='List<? extends '+base+'> view = records;'
+    # Both specific fixture requests have a negative prediction. The accompanying Java sources use the same line.
+    assert check['answerIndex']==1 and setup in check['javaSource'] and rejected in check['javaSource']
+    assert setup in prediction['body'] and prediction['body'].splitlines()[-1]==rejected
+    assert allowed in check['explanation'] and other in check['explanation']
+    assert check['options'][1] in text and check['explanation'] in text
+    if move in ('CHECK_COMPILE','COUNTEREXAMPLE'):
+        assert prediction['body'] in text and setup in text and rejected in text
+        return {'judgedLine':rejected,'comparisonLine':allowed,'answer':check['options'][1],
+                'groundedInJavaUnit':True}
+    assert move=='TRANSFER'
+    transfer=next(s for s in plan['scenes'] if s['key']=='application-transfer')
+    operation='List<? super '+value+'>'
+    assert operation in transfer['body'] and transfer['body'] in text
+    return {'changedConstraint':operation,'transferTask':transfer['body'].splitlines()[0],
+            'originalCaseRationaleIncluded':True}
+
+
+def required_coverage(case,plan,pages,review,expert_keys,edits,passage):
+    expected=case['expectedActivities']
+    moves,choices=review['reviewMoves'],review['allowedReviewMoves']
+    assert set(choices)==set(moves)==set(expert_keys)
+    assigned={key:allowed[0] for key,allowed in choices.items() if len(allowed)==1}
+    assert all(moves[k] in options for k,options in choices.items())
+    assert set(assigned.values()) <= set(expected)
+    # Each feasible student instruction must survive the wire contract, even when the reviewer would pick a default.
+    assert len(set(assigned.values())) >= min(len(expected),len(expert_keys))
+    extra_pages=[p for p in pages if p['id'].startswith('requested-')]
+    coverage=[]
+    for move in expected:
+        responsible=[k for k in expert_keys if assigned.get(k)==move]
+        supplementary=[p for p in extra_pages if p['id'].startswith('requested-'+move+'-')]
+        if responsible:
+            assert not supplementary, ('an assigned student activity must appear once',move)
+            body=edits[responsible[0]]
+            origin='student instruction enforced in reviewer schema'
+        else:
+            assert len(expert_keys)<len(expected) and supplementary, ('missing explicit student request',move)
+            body=''.join(passage(p) for p in supplementary)
+            origin='additional activity from explicit student instruction'
+        coverage.append({'activity':move,'origin':origin,'assignedSteps':responsible,
+                         'supplementPageIds':[p['id'] for p in supplementary],
+                         'evidence':verify_requested_activity(case,plan,move,body)})
+    assert all(any(p['id'].startswith('requested-'+move+'-') for move in expected) for p in extra_pages)
+    return coverage
+
+
 def run_student(base, probe, case):
     probe.case = case
     first_turn = len(probe.turns)
@@ -298,14 +355,20 @@ def run_student(base, probe, case):
     def original_passage(page):
         return page.get('notes') or page['elements'][0]['text']
     assert ''.join(original_passage(p) for p in visible)==''.join(dict.fromkeys(edits[k] for k in expert_keys))
-    assert '本节按教学审阅者选择的活动编排' in ''.join(original_passage(p) for p in verdict)
+    verdict_text=''.join(original_passage(p) for p in verdict)
+    assert verdict_text.startswith('本节按你明确要求的活动和教学审阅结果编排。')
+    reviewer=role_steps['review'][0]
+    coverage=required_coverage(case,plan,pages,reviewer,expert_keys,edits,original_passage)
     first_reason=check['explanation'].split('。')[0]
     output_checks=[]
     for key in expert_keys:
         move,text=moves[key],edits[key]
         assert labels[move] in text and first_reason in text
         assert all(name in text for name in (('Player','Guard') if case['identity']=='basketball' else ('Observation','Transit')))
-        output_checks.append({'expert':key,'modelSelectedActivity':move,'freeDraftTopicTerms':role_steps[key][0]['freeDraftTopicTerms'],
+        options=reviewer['allowedReviewMoves'][key]
+        output_checks.append({'expert':key,'returnedActivity':move,'allowedActivities':options,
+                              'selectionOrigin':'student instruction enforced in reviewer schema' if len(options)==1 else 'model choice among allowed activities',
+                              'freeDraftTopicTerms':role_steps[key][0]['freeDraftTopicTerms'],
                               'reviewReceivedExactDraft':True,'sourceBoundActivityInSlides':True,'sample':text[:600]})
     return {'student':case['identity'],'lesson':'G06','releaseId':release,'brief':brief,
             'lessonSHA256':plan['contentHash'],'exercise':activity['body'],'answer':check['options'][check['answerIndex']],
@@ -313,8 +376,8 @@ def run_student(base, probe, case):
             'studyStatus':run['status'],'accountedTokens':run['spentTokens'],'roles':{s['key']:s['role'] for s in run['steps']},
             'freeDraftsWithTopicTerm':sum(bool(x['freeDraftTopicTerms']) for x in output_checks),
             'freeDraftCount':len(output_checks),
-            'interpretation':'Expert drafts are free-form model text. Topic terms measure lexical overlap only. Final activities are selected by the model reviewer and rendered from checked course material.',
-            'providerTurns':turns,'reviewedActivities':output_checks}
+            'interpretation':'Expert drafts are free-form model text; topic-term counts measure lexical overlap. The student fixes requested activities. Where several activities are permitted, the reviewer chooses one. Published activity text comes from checked course material.',
+            'providerTurns':turns,'reviewedActivities':output_checks,'studentRequestedActivities':coverage}
 
 
 def verify(args, result):

@@ -2,6 +2,7 @@ package io.typeforge.learning;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.typeforge.curriculum.CurriculumService.ConceptView;
+import io.typeforge.curriculum.LessonActivityRequests;
 import io.typeforge.curriculum.CurriculumService.EvidenceView;
 import io.typeforge.learning.PersonalCourseware.Brief;
 import io.typeforge.learning.PersonalCourseware.Portable;
@@ -83,14 +84,18 @@ final class InterestApplications {
         if (recipe==null || topic.evidence().isEmpty()) return base;
         Theme chosen=choose(brief);
         String request=brief.requirements();
-        boolean counter=asks(request,"反例|不能编译|编译错误|边界|陷阱|counterexample|invalid");
-        boolean depth=asks(request,"深入|原理|底层|推导|为什么|详细|深度|depth|in.depth|explain why");
-        boolean transfer=asks(request,"迁移|挑战|变式|扩展|拓展|设计|项目|transfer|challenge");
-        boolean firstQuestion=asks(request,"先(?:做题|练习|预测|考我)|自测优先|quiz first|practice first");
+        var activities=LessonActivityRequests.parse(request);
+        boolean counter=activities.required().contains("COUNTEREXAMPLE") || !activities.declined().contains("COUNTEREXAMPLE")
+            && asks(request,"编译错误|边界|陷阱|invalid");
+        boolean depth=!activities.declined().contains("TRACE_TYPES") && asks(request,"深入|原理|底层|推导|为什么|详细|深度|depth|in.depth|explain why");
+        boolean transfer=activities.required().contains("TRANSFER") || !activities.declined().contains("TRANSFER")
+            && asks(request,"挑战|扩展|拓展|设计|项目|challenge");
+        boolean includeTransfer=!activities.declined().contains("TRANSFER") && (depth || transfer || !request.isBlank());
+        boolean firstQuestion=!activities.declined().contains("CHECK_COMPILE") && asks(request,"先(?:做题|练习|预测|考我)|自测优先|quiz first|practice first");
         boolean concrete=asks(request,"通俗|画面|例子|入门|直观|图示|生活|analogy|beginner|example");
         boolean accepted=!counter && chosen.producer();
-        var themed=make(chosen,recipe,brief,depth,transfer,concrete,accepted);
-        var portable=make(PUBLIC,recipe,new Brief("",""),depth,transfer || !request.isBlank(),concrete,accepted);
+        var themed=make(chosen,recipe,brief,depth,transfer,includeTransfer,concrete,accepted);
+        var portable=make(PUBLIC,recipe,new Brief("",""),depth,transfer || !request.isBlank(),includeTransfer,concrete,accepted);
         EvidenceView card=topic.evidence().get(0);
         var entries=new ArrayList<Scene>();
         for (int i=0;i<themed.size();i++) {
@@ -145,7 +150,7 @@ final class InterestApplications {
     }
 
     private record Part(String key,String kind,Portable text,SelfCheck check) {}
-    private static List<Part> make(Theme theme,Recipe r,Brief brief,boolean depth,boolean transfer,boolean concrete,boolean accepted) {
+    private static List<Part> make(Theme theme,Recipe r,Brief brief,boolean depth,boolean transfer,boolean includeTransfer,boolean concrete,boolean accepted) {
         String line=theme.fill(accepted?r.allowed():r.rejected());
         String other=theme.fill(accepted?r.rejected():r.allowed());
         String reason=theme.fill(accepted?r.allowedReason():r.rejectedReason());
@@ -162,7 +167,7 @@ final class InterestApplications {
             "结合本例目标，指出需要保留的类型信息，再做紧接着的一题。"),null));
         parts.add(new Part("application-check","PREDICT",new Portable(theme.situation()+" · 判断编译结果",exercise,
             "在本页选择结果，核对理由后再进入课程练习。"),new SelfCheck(OPTIONS,accepted?0:1,explanation,r.javaSource(theme,accepted))));
-        if(depth || transfer || !brief.requirements().isBlank()) {
+        if(includeTransfer) {
             String task=theme.fill(r.transfer());
             if(!brief.requirements().isBlank()) task+="\n\n结合你写下的本节要求「"+brief.requirements()+"」，选定一个具体改动，把旧声明、新声明和预期的编译结果并排解释。";
             parts.add(new Part("application-transfer","REFLECT",new Portable(theme.situation()+" · "+(transfer?"设计变式":"解释边界"),

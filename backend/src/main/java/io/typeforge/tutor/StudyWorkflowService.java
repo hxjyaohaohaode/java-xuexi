@@ -323,10 +323,13 @@ public final class StudyWorkflowService implements RuntimeCapabilityProvider {
             // receives replacement prose, and only for the predecessor explicitly named by the reviewer.
             if(!drafts.keySet().containsAll(edits.keySet())) throw DomainException.conflict("Review edit lacks a current expert draft");
             drafts.putAll(edits);
-            if(edition.flatMap(ReviewedApplication::from).isPresent() && "MODEL".equals(metadata(run.id()).get("mode_key"))) {
+            var application=edition.flatMap(ReviewedApplication::from);
+            if(application.isPresent() && "MODEL".equals(metadata(run.id()).get("mode_key"))) {
                 if(!edits.keySet().equals(drafts.keySet())) throw DomainException.conflict("Each personalized activity requires a reviewed selection");
-                critique="本节按教学审阅者选择的活动编排。预测、判定和对照理由取自本次个人课件固定的课程判例。"
-                    +"请先在编辑器检验原行，再只替换一个类型，记录编译器实际报告的差异。";
+                var activities=application.get().requests();
+                critique=activities.required().isEmpty()?"本节按教学审阅者选择的活动编排。":"本节按你明确要求的活动和教学审阅结果编排。";
+                critique+="判定和对照理由取自本次个人课件固定的课程判例。";
+                if(activities.declined().size()==ReviewedApplication.MOVES.size()) critique="已按你的要求省略补充教学活动。";
             }
             var body=drafts.values().stream().filter(value->!value.isBlank()).distinct().toList();
             if(inputs.size()>64)throw new DomainException("STUDY_REFERENCE_LIMIT",422,"The study artifact needs too many references; select a smaller context");
@@ -343,7 +346,7 @@ public final class StudyWorkflowService implements RuntimeCapabilityProvider {
                     if (inputs.size()>64) throw new DomainException("STUDY_REFERENCE_LIMIT",422,"The lesson has too many source references");
                 }
                 JsonNode content=kind.equals("SLIDES")?slides(body,critique,citations):document(title,body,critique,citations);
-                if (edition.isPresent()) content=CoursewareSlides.render(json,edition.get(),content,TutorService.Mode.valueOf(metadata(run.id()).get("mode_key").toString()));
+                if (edition.isPresent()) content=CoursewareSlides.render(json,edition.get(),content,TutorService.Mode.valueOf(metadata(run.id()).get("mode_key").toString()),edits.values());
                 artifact=artifacts.create(owner,workspace,kind,title,run.goalId(),"study-output:"+run.id()+":"+kind);
                 if(artifact.currentRevision()!=0)throw new DomainException("STUDY_OUTPUT_ALREADY_EDITED",409,"The output already has a version; an agent cannot overwrite it");
                 artifacts.save(owner,artifact.id(),0,content,List.copyOf(inputs.values()));artifact=artifacts.get(owner,artifact.id());

@@ -269,6 +269,29 @@ class TutorHttpProviderTest {
         }
     }
 
+    @Test void reviewerCannotIgnoreAnExplicitRequestedActivityEvenWithOnlyJsonObjectSupport() {
+        var evidence=search.search(DemoContentInitializer.RELEASE_ID,"Java PECS",null,1).items();
+        var ref=new io.typeforge.workspace.WorkspaceContextStore.Reference("ARTIFACT",UUID.randomUUID(),1,json.sha256("draft"));
+        var item=Map.<String,Object>of("kind","REVIEWED_APPLICATION","scenario","天文","modeling","天体类型",
+            "prediction","判断例子","rationale","课程已核对","transfer","新场景","requirements","要一个反例，然后做迁移。");
+        var prompt=new io.typeforge.tutor.TutorAnswerProvider.Prompt(UUID.randomUUID(),"分析课程判例",4,List.of(),
+            List.of(item),evidence,io.typeforge.tutor.TutorAnswerProvider.Purpose.REVIEW,List.of(
+                new io.typeforge.tutor.StudyContextJournal.Incoming("expert-1",ref,"待审原稿")));
+        for(boolean strict:List.of(true,false)) {
+            var settings=new TutorSettings("http://127.0.0.1:"+server.getAddress().getPort()+"/chat/completions",KEY,
+                "fixture-model",5000,2048,1_000_000,100,4,false,strict);
+            var provider=new HttpTutorModelProvider(settings,json,course,schemas);
+            byte[] data=provider.body(prompt);
+            var request=json.tree(new String(data,StandardCharsets.UTF_8));
+            if(strict) assertEquals(json.tree("[\"COUNTEREXAMPLE\"]"),request.at("/response_format/json_schema/schema/properties/revisions/properties/expert-1/enum"));
+            assertTrue(request.at("/messages/0/content").asText().contains("CASE_BRIEF_COVERAGE_V3"));
+            behavior.set(q->new Reply(wire(json.write(Map.of("answer","答复","limitations","测试",
+                "revisions",Map.of("expert-1","TRACE_TYPES"),"citedChunkIds",List.of(evidence.get(0).chunkId()))),"stop",true)));
+            var failure=assertThrows(io.typeforge.tutor.TutorAnswerProvider.Failure.class,()->provider.send(prompt,data));
+            assertEquals("STUDY_REVIEW_EDITS_INVALID",failure.code());assertEquals(28,failure.usage().totalTokens());
+        }
+    }
+
     @Test void contextWindowShrinksOptionalExcerptsAndRetainsRequiredLearnerQuestion() {
         var settings=new TutorSettings("http://127.0.0.1:"+server.getAddress().getPort()+"/chat/completions",KEY,
             "fixture-model",5000,8192,1_000_000,100,4,false,true,4800,768,1536,6144,8192);

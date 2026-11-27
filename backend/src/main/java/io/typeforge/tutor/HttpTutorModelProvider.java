@@ -125,6 +125,15 @@ public final class HttpTutorModelProvider implements TutorAnswerProvider,Runtime
         if(teachingCase.isPresent()) instruction+=prompt.purpose()==Purpose.REVIEW
             ? "\nCASE_REVIEW_MOVES：本次使用已审个人案例。逐个检查专家草稿与本题代码、判定及要求。revisions 每个值只可选择 TRACE_TYPES（沿类型推导）、CHECK_COMPILE（预测并编译）、COUNTEREXAMPLE（对照两行）、TRANSFER（迁移）。选择最能修复本稿问题的活动，平台将绑定本题原例与判定。answer 只需指出主要核验点。"
             : "\n本课主例是 learnerContext 中 REVIEWED_APPLICATION 的原始情境与代码。先用其中的类名、业务对象和待判断的一行讲解；通用 Number/List 例子只可用于最后的迁移。请按本节要求完成具体活动。";
+        if(teachingCase.isPresent() && prompt.purpose()==Purpose.REVIEW) {
+            var allowed=new java.util.LinkedHashMap<String,List<String>>();
+            var requests=teachingCase.get().requests();
+            for(int i=0;i<prompt.handoffs().size();i++)
+                allowed.put(prompt.handoffs().get(i).stepKey(),requests.optionsFor(i,prompt.handoffs().size()));
+            instruction+="\nCASE_BRIEF_COVERAGE_V3：本节按学习者明确要求分配活动，其余教学活动可从各步给定选项里选择。"
+                +"每个步骤只可选一个列出的值；NO_EXTRA_ACTIVITY 表示学生要求省略补充活动。"
+                +"本次可选值："+json.write(allowed);
+        }
         if(withoutRepairEvidence(prompt))
             instruction+="\n本节没有纳入需订正的本人作答。可选计划为 concept-first 或 example-first，角色仅可为 CONCEPT 或 EXAMPLE。";
         var format=responseFormat(prompt);
@@ -235,11 +244,13 @@ public final class HttpTutorModelProvider implements TutorAnswerProvider,Runtime
                 var revisions=properties.putObject("revisions").put("type","object").put("additionalProperties",false);
                 var changes=revisions.putObject("properties");
                 var steps=revisions.putArray("required");
-                for(var h:prompt.handoffs()) {
+                var application=ReviewedApplication.from(prompt);
+                for(int i=0;i<prompt.handoffs().size();i++) {
+                    var h=prompt.handoffs().get(i);
                     var value=changes.putObject(h.stepKey()).put("type","string");
-                    if(ReviewedApplication.from(prompt).isPresent()) {
+                    if(application.isPresent()) {
                         var choices=value.putArray("enum");
-                        ReviewedApplication.MOVES.forEach(choices::add);
+                        application.get().requests().optionsFor(i,prompt.handoffs().size()).forEach(choices::add);
                     } else value.put("maxLength",4000);
                     steps.add(h.stepKey());
                 }
@@ -316,14 +327,18 @@ public final class HttpTutorModelProvider implements TutorAnswerProvider,Runtime
                 if(reviewEdits) {
                     JsonNode edits=answer.path("revisions");
                     if(!edits.isObject() || edits.size()!=prompt.handoffs().size()) throw new Failure("STUDY_REVIEW_EDITS_INVALID",usage);
-                    for(var handoff:prompt.handoffs()) {
+                    for(int i=0;i<prompt.handoffs().size();i++) {
+                        var handoff=prompt.handoffs().get(i);
                         var edit=edits.path(handoff.stepKey());
                         if(!edit.isTextual() || edit.textValue().length()>4000) throw new Failure("STUDY_REVIEW_EDITS_INVALID",usage);
                         if(edit.textValue().contains(settings.apiKey())) throw new Failure("TUTOR_PROVIDER_SECRET",usage);
                         String selection=edit.textValue().strip();
                         if(wire.at("/messages/0/content").asText().contains("CASE_REVIEW_MOVES")) {
-                            if(!ReviewedApplication.MOVES.contains(selection)) throw new Failure("STUDY_REVIEW_EDITS_INVALID",usage);
-                            selection=ReviewedApplication.from(prompt).orElseThrow().activity(selection);
+                            var app=ReviewedApplication.from(prompt).orElseThrow();
+                            var allowedMoves=wire.at("/messages/0/content").asText().contains("CASE_BRIEF_COVERAGE_V3")
+                                ?app.requests().optionsFor(i,prompt.handoffs().size()):ReviewedApplication.MOVES;
+                            if(!allowedMoves.contains(selection)) throw new Failure("STUDY_REVIEW_EDITS_INVALID",usage);
+                            selection=app.activity(selection);
                         }
                         revisions.put(handoff.stepKey(),selection);
                     }
